@@ -263,18 +263,18 @@ const InviteModal = ({ onClose, onInvite }) => {
           </div>
         </div>
           
-          <div className="w-full items-center min-h-15 bg-[#373737] flex justify-between px-5">
+          <div className="w-full items-center min-h-15 bg-[#373737] flex justify-end gap-x-5 px-5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-300 rounded hover:bg-[#2D2D2D]"
+              className="px-8 py-2  text-white rounded flex items-center justify-center cursor-pointer border-1"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-[#6F3FFF] text-white rounded flex items-center justify-center"
+              className="px-8 py-2 bg-[#6F3FFF] text-white rounded flex items-center justify-center cursor-pointer border-1"
             >
               {loading ? (
                 <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
