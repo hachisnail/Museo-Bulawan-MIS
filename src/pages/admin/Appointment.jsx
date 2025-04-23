@@ -54,6 +54,7 @@ const Appointment = () => {
   const [toastMessage, setToastMessage] = useState('')
 
   const token = localStorage.getItem('token')
+  const API_URL = import.meta.env.VITE_API_URL
 
   /**
    * Format date to YYYY-MM-DD for API requests
@@ -83,7 +84,7 @@ const Appointment = () => {
   const fetchAttendanceDetail = async (appointmentId) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/auth/attendance/${appointmentId}`,
+        `${API_URL}/api/auth/attendance/${appointmentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -101,7 +102,7 @@ const Appointment = () => {
   const fetchVisitorRecordDetail = async (visitorId, appointmentId) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/auth/visitor-record/${visitorId}/${appointmentId}`,
+        `${API_URL}/api/auth/visitor-record/${visitorId}/${appointmentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -241,7 +242,7 @@ const Appointment = () => {
   const fetchVisitorRecords = async () => {
     try {
       // Use the same date filtering pattern as appointments
-      let url = 'http://localhost:5000/api/auth/visitor-records';
+      let url = `${API_URL}/api/auth/visitor-records`;
 
       // Only apply date filtering if selectedDate is not null
       if (selectedDate) {
@@ -273,7 +274,7 @@ const Appointment = () => {
     try {
       // For the initial load, don't apply date filtering
       // Only filter if a date is specifically selected
-      let url = 'http://localhost:5000/api/auth/appointment';
+      let url = `${API_URL}/api/auth/appointment`;
 
       // Only apply date filtering if selectedDate is not null and has been explicitly set
       if (selectedDate) {
@@ -301,7 +302,7 @@ const Appointment = () => {
   const fetchAttendanceData = async () => {
     try {
       // Use the same date filtering pattern as appointments
-      let url = 'http://localhost:5000/api/auth/attendance';
+      let url = `${API_URL}/api/auth/attendance`;
 
       // Only apply date filtering if selectedDate is not null
       if (selectedDate) {
@@ -328,7 +329,7 @@ const Appointment = () => {
   const fetchStats = async () => {
     try {
       // Only use date parameter if selectedDate is not null
-      let url = 'http://localhost:5000/api/auth/appointment/stats';
+      let url = `${API_URL}/api/auth/appointment/stats`;
       if (selectedDate) {
         const dateParam = formatDateForAPI(selectedDate);
         if (dateParam) {
@@ -361,7 +362,7 @@ const Appointment = () => {
       }
 
       await axios.patch(
-        `http://localhost:5000/api/auth/appointment/${appointmentId}/status`,
+        `${API_URL}/api/auth/appointment/${appointmentId}/status`,
         requestData,
         {
           headers: {
