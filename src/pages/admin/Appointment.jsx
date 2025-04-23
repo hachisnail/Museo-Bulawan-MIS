@@ -993,7 +993,7 @@ const Appointment = () => {
                         )
                       })
                     ) : (
-                      <div className="min-w-[94rem] py-16 flex justify-center items-center border-b-1 border-gray-400">
+                      <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
                         <div className="text-2xl text-gray-500 flex flex-col items-center">
                           <i className="fas fa-inbox text-5xl mb-4"></i>
                           <p>No appointment data available</p>
@@ -1051,7 +1051,7 @@ const Appointment = () => {
                         )
                       })
                     ) : (
-                      <div className="min-w-[94rem] py-16 flex justify-center items-center border-b-1 border-gray-400">
+                      <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
                         <div className="text-2xl text-gray-500 flex flex-col items-center">
                           <i className="fas fa-calendar-check text-5xl mb-4"></i>
                           <p>No attendance records found</p>
@@ -1160,7 +1160,7 @@ const Appointment = () => {
                         </React.Fragment>
                       ))
                     ) : (
-                      <div className="min-w-[94rem] py-16 flex justify-center items-center border-b-1 border-gray-400">
+                      <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
                         <div className="text-2xl text-gray-500 flex flex-col items-center">
                           <i className="fas fa-user-clock text-5xl mb-4"></i>
                           <p>No visitor records available</p>
