@@ -236,6 +236,9 @@ export const getAppointmentStats = async (req, res) => {
 /**
  * Fetch all appointments, eagerly loading Visitor data.
  */
+// controllers/appointmentController.js
+// Line 377-416: Update the getAllAppointments function
+
 export const getAllAppointments = async (req, res) => {
   try {
     // Get date from query param if provided
@@ -256,16 +259,37 @@ export const getAllAppointments = async (req, res) => {
       };
     }
 
+    // Fetch all appointments with their related data
     const appointments = await Appointment.findAll({
       where,
-      include: [Visitor, AppointmentStatus]
+      include: [Visitor, AppointmentStatus],
+      order: [['creation_date', 'DESC']] // Sort by date, newest first
     });
-    return res.json(appointments);
+
+    // Process data to prioritize "To Review" status
+    const toReview = [];
+    const others = [];
+    
+    // Split appointments into two categories
+    appointments.forEach(appointment => {
+      const status = appointment.AppointmentStatus?.status?.toUpperCase() || 'TO_REVIEW';
+      if (status === 'TO_REVIEW') {
+        toReview.push(appointment);
+      } else {
+        others.push(appointment);
+      }
+    });
+    
+    // Combine arrays with "To Review" first
+    const sortedAppointments = [...toReview, ...others];
+    
+    return res.json(sortedAppointments);
   } catch (error) {
     console.error('Error fetching appointments:', error);
     return res.status(500).json({ message: 'Server error retrieving appointments.' });
   }
 };
+
 
 
 
