@@ -526,7 +526,7 @@ export const registrationSuccess = (req, res) => {
           <h1>Registration Successful!</h1>
           <p>Your account has been created successfully.</p>
          
-          <p>Return to <a href="http://localhost:5173/login">Login</a></p>
+          <p>Return to <a href="http://mis.museobulawan.online/login">Login</a></p>
         </div>
       </body>
     </html>

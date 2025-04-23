@@ -1,8 +1,4 @@
 // routes/authRoutes.js
-import express from 'express';
-import { login, logout, autoLogout, refreshToken, verifyCookie  } from '../controller/authController.js';
-import { displayUsers, displaySpecificUser, getUserLoginLogs } from '../controller/userController.js';
-import { createAppointment, getAllAppointments } from '../controller/appointmentController.js';
 import { createForm } from '../controller/formController.js';
 
 import express from 'express';
