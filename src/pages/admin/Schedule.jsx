@@ -12,7 +12,7 @@ const Schedule = () => {
 
         <div className='w-full bg-[#F0F0F0] min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
           <span className=' text-5xl font-semibold text-black'>Schedule</span>
-          <div className='w-full h-full flex flex-col xl:flex-row  gap-y-5 xl:gap-y-0 justify-between sm:px-12'>
+          <div className='w-full h-full flex flex-col xl:flex-row  gap-y-5 xl:gap-y-0 justify-between sm:px-12 gap-x-10'>
 
             <div className='sm:[w-31rem] h-full flex flex-col justify-between items-center pt-20'>
               {/* left tab */}
@@ -38,7 +38,7 @@ const Schedule = () => {
               </div>
             </div>
 
-            <div className='min-w-full xl:min-w-[55rem] xl:max-w-[55rem] 2xl:max-w-[90rem] 2xl:min-w-[90rem] h-full flex flex-col gap-y-8'>
+            <div className='w-full min-w-[55rem]  h-full flex flex-col gap-y-8'>
               {/* middle tab */}
               <div className='w-full min-h-[5rem] flex flex-col justify-between'>
                 <span className='text-4xl font-bold text-black'>Today’s Schedule</span>
