@@ -135,6 +135,8 @@ const AdminNav = () => {
               <span>
                 {first_name.toUpperCase()}&nbsp;{last_name.toUpperCase()}
               </span>
+              
+              
             </div>
             <div className="sm:w-[15rem] flex flex-col justify-end gap-y-4 h-fit">
               <div className="w-[4rem] h-[4rem] rounded-full flex items-center justify-center bg-white">
