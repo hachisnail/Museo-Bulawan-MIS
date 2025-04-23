@@ -20,6 +20,15 @@ import {
   completeRegistration,
   registrationSuccess
 } from '../controller/invitationController.js';
+
+import{
+  createForm,
+  getAllForms,
+  updateFormStatus,
+  updateFormTimestamp,
+  updateTransferStatus
+} from '../controller/formController.js';
+
 import { logAction, fetchLog } from '../controller/LogService.js';
 
 const router = express.Router();
@@ -59,5 +68,14 @@ router.delete('/invitations/:id', autoLogout, revokeInvitation, logAction('delet
 router.get('/complete-registration/:token', renderCompleteRegistration);
 router.post('/complete-registration/:token', completeRegistration, logAction('create', 'Credential'));
 router.get('/registration-success', registrationSuccess);
+
+//Acquisition 
+router.post('/form', createForm);     // existing route for creating a form
+router.get('/form', autoLogout, getAllForms);  // new route for fetching all forms
+router.put('/form/:id/status', updateFormStatus);
+router.put('/form/:id/timestamp', updateFormTimestamp);
+router.put('/form/:id/transfer_status', updateTransferStatus); // New route for updating transfer status
+
+
 
 export default router;
