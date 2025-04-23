@@ -5,7 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcrypt';
 import { sequelize } from '../database.js';
 // Import the transporter component
-import transporter, { sendEmail } from './emailTransporter.js';
+import transporter, { sendEmail } from '../emailTransporter.js';
+
 
 const formatInvitation = (invitation) => {
   return {
