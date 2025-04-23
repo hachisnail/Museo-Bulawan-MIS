@@ -264,14 +264,14 @@ const Home = () => {
       
       </div>
 
-      <div ref={calendar} className="w-screen h-screen min-h-[79rem] flex flex-col xl:flex-row border-t-1 border-gray-400">
+      <div ref={calendar} className="w-screen h-screen min-h-[79rem] flex flex-col xl:flex-row border-t-1 border-gray-400 overflow-hidden ">
           <div className='w-full xl:max-w-[90rem] xl:min-w-[90rem] xl:h-full h-[60rem] bg-[#FFF6E1] border-r-1 border-b-1 flex justify-center flex-col px-20 items-center border-gray-400'>
               <CalendarComponent/>
           </div>
-          <div className='w-full h-full flex flex-col items-center justify-between'>
+          <div className='w-full h-full flex flex-col items-center justify-between gap-y-5'>
             <div className='w-fit min-h-[10rem] flex items-end'>
                 <div className='w-1 h-full flex flex-col'>
-                  <div className='relative right-[90rem] top-[7rem] w-[90rem] h-9 flex flex-col items-end justify-between'>
+                  <div className='relative right-[90rem] top-[7rem] w-[90rem] h-9 flex flex-col items-end justify-between overflow-hidden'>
                     <div className='w-full h-3 bg-black'></div>
                     <div className='w-[70rem] h-3 bg-black'></div>
 
@@ -282,10 +282,12 @@ const Home = () => {
                 </span>
             </div>
             <div className='w-[55rem] h-full flex flex-col justify-start gap-y-5'>
-              <div className='w-[55rem] h-[30rem] bg-black'>
+              <div className='w-[55rem] h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage1})` }}
+      >
 
               </div>
-              <div className='w-[55rem] h-[30rem] bg-black' >
+              <div className='w-[55rem] h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage3})` }}
+      >
 
               </div>
 
