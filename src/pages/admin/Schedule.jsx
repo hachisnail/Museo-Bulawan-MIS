@@ -69,7 +69,7 @@ const Schedule = () => {
                     <span className='text-white text-3xl font-semibold'>Hello</span>
                   </div>
 
-                  <div className='2xl:h-[53rem] h-[41rem] min-w-full shadow-xl bg-white rounded-xl'>
+                  <div className='h-full min-h-[41rem] min-w-full shadow-xl bg-white rounded-xl'>
                     {/* devil display cards */}
 
 
