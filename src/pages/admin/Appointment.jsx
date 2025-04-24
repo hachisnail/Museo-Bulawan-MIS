@@ -1201,8 +1201,6 @@ const Appointment = () => {
         </div>
       </div>
 
-      // snippet code
-      // In Appointment.jsx, pass the showToast function to AppointmentModal
       <AppointmentModal
         showModal={showModal}
         modalData={modalData}
