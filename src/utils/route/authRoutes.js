@@ -9,7 +9,10 @@ import {
   updateAppointmentStatus, 
   getAppointmentStats, 
   getAttendanceData,
-  getVisitorRecords,getAttendanceDetail,getVisitorRecordDetail 
+  getVisitorRecords,
+  getAttendanceDetail,
+  getVisitorRecordDetail,
+  sendEmailNotification 
 } from '../controller/appointmentController.js';
 import { 
   sendInvitation, 
@@ -41,17 +44,16 @@ router.get('/fetchUser/:id', autoLogout, displaySpecificUser);
 router.get('/fetchCredential', autoLogout, fetchCredential);
 router.get('/login-logs/:userId', autoLogout, getUserLoginLogs);
 
+// appointments routes #rhettrina
 router.post('/appointment', createAppointment, logAction('create','Appointment'));
 router.get('/appointment', autoLogout, getAllAppointments);
 router.patch('/appointment/:id/status', autoLogout, updateAppointmentStatus);
 router.get('/appointment/stats', autoLogout, getAppointmentStats);
 router.get('/attendance', autoLogout, getAttendanceData);
 router.get('/visitor-records', autoLogout, getVisitorRecords);
-
 router.get('/attendance/:id', autoLogout, getAttendanceDetail);
-
-// Get visitor record detail by visitor ID and appointment ID
 router.get('/visitor-record/:visitorId/:appointmentId', autoLogout, getVisitorRecordDetail);
+router.post('/send-email-notification', autoLogout, sendEmailNotification);
 
 
 router.get('/fetchLogs', autoLogout, fetchLog);
