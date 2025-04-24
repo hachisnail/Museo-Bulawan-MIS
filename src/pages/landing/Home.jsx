@@ -18,12 +18,16 @@ const Home = () => {
   const learnMore = useRef(null)
   const calendar = useRef(null)
   const events = useRef(null)
+  const support = useRef(null)
+  const home = useRef(null)
+
 
   return (
     <>
       <ScrollRestoration />
 
       <div
+       ref={home}
         className="bg-cover bg-center bg-no-repeat  min-h-[79rem] h-screen w-screen pt-7"
         style={{ backgroundImage: `url(${bgImage1})` }}
       >
@@ -367,7 +371,9 @@ const Home = () => {
                         </div>
                       </div>
                     </div>
+                    
                   </div>
+                  
                 </div>
 
                 <div className="w-full h-1/2   xl:h-full">
@@ -485,13 +491,27 @@ const Home = () => {
                     </div>
                   </div>
                 </div>
+                
               </div>
             </div>
+            <div className="w-full h-full flex mt-10 justify-end px-20">
+            <span
+              onClick={() =>
+                support.current?.scrollIntoView({ behavior: 'smooth' })
+              }
+              className="text-3xl text-white hover:underline cursor-pointer font-semibold"
+            >
+              Support Us <i class="fa-solid fa-arrow-right"></i>
+            </span>
           </div>
+          </div>
+          
         </div>
+        
+       
       </div>
 
-      <div className="w-screen h-screen min-h-[79rem]">
+      <div  ref={support} className="w-screen h-screen min-h-[79rem]">
         <div className="w-full h-full py-12  ">
           <div className="w-full h-full xl:px-120 px-12">
             <div className="w-full h-full flex flex-col">
@@ -564,8 +584,12 @@ const Home = () => {
                   </div>
                 </div>
               </div>
+              
             </div>
+            
           </div>
+
+          
         </div>
       </div>
     </>

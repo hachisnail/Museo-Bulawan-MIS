@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
 const Calendar = () => {
-  // Get current date information
   const now = new Date();
-  const [currentDate] = useState(now); // Store actual current date for highlighting
+  const [currentDate] = useState(now); 
   const [currentMonth] = useState(now.getMonth());
   const [currentYear] = useState(now.getFullYear());
   const [events, setEvents] = useState({});
@@ -11,15 +10,12 @@ const Calendar = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedEvents, setSelectedEvents] = useState([]);
   
-  // Month names for header display
   const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
 
-  // Days of week for header
   const weekdays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
   
-  // Fetch events from backend
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -44,7 +40,6 @@ const Calendar = () => {
     } catch (error) {
       console.error('Error fetching events:', error);
       
-      // For demo purposes - mock data
       setEvents({
         "2025-04-01": [{ title: "Monthly Meeting", description: "Team sync", special: false }],
         "2025-04-09": [{ title: "Important Event", description: "Priority task", special: true }],
@@ -162,8 +157,8 @@ const Calendar = () => {
                 className={`
                   h-28 border border-gray-200 p-2 cursor-pointer transition
                   ${!date.isCurrentMonth ? 'text-gray-400' : ''}
-                  ${isTodayDate ? 'bg-[#e8d9b0]' : ''}
-                  ${hasEvents && !isSpecialEvent && !isTodayDate ? 'bg-yellow-50' : ''}
+                  ${isTodayDate ? 'bg-[#e0c67d]' : ''}
+                  ${hasEvents && !isSpecialEvent && !isTodayDate ? 'bg-yellow-100' : ''}
                   ${isSpecialEvent ? 'bg-[#7d8e6a] text-white' : ''}
                   hover:bg-gray-100
                 `}
@@ -179,9 +174,9 @@ const Calendar = () => {
       
       {/* Event Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 backdrop-blur-xl bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg w-full max-w-md mx-4 overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+        <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white  border-1 border-gray-400 w-full max-w-md mx-4 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-300 flex justify-between items-center">
               <h3 className="text-lg font-medium">
                 {selectedDate?.toLocaleDateString('en-US', { 
                   month: 'long', 
@@ -193,9 +188,7 @@ const Calendar = () => {
                 onClick={() => setModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <i class="fas fa-times text-xl cursor-pointer"></i>
               </button>
             </div>
             <div className="px-6 py-4">
