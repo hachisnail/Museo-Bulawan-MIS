@@ -1,6 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../database.js';
 import User from './Users.js';
+import Credential from './Credential.js';
 
 const Article = sequelize.define('Article', {
   article_id: {
@@ -22,11 +23,11 @@ const Article = sequelize.define('Article', {
     onDelete: 'CASCADE',
   },
   upload_date: {
-    type: DataTypes.DATE, // store as string for manual input like "April 18, 2025"
+    type: DataTypes.DATE,
     allowNull: true,
   },
   images: {
-    type: DataTypes.TEXT, // store base64, file path, or JSON string of image URLs
+    type: DataTypes.TEXT,
     allowNull: true,
   },
   article_category: {
@@ -45,8 +46,17 @@ const Article = sequelize.define('Article', {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  upload_period: {
-    type: DataTypes.STRING,
+  status: {
+    type: DataTypes.ENUM('pending', 'posted'),
+    defaultValue: 'pending',
+    allowNull: false,
+  },
+  upload_period_start: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  upload_period_end: {
+    type: DataTypes.DATE,
     allowNull: true,
   },
   created_at: {
