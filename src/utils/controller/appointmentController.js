@@ -3,7 +3,7 @@
 import Visitor from '../models/Visitors.js';
 import Appointment from '../models/Appointment.js';
 import { Op } from 'sequelize';
-
+import transporter, { sendEmail } from '../emailTransporter.js';
 import AppointmentStatus from '../models/AppointmentStatus.js';
 
 /**
@@ -236,6 +236,9 @@ export const getAppointmentStats = async (req, res) => {
 /**
  * Fetch all appointments, eagerly loading Visitor data.
  */
+// controllers/appointmentController.js
+// Line 377-416: Update the getAllAppointments function
+
 export const getAllAppointments = async (req, res) => {
   try {
     // Get date from query param if provided
@@ -256,16 +259,37 @@ export const getAllAppointments = async (req, res) => {
       };
     }
 
+    // Fetch all appointments with their related data
     const appointments = await Appointment.findAll({
       where,
-      include: [Visitor, AppointmentStatus]
+      include: [Visitor, AppointmentStatus],
+      order: [['creation_date', 'DESC']] // Sort by date, newest first
     });
-    return res.json(appointments);
+
+    // Process data to prioritize "To Review" status
+    const toReview = [];
+    const others = [];
+    
+    // Split appointments into two categories
+    appointments.forEach(appointment => {
+      const status = appointment.AppointmentStatus?.status?.toUpperCase() || 'TO_REVIEW';
+      if (status === 'TO_REVIEW') {
+        toReview.push(appointment);
+      } else {
+        others.push(appointment);
+      }
+    });
+    
+    // Combine arrays with "To Review" first
+    const sortedAppointments = [...toReview, ...others];
+    
+    return res.json(sortedAppointments);
   } catch (error) {
     console.error('Error fetching appointments:', error);
     return res.status(500).json({ message: 'Server error retrieving appointments.' });
   }
 };
+
 
 
 
@@ -531,3 +555,85 @@ export const getVisitorRecordDetail = async (req, res) => {
 };
 
 
+export const sendEmailNotification = async (req, res) => {
+  try {
+    const { recipientEmail, subject, message, status, appointmentDetails } = req.body;
+
+    // Basic validation
+    if (!recipientEmail || !subject || !message) {
+      return res.status(400).json({ message: 'Missing required email details' });
+    }
+
+    // Format the email based on status type
+    let emailHtml = `
+      <div style="font-family: 'Segoe UI', sans-serif; padding: 20px; background-color: #f9f9f9; color: #333;">
+        <div style="max-width: 600px; margin: auto; background: #fff; border-radius: 10px; padding: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+          <h2 style="color: #6F3FFF;">Museo Bulawan Appointment Update</h2>
+          <p>Dear ${appointmentDetails.visitorName},</p>
+    `;
+
+    // Customize message based on status
+    if (status === 'CONFIRMED') {
+      emailHtml += `
+        <p>Your appointment request has been <strong style="color: #4CAF50;">CONFIRMED</strong>.</p>
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">
+          <p><strong>Appointment Details:</strong></p>
+          <p>Date: ${appointmentDetails.preferredDate}</p>
+          <p>Time: ${appointmentDetails.preferredTime}</p>
+          <p>Purpose: ${appointmentDetails.purpose}</p>
+        </div>
+      `;
+    } else if (status === 'REJECTED') {
+      emailHtml += `
+        <p>We regret to inform you that your appointment request has been <strong style="color: #F44336;">REJECTED</strong>.</p>
+      `;
+    } else if (status === 'FAILED') {
+      emailHtml += `
+        <p>Your appointment has been <strong style="color: #F44336;">CANCELLED</strong>.</p>
+      `;
+    } else if (status === 'COMPLETED') {
+      emailHtml += `
+        <p>Your visit has been marked as <strong style="color: #4CAF50;">COMPLETED</strong>. Thank you for visiting Museo Bulawan.</p>
+      `;
+    }
+
+    // Add the custom message from admin
+    emailHtml += `
+        <div style="margin: 20px 0; padding: 15px; border-left: 4px solid #6F3FFF;">
+          <p><strong>Message from Museo Bulawan:</strong></p>
+          <p>${message}</p>
+        </div>
+        <p style="margin-top: 30px;">Thank you for your interest in Museo Bulawan.</p>
+        <p>Best regards,<br>The Museo Bulawan Team</p>
+      </div>
+    </div>
+    `;
+
+    // Use the sendEmail helper function from emailTransporter
+    const { sendEmail } = await import('../emailTransporter.js');
+    const emailResult = await sendEmail({
+      from: '"Museo Bulawan" <museobulawanmis@gmail.com>',
+      to: recipientEmail,
+      subject: subject,
+      html: emailHtml
+    });
+
+    if (!emailResult.success) {
+      return res.status(500).json({
+        message: 'Failed to send email notification',
+        error: emailResult.error
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Email notification sent successfully'
+    });
+    
+  } catch (error) {
+    console.error('Error sending email notification:', error);
+    return res.status(500).json({
+      message: 'Server error sending email notification',
+      error: error.message
+    });
+  }
+};

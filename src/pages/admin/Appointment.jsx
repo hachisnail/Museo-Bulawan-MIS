@@ -4,6 +4,7 @@ import AdminNav from '../../components/navbar/AdminNav'
 import CustomDatePicker from '../../components/function/CustomDatePicker'
 import { connectWebSocket, closeWebSocket } from '../../utils/websocket'
 import { AppointmentModal } from '../../components/modals/AppointmentModal'
+import Toast from '../../components/function/Toast';
 
 const Appointment = () => {
   const [selectedDate, setSelectedDate] = useState(null)
@@ -50,10 +51,31 @@ const Appointment = () => {
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 })
 
   // Toast message
-  const [showToast, setShowToast] = useState(false)
-  const [toastMessage, setToastMessage] = useState('')
+
+  const [toastConfig, setToastConfig] = useState({
+    isVisible: false,
+    message: '',
+    type: 'success'
+  });
+
+  // Add this function to show toast with different types
+  const showToast = (message, type = 'success') => {
+    setToastConfig({
+      isVisible: true,
+      message,
+      type
+    });
+  };
+
+  const hideToast = () => {
+    setToastConfig({
+      ...toastConfig,
+      isVisible: false
+    });
+  };
 
   const token = localStorage.getItem('token')
+  const API_URL = import.meta.env.VITE_API_URL
 
   /**
    * Format date to YYYY-MM-DD for API requests
@@ -83,7 +105,7 @@ const Appointment = () => {
   const fetchAttendanceDetail = async (appointmentId) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/auth/attendance/${appointmentId}`,
+        `${API_URL}/api/auth/attendance/${appointmentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -93,6 +115,7 @@ const Appointment = () => {
       return response.data;
     } catch (error) {
       console.error('Error fetching attendance detail:', error);
+      showToast('Error fetching attendance details', 'error');
       return null;
     }
   };
@@ -101,7 +124,7 @@ const Appointment = () => {
   const fetchVisitorRecordDetail = async (visitorId, appointmentId) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/auth/visitor-record/${visitorId}/${appointmentId}`,
+        `${API_URL}/api/auth/visitor-record/${visitorId}/${appointmentId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -120,6 +143,7 @@ const Appointment = () => {
     // Only proceed if we have an appointment ID
     if (!row.appointment_id) {
       console.error('No appointment ID found for this attendance record');
+      showToast('Cannot find appointment details', 'error');
       return;
     }
 
@@ -127,9 +151,7 @@ const Appointment = () => {
     const detailData = await fetchAttendanceDetail(row.appointment_id);
 
     if (!detailData) {
-      setToastMessage('Failed to load attendance details');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      showToast('Failed to load attendance details', 'error');
       return;
     }
 
@@ -144,6 +166,7 @@ const Appointment = () => {
     // Make sure we have the necessary IDs
     if (!record.id || !detail.appointment_id) {
       console.error('Missing visitor ID or appointment ID');
+      showToast('Cannot find visitor details', 'error');
       return;
     }
 
@@ -151,9 +174,7 @@ const Appointment = () => {
     const detailData = await fetchVisitorRecordDetail(record.id, detail.appointment_id);
 
     if (!detailData) {
-      setToastMessage('Failed to load visitor record details');
-      setShowToast(true);
-      setTimeout(() => setShowToast(false), 3000);
+      showToast('Failed to load attendance details', 'error');
       return;
     }
 
@@ -241,7 +262,7 @@ const Appointment = () => {
   const fetchVisitorRecords = async () => {
     try {
       // Use the same date filtering pattern as appointments
-      let url = 'http://localhost:5000/api/auth/visitor-records';
+      let url = `${API_URL}/api/auth/visitor-records`;
 
       // Only apply date filtering if selectedDate is not null
       if (selectedDate) {
@@ -273,7 +294,7 @@ const Appointment = () => {
     try {
       // For the initial load, don't apply date filtering
       // Only filter if a date is specifically selected
-      let url = 'http://localhost:5000/api/auth/appointment';
+      let url = `${API_URL}/api/auth/appointment`;
 
       // Only apply date filtering if selectedDate is not null and has been explicitly set
       if (selectedDate) {
@@ -301,7 +322,7 @@ const Appointment = () => {
   const fetchAttendanceData = async () => {
     try {
       // Use the same date filtering pattern as appointments
-      let url = 'http://localhost:5000/api/auth/attendance';
+      let url = `${API_URL}/api/auth/attendance`;
 
       // Only apply date filtering if selectedDate is not null
       if (selectedDate) {
@@ -328,7 +349,7 @@ const Appointment = () => {
   const fetchStats = async () => {
     try {
       // Only use date parameter if selectedDate is not null
-      let url = 'http://localhost:5000/api/auth/appointment/stats';
+      let url = `${API_URL}/api/auth/appointment/stats`;
       if (selectedDate) {
         const dateParam = formatDateForAPI(selectedDate);
         if (dateParam) {
@@ -361,7 +382,7 @@ const Appointment = () => {
       }
 
       await axios.patch(
-        `http://localhost:5000/api/auth/appointment/${appointmentId}/status`,
+        `${API_URL}/api/auth/appointment/${appointmentId}/status`,
         requestData,
         {
           headers: {
@@ -369,7 +390,7 @@ const Appointment = () => {
           },
         }
       );
-
+      showToast(`Message sent to ${modalData?.email || 'visitor'}`, 'success');
       console.log(`Appointment ${appointmentId} updated to: ${newStatus}`);
       fetchAppointments();
       fetchStats();
@@ -384,8 +405,12 @@ const Appointment = () => {
    */
   const handleDateChange = (date) => {
     setSelectedDate(date);
-    // Data will be refreshed via useEffect when selectedDate changes
-  }
+    if (date) {
+      showToast(`Filtering data for ${formatDateForDisplay(date)}`, 'info');
+    } else {
+      showToast('Showing all dates', 'info');
+    }
+  };
 
   /**
    * useEffect: Initial data + websocket
@@ -677,7 +702,7 @@ const Appointment = () => {
   }
 
   const handleSend = () => {
-    alert('Message sent to ' + (modalData?.email || 'visitor'))
+    showToast(`Message sent to ${modalData?.email || 'visitor'}`, 'success');
     setShowModal(false)
   }
 
@@ -992,7 +1017,7 @@ const Appointment = () => {
                         )
                       })
                     ) : (
-                      <div className="min-w-[94rem] py-16 flex justify-center items-center border-b-1 border-gray-400">
+                      <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
                         <div className="text-2xl text-gray-500 flex flex-col items-center">
                           <i className="fas fa-inbox text-5xl mb-4"></i>
                           <p>No appointment data available</p>
@@ -1050,7 +1075,7 @@ const Appointment = () => {
                         )
                       })
                     ) : (
-                      <div className="min-w-[94rem] py-16 flex justify-center items-center border-b-1 border-gray-400">
+                      <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
                         <div className="text-2xl text-gray-500 flex flex-col items-center">
                           <i className="fas fa-calendar-check text-5xl mb-4"></i>
                           <p>No attendance records found</p>
@@ -1159,7 +1184,7 @@ const Appointment = () => {
                         </React.Fragment>
                       ))
                     ) : (
-                      <div className="min-w-[94rem] py-16 flex justify-center items-center border-b-1 border-gray-400">
+                      <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
                         <div className="text-2xl text-gray-500 flex flex-col items-center">
                           <i className="fas fa-user-clock text-5xl mb-4"></i>
                           <p>No visitor records available</p>
@@ -1176,40 +1201,55 @@ const Appointment = () => {
         </div>
       </div>
 
+      // snippet code
+      // In Appointment.jsx, pass the showToast function to AppointmentModal
       <AppointmentModal
         showModal={showModal}
         modalData={modalData}
         onClose={handleCloseModal}
-        onSend={handleSend}
-        updateAppointmentStatus={updateAppointmentStatus}
+        onSend={() => {
+          // Only show email sent message for the first phase (To Review)
+          if (modalData.status === 'To Review') {
+            showToast(`Message sent to ${modalData?.email || 'visitor'}`, 'success');
+          } else if (modalData.status === 'Confirmed' && modalData.approveVisit === 'arrive') {
+            showToast('Visitor check-in completed', 'success');
+          } else if (modalData.status === 'Confirmed' && modalData.approveVisit === 'cancel') {
+            showToast('Appointment canceled', 'warning');
+          }
+          setShowModal(false);
+        }}
+        updateAppointmentStatus={async (id, status, presentCount) => {
+          await updateAppointmentStatus(id, status, presentCount);
+          showToast(`Appointment status updated to ${status}`, 'success');
+        }}
         showRespondSection={true}
+        showToast={showToast}
       />
 
-      {/* Attendance Modal (no response section) */}
+
       <AppointmentModal
         showModal={showAttendanceModal}
         modalData={attendanceModalData}
         onClose={() => setShowAttendanceModal(false)}
         showRespondSection={false}
+        showToast={showToast}
       />
 
-      {/* Visitor Record Modal (no response section) */}
       <AppointmentModal
         showModal={showVisitorRecordModal}
         modalData={visitorRecordModalData}
         onClose={() => setShowVisitorRecordModal(false)}
         showRespondSection={false}
+        showToast={showToast}
       />
 
 
-
-
-      {/* Toast Message */}
-      {showToast && (
-        <div className="fixed top-5 right-5 bg-black text-white py-2 px-4 rounded shadow-md z-50">
-          {toastMessage}
-        </div>
-      )}
+      <Toast
+        message={toastConfig.message}
+        type={toastConfig.type}
+        isVisible={toastConfig.isVisible}
+        onClose={hideToast}
+      />
     </>
   )
 }

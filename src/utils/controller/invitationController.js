@@ -2,30 +2,10 @@ import Invitation from '../models/Invitation.js';
 import User from '../models/Users.js';
 import Credential from '../models/Credential.js';
 import { v4 as uuidv4 } from 'uuid';
-import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
 import { sequelize } from '../database.js';
+import transporter, { sendEmail } from '../emailTransporter.js';
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER || 'museobulawanmis@gmail.com',
-    pass: process.env.EMAIL_APP_PASSWORD || 'zabj fmlp fnow rsse'
-  },
-  tls: {
-    rejectUnauthorized: false
-  }
-});
-
-transporter.verify(function(error, success) {
-  if (error) {
-    console.log('SMTP Connection Error:', error);
-  } else {
-    console.log("SMTP Server is ready to take our messages");
-  }
-});
 
 const formatInvitation = (invitation) => {
   return {
@@ -109,7 +89,6 @@ export const sendInvitation = async (req, res, next) => {
       });
     }
     
-
     const protocol = req.protocol || 'http';
     const host = req.get('host') || 'localhost:5000';
     const inviteUrl = `${protocol}://${host}/api/auth/complete-registration/${token}`;
@@ -136,21 +115,27 @@ export const sendInvitation = async (req, res, next) => {
         </div>
       `;
 
-      const info = await transporter.sendMail({
+      // Using the sendEmail helper function
+      const emailResult = await sendEmail({
         from: '"Museo Bulawan" <museobulawanmis@gmail.com>',
         to: email,
         subject: 'Invitation to join Museo Bulawan',
-        html:emailHtml
+        html: emailHtml
       });
 
-      console.log('Email sent:', info.response);
+      if (!emailResult.success) {
+        return res.status(201).json({
+          message: 'Invitation created but email failed',
+          invitation: formatInvitation(invitation)
+        });
+      }
+      
       next();
       return res.status(201).json({
         message: 'Invitation sent',
         invitation: formatInvitation(invitation)
       });
     } catch (emailError) {
-      // console.error('Email error:', emailError);
       return res.status(201).json({
         message: 'Invitation created but email failed',
         invitation: formatInvitation(invitation)
@@ -162,8 +147,6 @@ export const sendInvitation = async (req, res, next) => {
     return res.status(500).json({ message: 'Server error', details: error.message });
   }
 };
-
-
 
 // Get pending invitations
 export const getPendingInvitations = async (req, res) => {
@@ -212,30 +195,26 @@ export const resendInvitation = async (req, res, next) => {
 
     const inviteUrl = `${req.protocol}://${req.get('host')}/api/auth/complete-registration/${invitation.token}`;
 
-    // Send email
-    transporter.sendMail({
+    // Using the sendEmail helper function
+    const emailResult = await sendEmail({
       from: '"Museo Bulawan" <museobulawanmis@gmail.com>',
       to: invitation.email,
       subject: 'Invitation Reminder',
       html: `<p>Reminder invitation for ${invitation.first_name}.</p><a href="${inviteUrl}">${inviteUrl}</a>`
-    }, (error) => {
-      if (error) {
-        console.error('Email error:', error);
-        return res.status(500).json({ message: 'Email failed' });
-      }
-
-      res.json({ message: 'Invitation resent' });
-
-      next();
     });
+
+    if (!emailResult.success) {
+      return res.status(500).json({ message: 'Email failed' });
+    }
+    
+    res.json({ message: 'Invitation resent' });
+    next();
 
   } catch (error) {
     console.error('Resend Invitation Error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
-
-
 
 export const revokeInvitation = async (req, res, next) => {
   try {
@@ -262,8 +241,6 @@ export const revokeInvitation = async (req, res, next) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
-
-
 
 export const renderCompleteRegistration = async (req, res) => {
   try {
@@ -405,10 +382,6 @@ export const renderCompleteRegistration = async (req, res) => {
             throw new Error("Unexpected server response. Please try again.");
           }
 
-          // redirect if successful
-          
-
-
           window.location.href = '/api/auth/registration-success';
         } catch (error) {
           errorDiv.textContent = error.message;
@@ -418,7 +391,6 @@ export const renderCompleteRegistration = async (req, res) => {
     </script>
   </body>
 </html>
-
     `);
     
   } catch (error) {
@@ -484,8 +456,6 @@ export const completeRegistration = async (req, res, next) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
-
-
 
 export const registrationSuccess = (req, res) => {
   res.send(`

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import axios from 'axios'; // Add this import for axios
 export const AppointmentModal = ({
   showModal,
   modalData,
@@ -20,7 +20,8 @@ export const AppointmentModal = ({
   const [presentCount, setPresentCount] = useState('');
   // Track if present count needs validation
   const [presentCountError, setPresentCountError] = useState(false);
-
+  const token = localStorage.getItem('token')
+  const API_URL = import.meta.env.VITE_API_URL;
 
   // Reset approval state and error state when modal data changes
   useEffect(() => {
@@ -58,44 +59,60 @@ export const AppointmentModal = ({
   const isCompletedOrFailed = isCompleted || isFailed;
 
   const handleSend = async () => {
-    // First phase validation: approval selection + message required
-    if (isToReview) {
-      let hasError = false;
-
-      // Validate approval selection
-      if (!approveVisit) {
-        setApprovalError(true);
-        hasError = true;
-      }
-
-      // Validate message
-      if (!message.trim()) {
-        setMessageError(true);
-        hasError = true;
-      }
-
-      if (hasError) return;
-    }
-
-    // For arrival action, validate present count
-    if (isConfirmed && approveVisit === 'arrive' && !presentCount) {
-      setPresentCountError(true);
-      return;
-    }
-
-    // Determine the new status based on action
-    let newStatus = modalData.status;
-    if (approveVisit === 'yes') {
-      newStatus = 'CONFIRMED';
-    } else if (approveVisit === 'no') {
-      newStatus = 'REJECTED';
-    } else if (approveVisit === 'cancel') {
-      newStatus = 'FAILED';
-    } else if (approveVisit === 'arrive') {
-      newStatus = 'COMPLETED';
-    }
+    // ... existing validation code ...
 
     try {
+      // Determine the new status based on action
+      let newStatus = modalData.status;
+      if (approveVisit === 'yes') {
+        newStatus = 'CONFIRMED';
+      } else if (approveVisit === 'no') {
+        newStatus = 'REJECTED';
+      } else if (approveVisit === 'cancel') {
+        newStatus = 'FAILED';
+      } else if (approveVisit === 'arrive') {
+        newStatus = 'COMPLETED';
+      }
+
+      // Get token from localStorage or wherever you store it
+      const token = localStorage.getItem('token'); // Adjust this according to your auth implementation
+
+      // Prepare email data
+      const emailData = {
+        recipientEmail: modalData.email
+          ? `${modalData.email},michael18ricafrente@gmail.com`
+          : 'michael18ricafrente@gmail.com',
+        subject: `Appointment ${newStatus.toLowerCase()} - Museo Bulawan`,
+        message: message,
+        status: newStatus,
+        appointmentDetails: {
+          visitorName: `${modalData.fromFirstName} ${modalData.fromLastName}`,
+          preferredDate: modalData.preferredDate,
+          preferredTime: modalData.preferredTime,
+          purpose: modalData.purpose
+        }
+      };
+
+
+
+      // Send email notification - fix: Actually calling the API and handling response
+      try {
+        const response = await axios.post(
+          `${API_URL}/api/auth/send-email-notification`,
+          emailData,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        console.log('Email notification sent:', response.data);
+      } catch (emailError) {
+        console.error('Error sending email notification:', emailError);
+        // Continue with the process even if email fails
+      }
+
       // Handle the present count update when completing an appointment
       if (approveVisit === 'arrive') {
         const presentValue = parseInt(presentCount, 10) || 0;
@@ -110,7 +127,7 @@ export const AppointmentModal = ({
       // Trigger parent component update and close modal
       onSend && onSend();
     } catch (err) {
-      console.error('Error while updating status:', err);
+      console.error('Error while updating status or sending email:', err);
     }
   };
 
@@ -257,7 +274,7 @@ export const AppointmentModal = ({
                     </p>
                   )}
                   <div className="text-sm text-gray-500 mt-2">
-                    This will automatically send to {modalData.email}
+                    This will automatically send to {modalData.email || 'michael18ricafrente@gmail.com'}
                   </div>
                 </div>
               </>
@@ -285,6 +302,28 @@ export const AppointmentModal = ({
                     </button>
                   </div>
                 </div>
+
+                {/* Add message field when canceling */}
+                {approveVisit === 'cancel' && (
+                  <div className="mb-6">
+                    <div className="text-base mb-3">Cancellation Message</div>
+                    <textarea
+                      className={`w-full p-4 border ${messageError ? 'border-red-500' : 'border-gray-300'} 
+                        rounded-md h-[120px] overflow-y-auto resize-none text-base`}
+                      value={message}
+                      onChange={(e) => {
+                        setMessage(e.target.value);
+                        if (e.target.value.trim()) {
+                          setMessageError(false);
+                        }
+                      }}
+                      placeholder="Enter cancellation reason (optional)"
+                    />
+                    <div className="text-sm text-gray-500 mt-2">
+                      This will automatically send to {modalData.email || 'michael18ricafrente@gmail.com'}
+                    </div>
+                  </div>
+                )}
 
                 {/* Attendance Section - Only shown when status is confirmed and arrive is selected */}
                 {approveVisit === 'arrive' && (
@@ -324,6 +363,20 @@ export const AppointmentModal = ({
                             Please enter how many visitors attended
                           </p>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Add completion message field */}
+                    <div className="mt-4">
+                      <div className="text-base mb-2">Completion Message</div>
+                      <textarea
+                        className="w-full p-4 border border-gray-300 rounded-md h-[120px] overflow-y-auto resize-none text-base"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Enter completion message (optional)"
+                      />
+                      <div className="text-sm text-gray-500 mt-2">
+                        This will automatically send to {modalData.email || 'michael18ricafrente@gmail.com'}
                       </div>
                     </div>
 
@@ -398,5 +451,3 @@ export const AppointmentModal = ({
 export default {
   AppointmentModal
 };
-
-

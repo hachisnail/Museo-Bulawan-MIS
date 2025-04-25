@@ -1,7 +1,9 @@
-import React, { useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom'
 import LandingNav from '../../components/navbar/LandingNav'
 import { ScrollRestoration } from 'react-router-dom'
+import CalendarComponent from '../../components/function/CalendarComponent';
+
 
 import bgImage1 from '../../../src/assets/06-AfternoonMealOfTheWorker 1.png'
 import bgImage2 from '../../../src/assets/bghome2.png'
@@ -15,12 +17,17 @@ import dhome2 from '../../../src/assets/dhome2.png'
 const Home = () => {
   const learnMore = useRef(null)
   const calendar = useRef(null)
+  const events = useRef(null)
+  const support = useRef(null)
+  const home = useRef(null)
+
 
   return (
     <>
       <ScrollRestoration />
 
       <div
+       ref={home}
         className="bg-cover bg-center bg-no-repeat  min-h-[79rem] h-screen w-screen pt-7"
         style={{ backgroundImage: `url(${bgImage1})` }}
       >
@@ -246,7 +253,7 @@ const Home = () => {
               </div>
             </div>
           </div>
-          <div className="w-full h-full flex justify-end px-20">
+          <div className="w-full h-full flex mt-20 justify-end px-20">
             <span
               onClick={() =>
                 calendar.current?.scrollIntoView({ behavior: 'smooth' })
@@ -257,11 +264,56 @@ const Home = () => {
             </span>
           </div>
         </div>
+        
+      
       </div>
 
-      <div ref={calendar} className="w-screen h-screen min-h-[79rem]"></div>
+      <div ref={calendar} className="w-screen h-screen min-h-[79rem] flex flex-col xl:flex-row border-t-1 border-gray-400 overflow-hidden ">
+          <div className='w-full xl:max-w-[90rem] xl:min-w-[90rem] xl:h-full h-[60rem] bg-[#FFF6E1] border-r-1 border-b-1 flex justify-center flex-col px-20 items-center border-gray-400'>
+              <CalendarComponent/>
+          </div>
+          <div className='w-full h-full flex flex-col items-center justify-between gap-y-5'>
+            <div className='w-fit min-h-[10rem] flex items-end'>
+                <div className='w-1 h-full flex flex-col'>
+                  <div className='relative right-[90rem] top-[7rem] w-[90rem] h-9 flex flex-col items-end justify-between overflow-hidden'>
+                    <div className='w-full h-3 bg-black'></div>
+                    <div className='w-[70rem] h-3 bg-black'></div>
 
-      <div className="w-screen h-screen min-h-[89rem] xl:min-h-[79rem]">
+                  </div>
+                </div>
+                <span className='text-8xl font-hina'>
+                  Whats On?
+                </span>
+            </div>
+            <div className='w-[55rem] h-full flex flex-col justify-start gap-y-5'>
+              <div className='w-[55rem] h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage1})` }}
+      >
+
+              </div>
+              <div className='w-[55rem] h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage3})` }}
+      >
+
+              </div>
+
+            </div>
+            <div className='w-full min-h-20 flex items-center justify-end pr-20'>
+              <span
+                onClick={() =>
+                  events.current?.scrollIntoView({ behavior: 'smooth' })
+                }
+                className="text-3xl hover:underline cursor-pointer font-semibold"
+              >
+                Events <i class="fa-solid fa-arrow-right"></i>
+              </span>
+            </div>
+          </div>
+
+
+
+
+      </div>
+
+      <div ref={events} className="w-screen h-screen min-h-[89rem] xl:min-h-[79rem]">
         <div className="w-full h-full py-24 px-4 bg-black xl:px-12 xl:py-26">
           <div className="w-full h-full flex flex-col">
             <div className="w-full max-h-[3em]  flex text-2xl justify-between pr-9">
@@ -319,7 +371,9 @@ const Home = () => {
                         </div>
                       </div>
                     </div>
+                    
                   </div>
+                  
                 </div>
 
                 <div className="w-full h-1/2   xl:h-full">
@@ -437,13 +491,27 @@ const Home = () => {
                     </div>
                   </div>
                 </div>
+                
               </div>
             </div>
+            <div className="w-full h-full flex mt-10 justify-end px-20">
+            <span
+              onClick={() =>
+                support.current?.scrollIntoView({ behavior: 'smooth' })
+              }
+              className="text-3xl text-white hover:underline cursor-pointer font-semibold"
+            >
+              Support Us <i class="fa-solid fa-arrow-right"></i>
+            </span>
           </div>
+          </div>
+          
         </div>
+        
+       
       </div>
 
-      <div className="w-screen h-screen min-h-[79rem]">
+      <div  ref={support} className="w-screen h-screen min-h-[79rem]">
         <div className="w-full h-full py-12  ">
           <div className="w-full h-full xl:px-120 px-12">
             <div className="w-full h-full flex flex-col">
@@ -516,8 +584,12 @@ const Home = () => {
                   </div>
                 </div>
               </div>
+              
             </div>
+            
           </div>
+
+          
         </div>
       </div>
     </>

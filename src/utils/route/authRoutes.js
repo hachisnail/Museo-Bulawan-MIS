@@ -9,7 +9,10 @@ import {
   updateAppointmentStatus, 
   getAppointmentStats, 
   getAttendanceData,
-  getVisitorRecords,getAttendanceDetail,getVisitorRecordDetail 
+  getVisitorRecords,
+  getAttendanceDetail,
+  getVisitorRecordDetail,
+  sendEmailNotification 
 } from '../controller/appointmentController.js';
 import { 
   sendInvitation, 
@@ -20,6 +23,15 @@ import {
   completeRegistration,
   registrationSuccess
 } from '../controller/invitationController.js';
+
+import{
+  createForm,
+  getAllForms,
+  updateFormStatus,
+  updateFormTimestamp,
+  updateTransferStatus
+} from '../controller/formController.js';
+
 import { logAction, fetchLog } from '../controller/LogService.js';
 import { createArticle, upload, getAllArticles} from '../controller/articleController.js';
 import multer from 'multer';
@@ -36,17 +48,16 @@ router.get('/fetchUser/:id', autoLogout, displaySpecificUser);
 router.get('/fetchCredential', autoLogout, fetchCredential);
 router.get('/login-logs/:userId', autoLogout, getUserLoginLogs);
 
+// appointments routes #rhettrina
 router.post('/appointment', createAppointment, logAction('create','Appointment'));
 router.get('/appointment', autoLogout, getAllAppointments);
 router.patch('/appointment/:id/status', autoLogout, updateAppointmentStatus);
 router.get('/appointment/stats', autoLogout, getAppointmentStats);
 router.get('/attendance', autoLogout, getAttendanceData);
 router.get('/visitor-records', autoLogout, getVisitorRecords);
-
 router.get('/attendance/:id', autoLogout, getAttendanceDetail);
-
-// Get visitor record detail by visitor ID and appointment ID
 router.get('/visitor-record/:visitorId/:appointmentId', autoLogout, getVisitorRecordDetail);
+router.post('/send-email-notification', autoLogout, sendEmailNotification);
 
 
 router.get('/fetchLogs', autoLogout, fetchLog);
@@ -63,6 +74,16 @@ router.delete('/invitations/:id', autoLogout, revokeInvitation, logAction('delet
 router.get('/complete-registration/:token', renderCompleteRegistration);
 router.post('/complete-registration/:token', completeRegistration, logAction('create', 'Credential'));
 router.get('/registration-success', registrationSuccess);
+
+//Acquisition 
+router.post('/form', createForm);     // existing route for creating a form
+router.get('/form', autoLogout, getAllForms);  // new route for fetching all forms
+router.put('/form/:id/status', updateFormStatus);
+router.put('/form/:id/timestamp', updateFormTimestamp);
+router.put('/form/:id/transfer_status', updateTransferStatus); // New route for updating transfer status
+
+
+
 
 
 router.get('/articles', autoLogout, getAllArticles);
@@ -83,6 +104,5 @@ router.post('/article', (req, res, next) => {
     next();
   });
 }, createArticle);
-
 
 export default router;
