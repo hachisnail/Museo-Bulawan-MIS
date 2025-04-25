@@ -33,6 +33,10 @@ import{
 } from '../controller/formController.js';
 
 import { logAction, fetchLog } from '../controller/LogService.js';
+import { createArticle, upload, getAllArticles} from '../controller/articleController.js';
+import multer from 'multer';
+
+
 
 const router = express.Router();
 
@@ -79,5 +83,26 @@ router.put('/form/:id/timestamp', updateFormTimestamp);
 router.put('/form/:id/transfer_status', updateTransferStatus); // New route for updating transfer status
 
 
+
+
+
+router.get('/articles', autoLogout, getAllArticles);
+  
+router.post('/article', (req, res, next) => {
+  upload.single('thumbnail')(req, res, function (err) {
+    if (err instanceof multer.MulterError) {
+      // A Multer-specific error occurred
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ message: 'File too large. Max size is 5MB.' });
+      }
+      return res.status(500).json({ message: 'Multer error.', error: err.message });
+    } else if (err) {
+      // An unknown error occurred
+      return res.status(500).json({ message: 'Unexpected error.', error: err.message });
+    }
+    // If everything went fine, proceed to controller
+    next();
+  });
+}, createArticle);
 
 export default router;
