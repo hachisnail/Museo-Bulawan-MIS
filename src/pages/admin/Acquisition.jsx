@@ -572,19 +572,19 @@ const handleConfirmAction = async () => {
               <div className='w-full h-full flex flex-col gap-y-7'>
                 {/* Form Table */}
                 {activeTab === 'form' && (
-                  <div>
-                    {/* Table Headers */}
-                    <div className='min-w-[94rem] w-full font-semibold h-fit grid grid-cols-6 justify-between '>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Date</div>
+                  <>
+                                {/* Table Headers */}
+                    <div className='min-w-[94rem] w-full font-semibold min-h-fit grid grid-cols-6 justify-between '>
+                      <div className='text-[#727272] text-2xl border-l-1  px-3 py-2'>Date</div>
                       <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Donator</div>
                       <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Artifact Name</div>
                       <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Status</div>
                       <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Transfer Status</div>
                       <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Last Updated</div>
-                    </div>
+                    </div>  
 
                     {/* Table Data */}
-                    <div className='w-full min-w-[94rem] h-auto flex flex-col mt-2'>
+                    <div className='w-full min-w-[94rem] h-full  flex flex-col border-gray-400 border-y'>
                       {filteredData.acquisitions.length > 0 ? (
                         filteredData.acquisitions.map((form) => (
                           <div
@@ -592,42 +592,43 @@ const handleConfirmAction = async () => {
                             className='min-w-[94rem] text-xl h-[4rem] font-semibold grid grid-cols-6 cursor-pointer hover:bg-gray-300'
                             onClick={() => handleOpenModal(form)}
                           >
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
                               {form.donation_date ? new Date(form.donation_date).toLocaleDateString() : 'N/A'}
                             </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
                               {form.Donator?.name || 'N/A'}
                             </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
                               {form.artifact_name}
                             </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
                               {getStatusLabel(form.ContributionType.status || 'Pending')}
                             </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
                               {getStatusLabel(form.ContributionType.transfer_status || 'N/A')}
                             </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
                               {form.updated_at ? new Date(form.updated_at).toLocaleString() : 'N/A'}
                             </div>
                           </div>
                         ))
                       ) : (
                         <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
-                          <div className="text-2xl text-gray-500 flex flex-col items-center">
+                          <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
                             <i className="fas fa-inbox text-5xl mb-4"></i>
                             <p>No acquisition data available</p>
                             <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
                           </div>
                         </div>
                       )}
-                    </div>
                   </div>
+                  </>
+
                 )}
 
                 {/* Donation Records Tab */}
                 {activeTab === 'donationRecords' && (
-                  <div>
+                  <>
                     {/* Table header for top-level rows */}
                     <div className='min-w-[94rem] w-full font-semibold h-fit grid grid-cols-3 justify-between '>
                       <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Date</div>
@@ -635,7 +636,7 @@ const handleConfirmAction = async () => {
                       <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Donations</div>
                     </div>
                   
-                    <div className='w-full min-w-[94rem] h-auto flex flex-col mt-2'>
+                    <div className='w-full min-w-[94rem] h-full flex flex-col border-y-1 border-gray-400'>
                       {donationGroupsArray.length > 0 ? (
                         donationGroupsArray.map((group) => {
                           const { donorId, donorName, date, forms } = group;
@@ -703,7 +704,7 @@ const handleConfirmAction = async () => {
                         })
                       ) : (
                         <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
-                          <div className="text-2xl text-gray-500 flex flex-col items-center">
+                          <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
                             <i className="fas fa-inbox text-5xl mb-4"></i>
                             <p>No donation records available</p>
                             <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
@@ -711,7 +712,7 @@ const handleConfirmAction = async () => {
                         </div>
                       )}
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
