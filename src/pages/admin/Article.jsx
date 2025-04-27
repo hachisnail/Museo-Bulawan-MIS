@@ -41,7 +41,7 @@ const ArticleForm = () => {
   
   // Define path to your uploads folder - important for displaying images in the modal
   const BASE_URL = "http://localhost:5000";
-  const UPLOAD_PATH = `${BASE_URL}/src/utils/assets/uploads/`;
+  const UPLOAD_PATH = `${BASE_URL}/uploads/`;
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -95,7 +95,7 @@ const ArticleForm = () => {
       let response;
       
       if (isEditing) {
-        // Update existing article
+        
         response = await axios.put(
           `${BASE_URL}/api/auth/article/${editingArticleId}`,
           formData,
@@ -177,13 +177,10 @@ const ArticleForm = () => {
     // Handle thumbnail preview for editing
     if (article.images) {
       // If the image exists, we need to construct a URL to it
-      // This URL should point to where the server exposes the uploads directory
       const imageUrl = `${UPLOAD_PATH}${article.images}`;
       setPreviewImage(imageUrl);
       
-      // Store just the filename as a string (not a File object)
-      // This lets us know we need to keep the existing image unless a new one is selected
-      setThumbnail(article.images);
+      // Store just the filename as a string (not a File object)      setThumbnail(article.images);
     } else {
       setPreviewImage(null);
       setThumbnail(null);
@@ -495,16 +492,7 @@ const ArticleForm = () => {
                         </div>
                       )}
                       
-                      {/* Display thumbnail preview in the form */}
-                      {previewImage && (
-                        <div className="mt-2 border border-gray-200 rounded p-1">
-                          <img 
-                            src={previewImage}
-                            alt="Thumbnail preview" 
-                            className="h-24 object-contain mx-auto"
-                          />
-                        </div>
-                      )}
+                      
                     </div>
                   </div>
 

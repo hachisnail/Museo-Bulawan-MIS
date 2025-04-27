@@ -159,14 +159,13 @@ app.get('/api/auth/currentUser', (req, res) => {
   return res.json({ id: req.user.id });
 });
 
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use('/uploads', cors(corsOptions), express.static(path.join(__dirname, './utils/assets/uploads')));
+
 app.use(express.static(path.join(__dirname, '../../dist')));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../../dist/index.html'));
 });
-
-
 
 console.log("Serving static files from:", path.join(__dirname, '../dist'));
 
