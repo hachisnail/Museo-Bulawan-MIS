@@ -188,56 +188,6 @@ const AdminNav = () => {
             </NavLink>
 
             <NavLink
-              to="/admin/acquisition"
-              className={({ isActive }) =>
-                `relative group ${linkClasses} ${
-                  isActive ? activeClasses : 'text-white'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <img
-                    src={donation_ico}
-                    alt="donation"
-                    className={`h-auto w-[25px] filter brightness-1 ${
-                      isActive ? 'invert-1' : 'invert'
-                    }`}
-                  />
-                  <span className="hidden sm:block">Acquisition</span>
-                  <span className="absolute  left-full ml-8 hidden group-hover:flex bg-gray-800 sm:text-transparent sm:bg-transparent text-white text-2xl rounded py-1 px-2 w-max">
-                    Acquisition
-                  </span>
-                </>
-              )}
-            </NavLink>
-
-            <NavLink
-              to="/admin/artifact"
-              className={({ isActive }) =>
-                `relative group ${linkClasses} ${
-                  isActive ? activeClasses : 'text-white'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <img
-                    src={artifact_ico}
-                    alt="artifact"
-                    className={`h-auto w-[25px] filter brightness-1 ${
-                      isActive ? 'invert-1' : 'invert'
-                    }`}
-                  />
-                  <span className="hidden sm:block">Artifact</span>
-                  <span className="absolute  left-full ml-8 hidden group-hover:flex bg-gray-800 sm:text-transparent sm:bg-transparent text-white text-2xl rounded py-1 px-2 w-max">
-                    Artifact
-                  </span>
-                </>
-              )}
-            </NavLink>
-
-            <NavLink
               to="/admin/appointment"
               className={({ isActive }) =>
                 `relative group ${linkClasses} ${
@@ -282,6 +232,56 @@ const AdminNav = () => {
                   <span className="hidden sm:block">Schedule</span>
                   <span className="absolute  left-full ml-8 hidden group-hover:flex bg-gray-800 sm:text-transparent sm:bg-transparent text-white text-2xl rounded py-1 px-2 w-max">
                     Schedule
+                  </span>
+                </>
+              )}
+            </NavLink>
+
+            <NavLink
+              to="/admin/acquisition"
+              className={({ isActive }) =>
+                `relative group ${linkClasses} ${
+                  isActive ? activeClasses : 'text-white'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <img
+                    src={donation_ico}
+                    alt="donation"
+                    className={`h-auto w-[25px] filter brightness-1 ${
+                      isActive ? 'invert-1' : 'invert'
+                    }`}
+                  />
+                  <span className="hidden sm:block">Acquisition</span>
+                  <span className="absolute  left-full ml-8 hidden group-hover:flex bg-gray-800 sm:text-transparent sm:bg-transparent text-white text-2xl rounded py-1 px-2 w-max">
+                    Acquisition
+                  </span>
+                </>
+              )}
+            </NavLink>
+
+            <NavLink
+              to="/admin/artifact"
+              className={({ isActive }) =>
+                `relative group ${linkClasses} ${
+                  isActive ? activeClasses : 'text-white'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <img
+                    src={artifact_ico}
+                    alt="artifact"
+                    className={`h-auto w-[25px] filter brightness-1 ${
+                      isActive ? 'invert-1' : 'invert'
+                    }`}
+                  />
+                  <span className="hidden sm:block">Artifact</span>
+                  <span className="absolute  left-full ml-8 hidden group-hover:flex bg-gray-800 sm:text-transparent sm:bg-transparent text-white text-2xl rounded py-1 px-2 w-max">
+                    Artifact
                   </span>
                 </>
               )}

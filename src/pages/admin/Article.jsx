@@ -227,8 +227,8 @@ const ArticleForm = () => {
             <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
               {/* info bar */}
               <div className='w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex justify-start py-2 gap-x-2'>
-                <button className='px-4 h-full border-1 border-gray-500 rounded-lg cursor-pointer'>
-                  <span className='text-2xl font-semibold'>Artifact</span>
+                <button className='px-4 h-full border-1 border-black  text-white bg-black rounded-lg cursor-pointer'>
+                  <span className='text-2xl font-semibold'>Articles</span>
                 </button>
               </div>
 
@@ -330,7 +330,7 @@ const ArticleForm = () => {
               </div>
 
               {/* Article Table Header */}
-              <div className='min-w-[94rem] w-full font-semibold h-fit grid grid-cols-5 justify-between'>
+              <div className='min-w-[94rem] w-full  font-semibold h-fit grid grid-cols-5 justify-between'>
                 <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
                   Date
                 </div>
@@ -349,7 +349,7 @@ const ArticleForm = () => {
               </div>
 
               {/* Article Table Data */}
-              <div className='w-full min-w-[94rem] h-auto flex flex-col border-t-1 border-t-gray-400'>
+              <div className='w-full min-w-[94rem] h-full flex flex-col border-t-1 border-t-gray-400'>
                 {loading ? (
                   <div className="col-span-5 py-8 text-center text-2xl text-gray-500">
                     Loading articles...
@@ -395,8 +395,12 @@ const ArticleForm = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="col-span-5 py-8 text-center text-2xl text-gray-500">
-                    No articles found
+                  <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
+                          <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
+                            <i className="fas fa-inbox text-5xl mb-4"></i>
+                            <p>No article found</p>
+                            <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
+                          </div>
                   </div>
                 )}
               </div>
