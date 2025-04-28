@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Apr 28, 2025 at 09:40 AM
+-- Generation Time: Apr 28, 2025 at 12:38 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -179,7 +179,6 @@ CREATE TABLE `artifacts` (
   `display_status` enum('stored','displayed') NOT NULL,
   `lending_duration` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`lending_duration`)),
   `related_files` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`related_files`)),
-  `duration_id` int(11) NOT NULL,
   `description_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -294,7 +293,8 @@ CREATE TABLE `duration_logs` (
   `id` int(11) NOT NULL,
   `description` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`description`)),
   `display_end` timestamp NULL DEFAULT NULL,
-  `display_start` timestamp NULL DEFAULT NULL
+  `display_start` timestamp NULL DEFAULT NULL,
+  `artifact_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -639,7 +639,8 @@ ALTER TABLE `artifacts`
 -- Indexes for table `artifact_description`
 --
 ALTER TABLE `artifact_description`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_artifactdescription_artifact` (`artifact_id`);
 
 --
 -- Indexes for table `contribution_type`
@@ -664,7 +665,8 @@ ALTER TABLE `donator`
 -- Indexes for table `duration_logs`
 --
 ALTER TABLE `duration_logs`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_durationlogs_artifact` (`artifact_id`);
 
 --
 -- Indexes for table `form`
@@ -836,6 +838,18 @@ ALTER TABLE `appointment_status`
 --
 ALTER TABLE `articles`
   ADD CONSTRAINT `articles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `credentials` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `artifact_description`
+--
+ALTER TABLE `artifact_description`
+  ADD CONSTRAINT `fk_artifactdescription_artifact` FOREIGN KEY (`artifact_id`) REFERENCES `artifacts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `duration_logs`
+--
+ALTER TABLE `duration_logs`
+  ADD CONSTRAINT `fk_durationlogs_artifact` FOREIGN KEY (`artifact_id`) REFERENCES `artifacts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `form`
