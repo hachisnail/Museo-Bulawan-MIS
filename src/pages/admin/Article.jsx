@@ -5,16 +5,24 @@ import CustomDatePicker from '../../components/function/CustomDatePicker'
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Button from "@/components/ui/button"
+import TextAlign from "@tiptap/extension-text-align"
+import Underline from '@tiptap/extension-underline'
+import { Node } from '@tiptap/core'
+import { ReactNodeViewRenderer } from '@tiptap/react'
+import { TwoColumnBlock } from '../../components/articleComponents/TwoColumnBlock'
 
 import {
   Bold,
   Italic,
-  Underline,
+  Underline as UnderlineIcon,
   AlignLeft,
   AlignCenter,
   AlignRight,
   AlignJustify,
 } from "lucide-react";
+
+
+
 
 const ArticleForm = () => {
   // Form state
@@ -44,10 +52,17 @@ const ArticleForm = () => {
   const UPLOAD_PATH = `${BASE_URL}/uploads/`;
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      Underline,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+        alignments: ['left', 'center', 'right', 'justify'],
+      }),
+      TwoColumnBlock, // Add the TwoColumnBlock extension
+    ],
     content: "", // Initial content
   });
-
   // Fetch articles on component mount
   useEffect(() => {
     fetchArticles();
@@ -179,7 +194,7 @@ const ArticleForm = () => {
       // If the image exists, we need to construct a URL to it
       const imageUrl = `${UPLOAD_PATH}${article.images}`;
       setPreviewImage(imageUrl);
-      
+      setThumbnail(article.images);
       // Store just the filename as a string (not a File object)      setThumbnail(article.images);
     } else {
       setPreviewImage(null);
@@ -495,8 +510,6 @@ const ArticleForm = () => {
                           Current image: {thumbnail}
                         </div>
                       )}
-                      
-                      
                     </div>
                   </div>
 
@@ -506,40 +519,23 @@ const ArticleForm = () => {
                     <div className="flex items-center gap-2 p-2 bg-[#d6c2ad] rounded border border-blue-400">
                       {/* Heading buttons */}
                       <div className="flex gap-1">
-                          {[1, 2, 3, 4, 5].map((level) => (
-                            <button
-                              key={level}
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                editor?.chain().focus().toggleHeading({ level }).run();
-                              }}
-                              className="text-sm px-1 hover:underline"
-                            >
-                              H{level}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Font size input */}
-                        <input
-                          type="number"
-                          min="10"
-                          max="72"
-                          onChange={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            editor?.chain().focus().setFontSize(`${e.target.value}px`).run();
-                          }}
-                          defaultValue={20}
-                          className="w-12 text-center text-sm px-1 py-0.5 rounded border border-gray-300 bg-white"
-                          style={{
-                            appearance: "textfield",
-                            MozAppearance: "textfield",
-                            WebkitAppearance: "none",
-                          }}
-                        />
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <button
+                            key={level}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              editor?.chain().focus().toggleHeading({ level }).run();
+                            }}
+                            className={`text-sm px-2 py-1 border rounded-sm ${
+                              editor?.isActive('heading', { level }) ? 'bg-white' : ''
+                            }`}
+                          >
+                            H{level}
+                          </button>
+                        ))}
+                      </div>
 
                       {/* Divider */}
                       <div className="border-l h-6 mx-2" />
@@ -566,7 +562,7 @@ const ArticleForm = () => {
                           }}
                           className={`p-1 border rounded ${editor?.isActive("underline") ? "bg-white" : ""}`}
                         >
-                          <Underline size={16} />
+                          <UnderlineIcon size={16} />
                         </button>
                         <button
                           type="button"
@@ -630,6 +626,26 @@ const ArticleForm = () => {
                         >
                           <AlignJustify size={16} />
                         </button>
+                        {/* Add this button to your toolbar */}
+                        <div className="border-l h-6 mx-2" />
+  
+  {/* Two Column Layout Button */}
+  <button
+    type="button"
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      editor?.chain().focus().insertTwoColumnBlock().run();
+    }}
+    className="p-1 border rounded"
+    title="Insert Two Column Layout"
+  >
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="2" y="4" width="9" height="16" stroke="currentColor" strokeWidth="2" />
+      <rect x="13" y="4" width="9" height="16" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  </button>
+
                       </div>
                     </div>
 
@@ -700,7 +716,10 @@ const ArticleForm = () => {
                   
                   <div className="prose max-w-none">
                     {editor?.getHTML() ? (
-                      <div dangerouslySetInnerHTML={{ __html: editor.getHTML() }} />
+                      <div 
+                        className="editor-content-preview" 
+                        dangerouslySetInnerHTML={{ __html: editor.getHTML() }} 
+                      />
                     ) : (
                       <p className="text-gray-400 italic">Article content will appear here...</p>
                     )}

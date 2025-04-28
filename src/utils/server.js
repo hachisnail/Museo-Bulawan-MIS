@@ -160,7 +160,12 @@ app.get('/api/auth/currentUser', (req, res) => {
 });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use('/uploads', cors(corsOptions), express.static(path.join(__dirname, './utils/assets/uploads')));
+app.use(
+  '/uploads',
+  express.static(
+    path.join(__dirname, '…path…/src/utils/assets/uploads')
+  )
+);
 
 app.use(express.static(path.join(__dirname, '../../dist')));
 app.get('*', (req, res) => {

@@ -98,3 +98,23 @@ export const getAllArticles = async (req, res) => {
     return res.status(500).json({ message: 'Server error retrieving appointments.' });
   }
 };
+
+export const getPublicArticles = async (req, res) => {
+  try {
+    const articles = await Article.findAll({
+      attributes: ['images', 'title', 'article_category', 'upload_date'],
+      order: [['created_at', 'DESC']],
+    });
+
+    const formattedArticles = articles.map(article => ({
+      ...article.dataValues,
+      images: article.images ? `http://localhost:5000/uploads/${article.images}` : null,
+    }));
+
+    return res.json(formattedArticles);
+  } catch (error) {
+    console.error('Error fetching public articles:', error);
+    return res.status(500).json({ message: 'Server error retrieving public articles.' });
+  }
+};
+
