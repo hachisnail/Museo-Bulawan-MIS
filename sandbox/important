@@ -66,3 +66,5 @@ router.post('/invitations', autoLogout, sendInvitation, logAction('create', 'Inv
 router.get('/invitations', autoLogout, getPendingInvitations);
 router.post('/invitations/:id/resend', autoLogout, resendInvitation, logAction('update', 'Invitation'));
 router.delete('/invitations/:id', autoLogout, revokeInvitation, logAction('soft_delete', 'Invitation') );
+
+

@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
 import AdminNav from '../../components/navbar/AdminNav'
-// 1) Import CustomDatePicker
+import ArtifactView from '../../components/modals/ArtifactView'
 import CustomDatePicker from '../../components/function/CustomDatePicker'
 
 const Artifact = () => {
-  // 2) Keep track of the selected date
   const [selectedDate, setSelectedDate] = useState(new Date())
 
   return (
     <>
+    {/* <ArtifactView/> */}
       <div className='w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]'>
         <div className='bg-[#1C1B19] w-auto min-h-full h-full min-w-[6rem] sm:min-w-auto'>
           <AdminNav />
@@ -125,62 +125,53 @@ const Artifact = () => {
                 </div>
               </div>
 
-              <div className='min-w-[94rem] w-full font-semibold h-fit grid grid-cols-6 justify-between'>
+              <div className="min-w-[94rem] w-full font-semibold h-fit grid grid-cols-6 justify-between">
                 {/* table headers */}
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2 cols-span-1'>
+                <div className="text-[#727272] text-2xl border-l px-3 py-2 col-span-1">
                   <span>Date</span>
                 </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2  cols-span-1'>
-                  <span>Visitor Name</span>
-                </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2  cols-span-1'>
+                <div className="text-[#727272] text-2xl border-l px-3 py-2 col-span-2">
                   <span>Title</span>
                 </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2  cols-span-1'>
-                  <span>Status</span>
+                <div className="text-[#727272] text-2xl border-l px-3 py-2 col-span-1">
+                  <span>Type</span>
                 </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2  cols-span-1'>
-                  <span>Transfer Status</span>
+                <div className="text-[#727272] text-2xl border-l px-3 py-2 col-span-1">
+                  <span>Display Status</span>
                 </div>
-                <div className='text-[#727272] justify-between flex text-2xl border-l-1 pl-3  cols-span-1'>
-                  <span className='my-2'>Updated</span>
-                  <div className='text-[#727272] text-2xl border-l-1 px-3 py-2 w-[7rem] cols-span-1'>
-                    <span>Action</span>
-                  </div>
+                <div className="text-[#727272] text-2xl border-l px-3 py-2 col-span-1">
+                  <span>Updated</span>
                 </div>
               </div>
 
-              <div className='w-full min-w-[94rem] h-auto flec flex-col border-t-1 border-t-gray-400'>
+
+              
+                <div className="w-full min-w-[94rem] h-auto flex flex-col border-t border-t-gray-400">
                 {/* table data */}
-                <div className='min-w-[94rem] text-xl h-fit font-semibold grid grid-cols-6 justify-between cursor-pointer hover:bg-gray-300'>
-                  <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400 cols-span-1'>
+                <div className="min-w-[94rem] text-xl h-fit font-semibold grid grid-cols-6 justify-between cursor-pointer hover:bg-gray-300">
+                  <div className="px-4 pt-1 pb-3 border-b border-gray-400 col-span-1">
                     <span>02-19-2024</span>
                   </div>
-                  <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400 cols-span-1'>
-                    <span>Olivia Harper</span>
+                  <div className="px-4 pt-1 pb-3 border-b border-gray-400 col-span-2">
+                  <span>Perlas ng silanganan</span>
+
                   </div>
-                  <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400 cols-span-1'>
-                    <span>Perlas ng silanganan</span>
+                  <div className="px-4 pt-1 pb-3 border-b border-gray-400 col-span-1">
+                  <span>Lending</span>
+
                   </div>
-                  <div className='px-4 py-4 border-b-1 border-gray-400 cols-span-1'>
-                    <span className='text-white bg-[#9C7744] border-1 border-black rounded-md px-15 py-1'>
+                  <div className="px-4 py-4 border-b border-gray-400 col-span-1">
+                    <span className="text-white bg-[#9C7744] border border-black rounded-md px-4 py-1">
                       Accepted
                     </span>
                   </div>
-                  <div className='px-4 py-4 border-b-1 border-gray-400 cols-span-1'>
-                    <span className='text-white bg-[#9C7744] border-1 border-black rounded-md px-15 py-1'>
-                      Accepted
-                    </span>
-                  </div>
-                  <div className='pl-4 pt-1 pb-3 flex justify-between border-b-1 border-gray-400 cols-span-1'>
-                    <span className='w-full truncate'>02-19-2024</span>
-                    <div className='min-w-[7rem] flex gap-x-2 pl-3 items-center'>
-                      <i className="fa-solid fa-pen-to-square cursor-pointer"></i>
-                      <i className="fa-solid fa-trash cursor-pointer"></i>
-                      <i className="fa-solid fa-bars cursor-pointer"></i>
-                    </div>
+                  <div className="px-4 py-4 border-b border-gray-400 col-span-1">
+                  <span>02-19-2024</span>
+
                   </div>
                 </div>
+
+                  
 
                 {/* Additional rows follow the same pattern */}
               </div>
