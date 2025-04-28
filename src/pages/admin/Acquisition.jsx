@@ -592,22 +592,22 @@ const handleConfirmAction = async () => {
                             className='min-w-[94rem] text-xl h-[4rem] font-semibold grid grid-cols-6 cursor-pointer hover:bg-gray-300'
                             onClick={() => handleOpenModal(form)}
                           >
-                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
                               {form.donation_date ? new Date(form.donation_date).toLocaleDateString() : 'N/A'}
                             </div>
-                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
                               {form.Donator?.name || 'N/A'}
                             </div>
-                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
                               {form.artifact_name}
                             </div>
-                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
                               {getStatusLabel(form.ContributionType.status || 'Pending')}
                             </div>
-                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
                               {getStatusLabel(form.ContributionType.transfer_status || 'N/A')}
                             </div>
-                            <div className='px-4 py-2 border-t-1 border-gray-400 flex items-center'>
+                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
                               {form.updated_at ? new Date(form.updated_at).toLocaleString() : 'N/A'}
                             </div>
                           </div>

@@ -129,7 +129,7 @@ const DayScheduler = ({
     <div className="w-full h-full relative bg-gray-200 overflow-hidden">
       {/* Left timeline ruler */}
       <div
-        className="absolute left-0 top-0 bottom-0 bg-gray-900 text-white z-10"
+        className="absolute left-0 top-0 bottom-0 bg-gray-900 text-white z-10 rounded-md"
         style={{ width: '4.5rem' }}
       >
         {Array.from({ length: (dayEnd - dayStart) / 60 }).map((_, idx) => {
@@ -167,7 +167,7 @@ const DayScheduler = ({
         {Array.from({ length: (dayEnd - dayStart) / 60 + 1 }).map((_, i) => (
           <div
             key={i}
-            className="absolute left-0 w-full border-t border-gray-300"
+            className="absolute left-0 w-full border-t border-gray-300 rounded-md"
             style={{
               top: `calc(${(i / ((dayEnd - dayStart) / 60)) * 100}%)`
             }}
@@ -437,7 +437,7 @@ const Schedule = () => {
               <div className="w-full min-h-[5rem] flex flex-col justify-between">
                 <span className="text-4xl font-bold text-black">Today's Schedule</span>
                 <div className="w-full h-fit flex items-center">
-                  <span className="text-3xl font-bold text-[#9590FF]">
+                  <span className="w-[14rem] text-center text-3xl font-bold text-[#9590FF]">
                     {weekdayName} {dayNum}
                   </span>
                   <div className="flex items-center ml-4">
