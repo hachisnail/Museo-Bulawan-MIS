@@ -7,7 +7,7 @@ import Form from '../../pages/landing/Form';
 import Home from '../../pages/landing/Home';
 import Support from '../../pages/landing/Support';
 import Login from '../../pages/landing/Login';
-import PrivateRoute from '../middleware/PrivateRoute';
+import PrivateRoute from './PrivateRoute';
 import AdminLayout from '../../components/layout/AdminLayout';
 import AdminRoutes from './AdminRoutes';
 import Article from '../../pages/landing/Article';
