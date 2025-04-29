@@ -1,110 +1,110 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link, ScrollRestoration } from 'react-router-dom';
+import axios from 'axios';
+
 import LandingNav from '../../components/navbar/LandingNav';
-import { ScrollRestoration } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import backgroundImage from '../../../src/assets/Fernando-Amorsolo-Women-Bathing-and-Washing Clothes-7463.png';
 
-import backgroundImage from '../../../src/assets/Fernando-Amorsolo-Women-Bathing-and-Washing Clothes-7463.png'
-import eventImage from '../../../src/assets/img_1.png';
-
-
-const itemsData = {
-  "items": [
-    {
-      "image": eventImage,
-      "category": "Education",
-      "name": "Event Name 1",
-      "date": "Month dd, yyyy"
-     
-    },
-    {
-      "image": eventImage,
-      "category": "Subtopic",
-      "name": "Event Name 2",
-      "date": "Month dd, yyyy"
-    },
-    {
-      "image": eventImage,
-      "category": "Content",
-      "name": "Event Name 3",
-      "date": "Month dd, yyyy"
-    },
-    {
-      "image": eventImage,
-      "category": "Workshop",
-      "name": "Event Name 4",
-      "date": "Month dd, yyyy"
-    },
-    {
-      "image": eventImage,
-      "category": "Seminar",
-      "name": "Event Name 5",
-      "date": "Month dd, yyyy"
-    },
-    {
-      "image": eventImage,
-      "category": "Conference",
-      "name": "Event Name 6",
-      "date": "Month dd, yyyy"
-    },
-    {
-      "image": eventImage,
-      "category": "Dance",
-      "name": "Event Name 7",
-      "date": "Month dd, yyyy"
-    },
-    {
-      "image": eventImage,
-      "category": "Exhibit",
-      "name": "Event Name 8",
-      "date": "Month dd, yyyy"
-    },
-    {
-      "image": eventImage,
-      "category": "Performance",
-      "name": "Event Name 9",
-      "date": "Month dd, yyyy"
-    }
-  ]
-};
-
+// Example municipality list
 const municipalities = [
   "Basud", "Capalonga", "Daet", "Jose Panganiban", "Labo",
-  "Mercedes", "Paracale", "San Lorenzo Ruiz", "San Vicente", "Santa Elena", "Talisay", "Vinzons"
+  "Mercedes", "Paracale", "San Lorenzo Ruiz", "San Vicente", 
+  "Santa Elena", "Talisay", "Vinzons"
 ];
 
+const BASE_URL = 'http://localhost:5000';  
+const token = localStorage.getItem('token'); // Remove if public
+
 const Content = () => {
+  const [articles, setArticles]     = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+
+  // Optional filters
+  const [keyword, setKeyword]       = useState('');
+  const [category, setCategory]     = useState('');
+  const [municipality, setMunicipality] = useState('');
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  // Fetch articles (similar to admin logic, but in a “landing” style)
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${BASE_URL}/api/auth/articles`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // remove if not needed
+        },
+        withCredentials: true,
+      });
+      setArticles(response.data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching articles:", err);
+      setError("Failed to load articles. (Unauthorized or server error)");
+      setLoading(false);
+    }
+  };
+
+  // Filter logic for demonstration: title, author, category, address
+  const filteredArticles = articles.filter((article) => {
+    const matchesKeyword =
+      !keyword ||
+      article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
+      article.author?.toLowerCase().includes(keyword.toLowerCase());
+    const matchesCategory =
+      !category ||
+      article.article_category?.toLowerCase() === category.toLowerCase();
+    const matchesMunicipality =
+      !municipality ||
+      article.address?.toLowerCase().includes(municipality.toLowerCase());
+
+    return matchesKeyword && matchesCategory && matchesMunicipality;
+  });
+
   return (
     <>
       <ScrollRestoration />
       <div className="bg-[#1C1B19] flex flex-col gap-y-4 w-screen pt-7 h-fit min-h-fit">
+        {/* Top Nav */}
         <LandingNav />
 
-        {/* Background Image Section */}
+        {/* Background + Search UI */}
         <div
           className="w-screen h-[40rem] bg-cover bg-center bg-no-repeat relative"
           style={{ backgroundImage: `url(${backgroundImage})` }}
         >
-          {/* Centered Search Bar Overlay */}
           <div className="absolute inset-0 flex justify-center items-center">
-            {/* Outer container with bigger width/height, bigger text */}
             <div className="grid grid-cols-4 w-[90%] max-w-6xl h-15">
 
-              {/* 1. Keyword Input */}
+              {/* Keyword Input */}
               <div className="flex items-center justify-center bg-white text-black border-r border-black">
                 <input
                   type="text"
                   placeholder="Enter keyword"
                   className="w-full h-full px-4 text-4xl lg:text-5xl bg-transparent focus:outline-none"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
                 />
               </div>
 
-              {/* 2. Category Dropdown */}
+              {/* Category Dropdown */}
               <div className="relative flex items-center justify-center bg-white text-black border-r border-black">
-                <select className="w-full h-full px-4 text-4xl lg:text-5xl bg-transparent appearance-none focus:outline-none">
-                  <option>Category</option>
-                  {/* More options here */}
+                <select
+                  className="w-full h-full px-4 text-4xl lg:text-5xl bg-transparent appearance-none focus:outline-none"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  <option value="">Category</option>
+                  <option value="Education">Education</option>
+                  <option value="Exhibit">Exhibit</option>
+                  <option value="Contents">Contents</option>
+                  <option value="Workshop">Workshop</option>
+                  <option value="Seminar">Seminar</option>
+                  {/* more if needed */}
                 </select>
-                {/* Dropdown icon */}
                 <div className="pointer-events-none absolute right-2">
                   <svg
                     className="h-8 w-8 text-black"
@@ -112,27 +112,30 @@ const Content = () => {
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth="2" 
+                      d="M19 9l-7 7-7-7" 
                     />
                   </svg>
                 </div>
               </div>
 
-              {/* 3. Municipality Dropdown */}
+              {/* Municipality Dropdown */}
               <div className="relative flex items-center justify-center bg-white text-black border-r border-black">
-                <select className="w-full h-full px-4 text-4xl lg:text-5xl bg-transparent appearance-none focus:outline-none">
-                  <option>Municipality</option>
-                  {municipalities.map((municipality) => (
-                    <option key={municipality} value={municipality}>
-                      {municipality}
+                <select
+                  className="w-full h-full px-4 text-4xl lg:text-5xl bg-transparent appearance-none focus:outline-none"
+                  value={municipality}
+                  onChange={(e) => setMunicipality(e.target.value)}
+                >
+                  <option value="">Municipality</option>
+                  {municipalities.map((mun) => (
+                    <option key={mun} value={mun}>
+                      {mun}
                     </option>
                   ))}
                 </select>
-                {/* Dropdown icon */}
                 <div className="pointer-events-none absolute right-2">
                   <svg
                     className="h-8 w-8 text-black"
@@ -140,25 +143,20 @@ const Content = () => {
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M19 9l-7 7-7-7"
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth="2" 
+                      d="M19 9l-7 7-7-7" 
                     />
                   </svg>
                 </div>
               </div>
 
+              {/* Search Button */}
               <button
-                className="flex items-center justify-center
-             text-4xl lg:text-5xl
-             border-2 border-transparent
-             bg-black text-white
-             hover:bg-white hover:text-black
-             hover:border-black
-             transition-all duration-300
-             cursor-pointer"
+                className="flex items-center justify-center text-4xl lg:text-5xl border-2 border-transparent bg-black text-white hover:bg-white hover:text-black hover:border-black transition-all duration-300 cursor-pointer"
+                onClick={fetchArticles}
               >
                 Search
               </button>
@@ -167,33 +165,63 @@ const Content = () => {
         </div>
       </div>
 
+      {/* Articles Grid Section (similar design as your existing Content.jsx) */}
       <div className="bg-[#1C1B19] min-h-screen py-15">
         <div className="w-full px-4 mx-auto flex justify-around">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 gap-x-20">
-            {itemsData.items.map((item, index) => (
-              <Link
-                key={index}
-                to={`/article/${index.slug}`} // Replace with actual ID or slug if available
-                className="flex flex-col items-center text-center hover:opacity-90 transition duration-300"
-              >
-                <img
-                  src={item.image}
-                  alt={`Event ${index + 1}`}
-                  className="w-[300px] h-auto"
-                />
-                <p className="text-[#F05454] text-base uppercase mt-2">
-                  {item.category}
-                </p>
-                <h2 className="text-white text-2xl font-bold mt-1">
-                  {item.name}
-                </h2>
-                <p className="text-gray-300 text-base mt-1">
-                  {item.date}
-                </p>
-              </Link>
-            ))}
+          {loading && (
+            <div className="text-center text-white text-xl">
+              Loading articles...
+            </div>
+          )}
+          {error && (
+            <div className="text-center text-red-500 text-xl">
+              {error}
+            </div>
+          )}
+          {!loading && !error && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 gap-x-20">
+              {filteredArticles.map((article, index) => {
+                // Construct an image URL if only filename is stored
+                const imageSrc = article.images
+                  ? `${BASE_URL}/uploads/${article.images}`
+                  : "https://via.placeholder.com/300x200?text=No+Image";
+                
+                const displayDate = article.upload_date
+                  ? new Date(article.upload_date).toLocaleDateString()
+                  : "No Date";
 
-          </div>
+                return (
+                  <Link
+                    key={article.article_id || index}
+                    to={`/article/${article.article_id}`}
+                    className="flex flex-col items-center text-center hover:opacity-90 transition duration-300"
+                  >
+                    {/* Thumbnail */}
+                    <img
+                      src={imageSrc}
+                      alt={`Article ${article.article_id}`}
+                      className="w-[300px] h-auto"
+                    />
+
+                    {/* Category */}
+                    <p className="text-[#F05454] text-base uppercase mt-2">
+                      {article.article_category || 'No Category'}
+                    </p>
+
+                    {/* Title */}
+                    <h2 className="text-white text-2xl font-bold mt-1">
+                      {article.title || 'Untitled'}
+                    </h2>
+
+                    {/* Date */}
+                    <p className="text-gray-300 text-base mt-1">
+                      {displayDate}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </>

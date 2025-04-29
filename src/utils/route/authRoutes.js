@@ -33,7 +33,7 @@ import{
 } from '../controller/formController.js';
 
 import { logAction, fetchLog } from '../controller/LogService.js';
-import { createArticle, upload, getAllArticles} from '../controller/articleController.js';
+import { createArticle, upload, getAllArticles, getPublicArticles} from '../controller/articleController.js';
 import multer from 'multer';
 
 
@@ -104,5 +104,8 @@ router.post('/article', (req, res, next) => {
     next();
   });
 }, createArticle);
+
+router.get('/public-articles', getPublicArticles);
+
 
 export default router;

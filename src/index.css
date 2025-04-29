@@ -64,3 +64,28 @@ html {
     -webkit-text-fill-color: #ffffff !important;
   }
   
+/* 2 block text on article */
+  /* Add this to your styles */
+.editor-content-preview h1 { font-size: 2em; font-weight: bold; margin-bottom: 0.5em; }
+.editor-content-preview h2 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; }
+.editor-content-preview h3 { font-size: 1.3em; font-weight: bold; margin-bottom: 0.5em; }
+.editor-content-preview h4 { font-size: 1.2em; font-weight: bold; margin-bottom: 0.5em; }
+.editor-content-preview h5 { font-size: 1.1em; font-weight: bold; margin-bottom: 0.5em; }
+.editor-content-preview p { margin-bottom: 1em; }
+
+.editor-content-preview [data-text-align="center"] { text-align: center; }
+.editor-content-preview [data-text-align="right"] { text-align: right; }
+.editor-content-preview [data-text-align="left"] { text-align: left; }
+.editor-content-preview [data-text-align="justify"] { text-align: justify; }
+
+.two-column-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.two-column-block .column {
+  min-height: 50px;
+  padding: 0.5rem;
+}
