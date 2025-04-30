@@ -1,12 +1,61 @@
-import React from 'react'
+import React, { useEffect, useState  } from 'react';
 import LandingNav from '../../components/navbar/LandingNav'
-import { ScrollRestoration } from 'react-router-dom'
+import {useParams, ScrollRestoration } from 'react-router-dom'
 
 import topImage from '../../../src/assets/456411725_818119137184125_1334004125955189067_n.png';
 import articleImage1 from '../../../src/assets/455363415_812761527719886_1195461782753847821_n (1).png';
 import articleImage2 from '../../../src/assets/456426171_818223347173704_7806646081153137378_n 2.png';
 
+const API_URL = import.meta.env.VITE_API_URL
+
+
 const Article = () => {
+  const { id } = useParams(); 
+  const [article, setArticle] = useState(null);
+
+  const decodeId = (encoded) => {
+    try {
+      const decoded = atob(encoded);  
+      const [id, name] = decoded.split('::'); 
+      return { id, name };
+    } catch (err) {
+      console.error('Decode error:', err);
+      return { id: null, name: null };
+    }
+  };
+
+  const { id: articleId, name: articleName } = decodeId(id);
+
+  // console.log(articleId + articleName)
+
+  const fetchArticle = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/api/auth/public-article/${id}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      const data = await response.json(); 
+      setArticle(data);
+    } catch (error) {
+      console.error('Error fetching article:', error);
+    }
+  };
+  
+
+  useEffect(() => {
+    if (!articleId) {
+      console.log('No articleId provided.');
+      return;
+    }
+
+    fetchArticle(articleId);
+  }, [articleId]);
+console.log(article);
+
 
 const ArticleSection = ({ title, content, image, dropCap }) => {
   return (
@@ -35,25 +84,28 @@ const ArticleSection = ({ title, content, image, dropCap }) => {
       </div>
 
       <div className='w-screen h-[20rem] font-hina'>
-      <h1 className='flex w-auto h-full text-center items-center justify-center text-[7rem]'>Title of the News or Event</h1>
+      <span className='flex w-auto h-full text-center items-center justify-center text-[7rem]'>{articleName}</span>
       </div>
       <div className="flex w-auto justify-center my-[5rem]">
         <div className="flex w-[70rem] h-auto items-center justify-center text-center text-[2rem]">
             <span className="w-1/4 h-[13rem] border border-black flex flex-col items-center justify-center">
                 <h1 className='text-[1.5rem]'>Date</h1>
-                <p>month dd, yyyy</p>
+                <p>{new Date(article?.upload_date).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}</p>
             </span>
             <span className="w-1/4 h-[13rem] border border-black flex flex-col items-center justify-center">
                 <h1 className='text-[1.5rem]'>Author</h1>
-                <p>Name of the Author</p>
+                <p>{article?.author}</p>
             </span>
             <span className="w-1/4 h-[13rem] border border-black flex flex-col items-center justify-center">
                 <h1 className='text-[1.5rem]'>Address</h1>
-                <p>Location of the event or news</p>
+                <p>{article?.address}</p>
             </span>
             <span className="w-1/4 h-[13rem] border border-black flex flex-col items-center justify-center">
-                <h1 className='text-[1.5rem]'>News</h1>
-                <p>[placeholder]</p>
+                <h1 className='text-[1.5rem]'>{article?.article_category}</h1>
             </span>
         </div>
         </div>

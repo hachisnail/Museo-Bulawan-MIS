@@ -12,8 +12,9 @@ const municipalities = [
   "Santa Elena", "Talisay", "Vinzons"
 ];
 
-const BASE_URL = 'http://localhost:5000';  
-const token = localStorage.getItem('token'); // Remove if public
+const API_URL = import.meta.env.VITE_API_URL
+
+// const token = localStorage.getItem('token'); // Remove if public
 
 const Content = () => {
   const [articles, setArticles]     = useState([]);
@@ -33,12 +34,7 @@ const Content = () => {
   const fetchArticles = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/api/auth/articles`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // remove if not needed
-        },
-        withCredentials: true,
-      });
+      const response = await axios.get(`${API_URL}/api/auth/public-articles`);
       setArticles(response.data);
       setLoading(false);
     } catch (err) {
@@ -63,6 +59,14 @@ const Content = () => {
 
     return matchesKeyword && matchesCategory && matchesMunicipality;
   });
+  // console.log(articles);
+
+  const encoded = (id, name) => {
+    const encodedString = `${id}::${name}`;
+  return btoa(encodedString);
+  };
+
+
 
   return (
     <>
@@ -165,7 +169,7 @@ const Content = () => {
         </div>
       </div>
 
-      {/* Articles Grid Section (similar design as your existing Content.jsx) */}
+      {/* Articles Grid Section  */}
       <div className="bg-[#1C1B19] min-h-screen py-15">
         <div className="w-full px-4 mx-auto flex justify-around">
           {loading && (
@@ -183,8 +187,8 @@ const Content = () => {
               {filteredArticles.map((article, index) => {
                 // Construct an image URL if only filename is stored
                 const imageSrc = article.images
-                  ? `${BASE_URL}/uploads/${article.images}`
-                  : "https://via.placeholder.com/300x200?text=No+Image";
+                  ? `${API_URL}/uploads/${article.images}`
+                  : "https://fakeimg.pl/300x300?text=image?";
                 
                 const displayDate = article.upload_date
                   ? new Date(article.upload_date).toLocaleDateString()
@@ -193,9 +197,9 @@ const Content = () => {
                 return (
                   <Link
                     key={article.article_id || index}
-                    to={`/article/${article.article_id}`}
+                    to={`/article/${encoded(article.article_id, article.title)}`}
                     className="flex flex-col items-center text-center hover:opacity-90 transition duration-300"
-                  >
+                  > 
                     {/* Thumbnail */}
                     <img
                       src={imageSrc}
