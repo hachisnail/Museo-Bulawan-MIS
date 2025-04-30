@@ -12,8 +12,9 @@ const municipalities = [
   "Santa Elena", "Talisay", "Vinzons"
 ];
 
-const BASE_URL = 'http://localhost:5000';  
+const API_URL = import.meta.env.VITE_API_URL
 
+// const token = localStorage.getItem('token'); // Remove if public
 
 const Content = () => {
   const [articles, setArticles]     = useState([]);
