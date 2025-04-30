@@ -35,6 +35,15 @@ import{
 import { logAction, fetchLog } from '../controller/LogService.js';
 import { createArticle, upload, getAllArticles, getPublicArticles, getPublicArticle} from '../controller/articleController.js';
 import multer from 'multer';
+import { 
+  createSchedule, 
+  getSchedules, 
+  getScheduleById, 
+  updateSchedule, 
+  deleteSchedule 
+} from '../controller/scheduleController.js';
+
+
 
 
 
@@ -58,6 +67,13 @@ router.get('/visitor-records', autoLogout, getVisitorRecords);
 router.get('/attendance/:id', autoLogout, getAttendanceDetail);
 router.get('/visitor-record/:visitorId/:appointmentId', autoLogout, getVisitorRecordDetail);
 router.post('/send-email-notification', autoLogout, sendEmailNotification);
+
+// Schedule routes
+router.post('/schedules', autoLogout, createSchedule, logAction('create', 'Schedule'));
+router.get('/schedules', autoLogout, getSchedules);
+router.get('/schedules/:id', autoLogout, getScheduleById);
+router.put('/schedules/:id', autoLogout, updateSchedule, logAction('update', 'Schedule'));
+router.delete('/schedules/:id', autoLogout, deleteSchedule, logAction('delete', 'Schedule'));
 
 
 router.get('/fetchLogs', autoLogout, fetchLog);

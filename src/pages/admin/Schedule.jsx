@@ -7,6 +7,10 @@ import TimePicker from 'react-time-picker'
 import 'react-calendar/dist/Calendar.css'
 import 'react-time-picker/dist/TimePicker.css'
 import appointments from '../admin/sample.json'
+import axios from 'axios'
+import Toast from '../../components/function/Toast'
+import { useEffect } from 'react'
+
 
 // ---------------- UTILITY FUNCTIONS ----------------
 
@@ -39,6 +43,9 @@ function formatTimeTo12H(str) {
 function eventsOverlap(a, b) {
   return a.start < b.end && b.start < a.end
 }
+
+// Add this with other state declarations
+
 
 // ---------------- DAY SCHEDULER ----------------
 const DayScheduler = ({
@@ -125,6 +132,43 @@ const DayScheduler = ({
     })
   }
 
+  // Logic to reposition the hover card when hovering
+  const handleMouseEnter = (e) => {
+    const parentRect = e.currentTarget.parentNode.getBoundingClientRect()
+    const hoverCard = e.currentTarget.querySelector('.hover-card')
+    if (!hoverCard) return
+
+    // Remove any old inline positioning
+    hoverCard.style.removeProperty('top')
+
+    setTimeout(() => {
+      const hoverRect = hoverCard.getBoundingClientRect()
+
+      // If bottom of card overflows parent
+      if (hoverRect.bottom > parentRect.bottom) {
+        const overflowBottom = hoverRect.bottom - parentRect.bottom
+        hoverCard.style.top = `-${overflowBottom + 8}px`
+      }
+
+      // If top of card is above parent
+      if (hoverRect.top < parentRect.top) {
+        const overflowTop = parentRect.top - hoverRect.top
+        hoverCard.style.top = `${overflowTop + 8}px`
+      }
+    }, 0)
+  }
+
+  const handleMouseLeave = (e) => {
+    const hoverCard = e.currentTarget.querySelector('.hover-card')
+    if (hoverCard) {
+      hoverCard.style.removeProperty('top')
+    }
+  }
+
+  // Add this with other state declarations
+
+
+
   return (
     <div className="w-full h-full relative bg-gray-200 overflow-hidden">
       {/* Left timeline ruler */}
@@ -192,13 +236,14 @@ const DayScheduler = ({
             <div
               key={ev.id}
               onClick={() => {
-                // Toggle selection - if already selected, deselect it
                 if (selectedAppointment && selectedAppointment.id === ev.id) {
                   onSelectAppointment(null)
                 } else {
                   onSelectAppointment(ev)
                 }
               }}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
               className="group absolute p-1 cursor-pointer"
               style={{
                 top: `${top}%`,
@@ -210,19 +255,20 @@ const DayScheduler = ({
               {/* Normal (non-hover) view */}
               <div
                 className={`
-                  w-full h-full
-                  border ${isSelected ? 'border-white bg-gray-500 text-white' : 'border-gray-300 bg-white'}
-                  rounded shadow-sm p-2 flex flex-col justify-between relative
-                  transition-all overflow-hidden
-                  group-hover:opacity-0
-                `}
+                    w-full h-full
+                    border ${isSelected ? 'border-white bg-gray-500 text-white' : 'border-gray-300 bg-white'}
+                    rounded shadow-sm p-2 flex flex-col justify-between relative
+                    transition-all overflow-hidden
+                    group-hover:opacity-0
+                    ${ev.isAppointment ? 'border-l-4 border-l-blue-500' : ''}
+                    ${ev.isSchedule && ev.availability === 'EXCLUSIVE' ? 'border-l-4 border-l-red-500' : ''}
+                    ${ev.isSchedule && ev.availability === 'SHARED' ? 'border-l-4 border-l-green-500' : ''}
+                  `}
               >
                 <div
                   className={`
-                    border-l-4
-                    ${isSelected ? 'border-white' : 'border-black'}
-                    pl-2 h-full flex flex-col justify-between relative
-                  `}
+                      pl-2 h-full flex flex-col justify-between relative
+                    `}
                 >
                   <div className="flex-1 overflow-hidden">
                     <p className="font-bold text-xs sm:text-sm truncate">
@@ -238,12 +284,22 @@ const DayScheduler = ({
                         {ev.numPeople}
                       </p>
                     )}
+                    {ev.isAppointment && (
+                      <p className="text-[10px] sm:text-xs truncate text-blue-500">
+                        Appointment
+                      </p>
+                    )}
+                    {ev.isSchedule && (
+                      <p className="text-[10px] sm:text-xs truncate text-green-500">
+                        {ev.availability === 'EXCLUSIVE' ? 'Exclusive Schedule' : 'Shared Schedule'}
+                      </p>
+                    )}
                   </div>
                   <p
                     className={`
-                      absolute bottom-1 right-2 text-[10px] sm:text-xs
-                      ${isSelected ? '' : 'text-gray-400'}
-                    `}
+                        absolute bottom-1 right-2 text-[10px] sm:text-xs
+                        ${isSelected ? '' : 'text-gray-400'}
+                      `}
                   >
                     {formatTimeTo12H(ev.startTime)} - {formatTimeTo12H(ev.endTime)}
                   </p>
@@ -253,36 +309,90 @@ const DayScheduler = ({
               {/* Hover (expanded) view */}
               <div
                 className={`
-                  absolute top-0 left-0 w-[20rem] max-w-[90vw]
-                  min-h-[6rem]
-                  border ${isSelected ? 'border-white' : 'border-black'}
-                  rounded-lg shadow-2xl p-4
-                  flex flex-col justify-between
-                  z-50 opacity-0 group-hover:opacity-100
-                  transition-all duration-300 ease-in-out
-                  ${isSelected ? 'bg-gray-500 text-white' : 'bg-white'}
-                  hover:scale-90
-                  origin-top-left
-                  w-full
-                `}
+                    hover-card
+                    absolute top-0 left-0 w-[20rem] max-w-[90vw]
+                    min-h-[6rem]
+                    border ${isSelected ? 'border-white' : 'border-gray-300'}
+                    rounded-lg shadow-2xl p-4
+                    flex flex-col justify-between
+                    z-50 opacity-0 group-hover:opacity-100
+                    transition-all duration-300 ease-in-out
+                    ${isSelected ? 'bg-gray-500 text-white' : 'bg-white'}
+                    hover:scale-90
+                    origin-top-left
+                    w-full
+                    ${ev.isAppointment ? 'border-l-4 border-l-blue-500' : ''}
+                    ${ev.isSchedule && ev.availability === 'EXCLUSIVE' ? 'border-l-4 border-l-red-500' : ''}
+                    ${ev.isSchedule && ev.availability === 'SHARED' ? 'border-l-4 border-l-green-500' : ''}
+                  `}
               >
                 <div
                   className={`
-                    border-l-4
-                    ${isSelected ? 'border-white' : 'border-black'}
-                    pl-3 flex-1 flex flex-col justify-between relative
-                  `}
+                      pl-3 flex-1 flex flex-col justify-between relative
+                    `}
                 >
                   <div className="flex-1 overflow-visible">
                     <p className="font-bold text-base break-words">{ev.title}</p>
                     {ev.organizer && <p className="text-sm break-words">{ev.organizer}</p>}
                     {ev.numPeople && <p className="text-sm break-words">{ev.numPeople}</p>}
+
+                    {/* Event type and availability indicator */}
+                    {ev.isAppointment && (
+                      <div className="mt-2 mb-1">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs font-medium">
+                          <i className="fas fa-calendar-check mr-1"></i> Appointment
+                        </span>
+                        <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium">
+                          <i className="fas fa-users mr-1"></i> Shared
+                        </span>
+                      </div>
+                    )}
+
+                    {ev.isSchedule && (
+                      <div className="mt-2 mb-1">
+                        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs font-medium">
+                          <i className="fas fa-calendar mr-1"></i> Schedule
+                        </span>
+                        <span className={`ml-2 px-2 py-1 ${ev.availability === 'EXCLUSIVE' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'} rounded-md text-xs font-medium`}>
+                          <i className={`fas ${ev.availability === 'EXCLUSIVE' ? 'fa-lock' : 'fa-users'} mr-1`}></i>
+                          {ev.availability === 'EXCLUSIVE' ? 'Exclusive' : 'Shared'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Status indicator for appointments */}
+                    {ev.isAppointment && ev.status && (
+                      <div className="mt-1 mb-2">
+                        <span className={`px-2 py-1 rounded-md text-xs font-medium
+                            ${ev.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : ''}
+                            ${ev.status === 'TO_REVIEW' ? 'bg-yellow-100 text-yellow-800' : ''}
+                            ${ev.status === 'REJECTED' ? 'bg-red-100 text-red-800' : ''}
+                            ${ev.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' : ''}
+                            ${ev.status === 'FAILED' ? 'bg-gray-100 text-gray-800' : ''}
+                          `}>
+                          <i className={`fas ${ev.status === 'CONFIRMED' ? 'fa-check-circle' :
+                            ev.status === 'TO_REVIEW' ? 'fa-clock' :
+                              ev.status === 'REJECTED' ? 'fa-times-circle' :
+                                ev.status === 'COMPLETED' ? 'fa-flag-checkered' :
+                                  'fa-exclamation-circle'
+                            } mr-1`}></i>
+                          {ev.status.replace('_', ' ').charAt(0) + ev.status.replace('_', ' ').slice(1).toLowerCase()}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Description if available */}
+                    {ev.description && (
+                      <p className="text-sm break-words mt-2 text-gray-600">
+                        {ev.description}
+                      </p>
+                    )}
                   </div>
                   <p
                     className={`
-                      absolute bottom-2 right-3 text-xs sm:text-sm
-                      ${isSelected ? 'text-white' : 'text-gray-400'}
-                    `}
+                        absolute bottom-2 right-3 text-xs sm:text-sm
+                        ${isSelected ? 'text-white' : 'text-gray-400'}
+                      `}
                   >
                     {formatTimeTo12H(ev.startTime)} - {formatTimeTo12H(ev.endTime)}
                   </p>
@@ -290,17 +400,19 @@ const DayScheduler = ({
               </div>
             </div>
           )
+
         })}
       </div>
     </div>
   )
 }
 
+
 // ---------------- MAIN SCHEDULE PAGE ----------------
 const Schedule = () => {
   // Calendar state
   const [selectedDate, setSelectedDate] = useState(new Date())
-
+  const [newAvailability, setNewAvailability] = useState('SHARED') // Default to 'SHARED'
   // Track the currently selected appointment from the DayScheduler
   const [selectedAppointment, setSelectedAppointment] = useState(null)
 
@@ -312,35 +424,238 @@ const Schedule = () => {
 
   // Build a local date string for the selected date (no UTC offset).
   const dateString = getLocalDateString(selectedDate)
-
+  const monthLabel = selectedDate.toLocaleString('default', { month: 'long' }) + ' ' + selectedDate.getFullYear()
+  const weekdayName = selectedDate.toLocaleString('default', { weekday: 'long' })
+  const dayNum = selectedDate.getDate()
   // Filter only items that match selected day for "Today's Scheduled Tours"
   const todaysTours = appointments
     .filter((apt) => apt.date === dateString)
     .sort((a, b) => timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime))
 
-  const handleAddEvent = () => {
-    console.log('New event:', {
-      title: newTitle,
-      description: newDesc,
-      startTime: newStartTime,
-      endTime: newEndTime,
-      date: dateString
-    })
-    // Clear fields
-    setNewTitle('')
-    setNewDesc('')
-    setNewStartTime('09:00')
-    setNewEndTime('10:00')
-    // For real usage, you'd dispatch or call an API here
+  const [backendEvents, setBackendEvents] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const API_URL = import.meta.env.VITE_API_URL || '/api'
+  // Fetch data when component mounts or selectedDate changes
+  useEffect(() => {
+    fetchEvents()
+  }, [selectedDate, dateString])
+
+  const handleAddEvent = async () => {
+    try {
+      // Validate input
+      if (!newTitle) {
+        showToast('Please enter an event title', 'error');
+        return;
+      }
+
+      if (newStartTime >= newEndTime) {
+        showToast('Start time must be earlier than end time', 'error');
+        return;
+      }
+
+      // Get the token from localStorage (same pattern as in Appointment.jsx)
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showToast('You need to be logged in to add schedules', 'error');
+        return;
+      }
+
+      // Get API URL from environment variables
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+      // Create the schedule data object
+      const scheduleData = {
+        title: newTitle,
+        description: newDesc,
+        date: dateString,
+        start_time: newStartTime,
+        end_time: newEndTime,
+        availability: newAvailability
+      };
+
+      console.log('Sending schedule data:', scheduleData);
+
+      // Make API call to backend using axios
+      const response = await axios.post(
+        `${API_URL}/api/auth/schedules`,
+        scheduleData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      console.log('Schedule created successfully:', response.data);
+
+      // Show success notification
+      showToast('Schedule added successfully', 'success');
+
+      // Clear form fields
+      setNewTitle('');
+      setNewDesc('');
+      setNewStartTime('09:00');
+      setNewEndTime('10:00');
+      setNewAvailability('SHARED');
+
+    } catch (error) {
+      console.error('Error creating schedule:', error);
+
+      // Show error notification
+      if (error.response) {
+        showToast(`Error: ${error.response.data.message || 'Failed to create schedule'}`, 'error');
+      } else {
+        showToast('Network error. Please try again.', 'error');
+      }
+    }
+  };
+
+  // Fetch both schedules and appointments from the backend
+  // Fetch both schedules and appointments from the backend
+  const fetchEvents = async () => {
+    setIsLoading(true)
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        showToast("Not authenticated. Please log in.", 'error')
+        setIsLoading(false)
+        return
+      }
+
+      // Format date for API
+      const formattedDate = dateString
+
+      // Fetch schedules
+      const schedulesResponse = await axios.get(
+        `${API_URL}/api/auth/schedules?date=${formattedDate}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+
+      console.log("Schedules response:", schedulesResponse.data)
+
+      // Fetch appointments
+      const appointmentsResponse = await axios.get(
+        `${API_URL}/api/auth/appointment?date=${formattedDate}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+
+      console.log("Appointments response:", appointmentsResponse.data)
+
+      // Convert appointments to the same format as schedules
+      const appointmentEvents = appointmentsResponse.data.map(appointment => {
+        // Default time if preferred_time is missing
+        let startTime = "09:00";
+        let endTime = "10:00";
+
+        if (appointment.preferred_time && typeof appointment.preferred_time === 'string') {
+          const timeParts = appointment.preferred_time.split('-');
+          if (timeParts.length > 0 && timeParts[0]) {
+            startTime = timeParts[0].trim();
+
+            if (timeParts.length > 1 && timeParts[1]) {
+              endTime = timeParts[1].trim();
+            } else {
+              // Calculate end time by adding 1 hour to start time
+              const [hours, minutes] = startTime.split(':').map(part => parseInt(part, 10));
+              if (!isNaN(hours)) {
+                const newHours = (hours + 1) % 24;
+                endTime = `${newHours.toString().padStart(2, '0')}:${minutes ? minutes.toString().padStart(2, '0') : '00'}`;
+              }
+            }
+          }
+        }
+
+        return {
+          id: `appointment-${appointment.appointment_id}`,
+          title: appointment.purpose_of_visit || 'Appointment',
+          description: appointment.additional_notes || '',
+          date: appointment.preferred_date,
+          startTime,
+          endTime,
+          organizer: `${appointment.Visitor?.first_name || ''} ${appointment.Visitor?.last_name || ''}`.trim(),
+          numPeople: `${appointment.population_count || 1} visitors`,
+          availability: 'SHARED', // Appointments are automatically shared
+          isAppointment: true,
+          status: appointment.AppointmentStatus?.status || 'TO_REVIEW'
+        };
+      })
+
+      // Convert schedules to the expected format
+      const scheduleEvents = schedulesResponse.data.map(schedule => ({
+        id: `schedule-${schedule.schedule_id}`,
+        title: schedule.title,
+        description: schedule.description || '',
+        date: schedule.date,
+        startTime: schedule.start_time,
+        endTime: schedule.end_time,
+        availability: schedule.availability,
+        isSchedule: true
+      }))
+
+      console.log("Schedule events:", scheduleEvents)
+      console.log("Appointment events:", appointmentEvents)
+
+      // Combine both types of events
+      const allEvents = [...appointmentEvents, ...scheduleEvents]
+      console.log("All events:", allEvents)
+      setBackendEvents(allEvents)
+
+    } catch (error) {
+      console.error('Error fetching events:', error)
+      showToast('Failed to load events', 'error')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  // Labels
-  const monthLabel =
-    selectedDate.toLocaleString('default', { month: 'long' }) +
-    ' ' +
-    selectedDate.getFullYear()
-  const weekdayName = selectedDate.toLocaleString('default', { weekday: 'long' })
-  const dayNum = selectedDate.getDate()
+
+  // Helper function to add an hour to a time string (e.g., "09:00" -> "10:00")
+  // Helper function to add an hour to a time string (e.g., "09:00" -> "10:00")
+  const addHourToTime = (timeStr) => {
+    if (!timeStr) return "00:00"; // Default if timeStr is undefined
+
+    const parts = timeStr.split(':');
+    if (parts.length < 2) return "00:00"; // Default if format is incorrect
+
+    const hour = parseInt(parts[0], 10);
+    const minute = parseInt(parts[1], 10);
+
+    if (isNaN(hour) || isNaN(minute)) return "00:00"; // Default if parsing fails
+
+    const newHour = (hour + 1) % 24;
+    return `${newHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  }
+
+  const [toastConfig, setToastConfig] = useState({
+    isVisible: false,
+    message: '',
+    type: 'success'
+  });
+  // Toast functions
+  const showToast = (message, type = 'success') => {
+    setToastConfig({
+      isVisible: true,
+      message,
+      type
+    });
+  };
+
+  const hideToast = () => {
+    setToastConfig({
+      ...toastConfig,
+      isVisible: false
+    });
+  };
+
 
   return (
     <>
@@ -463,11 +778,13 @@ const Schedule = () => {
               </div>
               <div className="w-full h-full bg-white p-5 rounded-xl shadow-xl">
                 <DayScheduler
-                  appointments={appointments}
+                  appointments={backendEvents}
                   selectedDate={selectedDate}
                   onSelectAppointment={setSelectedAppointment}
                   selectedAppointment={selectedAppointment}
+                  isLoading={isLoading}
                 />
+
               </div>
             </div>
 
@@ -558,6 +875,43 @@ const Schedule = () => {
                     </div>
                   </div>
 
+                  {/* Availability Selection - Improved Layout */}
+                  <div className="flex flex-col">
+                    <label className="text-sm text-gray-600 mb-2">
+                      Availability
+                    </label>
+                    <div className="flex gap-4">
+                      <label className="bg-white border border-gray-300 rounded-lg p-3 flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors w-full">
+                        <input
+                          type="radio"
+                          name="availability"
+                          value="SHARED"
+                          checked={newAvailability === 'SHARED'}
+                          onChange={() => setNewAvailability('SHARED')}
+                          className="w-4 h-4 text-[#A6A3F6] focus:ring-[#A6A3F6]"
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-medium">Shared</span>
+                          <span className="text-xs text-gray-500">Can be booked with other events</span>
+                        </div>
+                      </label>
+                      <label className="bg-white border border-gray-300 rounded-lg p-3 flex items-center gap-2 cursor-pointer hover:bg-gray-50 transition-colors w-full">
+                        <input
+                          type="radio"
+                          name="availability"
+                          value="EXCLUSIVE"
+                          checked={newAvailability === 'EXCLUSIVE'}
+                          onChange={() => setNewAvailability('EXCLUSIVE')}
+                          className="w-4 h-4 text-[#A6A3F6] focus:ring-[#A6A3F6]"
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-medium">Exclusive</span>
+                          <span className="text-xs text-gray-500">Reserved for this event only</span>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
                   {/* Add Event Button */}
                   <button
                     className="w-full bg-[#A6A3F6] text-white py-3 rounded-lg font-semibold hover:bg-[#8e8aec] transition-all flex items-center justify-center gap-2"
@@ -567,6 +921,8 @@ const Schedule = () => {
                   </button>
                 </div>
               </div>
+
+
 
               {/* Selected Appointment */}
               <div className="w-full shadow-xl bg-white rounded-xl p-6">
@@ -615,6 +971,22 @@ const Schedule = () => {
           </div>
         </div>
       </div>
+      {isLoading && (
+        <div className="fixed inset-0 bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-white p-5 rounded-lg shadow-lg flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-4 border-[#A6A3F6] border-t-transparent"></div>
+            <span>Loading events...</span>
+          </div>
+        </div>
+      )}
+      {/* Toast notifications */}
+      <Toast
+        message={toastConfig.message}
+        type={toastConfig.type}
+        isVisible={toastConfig.isVisible}
+        onClose={hideToast}
+      />
+
     </>
   )
 }
