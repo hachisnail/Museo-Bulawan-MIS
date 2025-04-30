@@ -20,6 +20,10 @@ export const AppointmentModal = ({
   const [presentCount, setPresentCount] = useState('');
   // Track if present count needs validation
   const [presentCountError, setPresentCountError] = useState(false);
+
+  // Loading indicator while sending email / updating status
+  const [isLoading, setIsLoading] = useState(false);
+
   const token = localStorage.getItem('token')
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -45,6 +49,7 @@ export const AppointmentModal = ({
     setPresentCountError(false);
     setMessage("");
     setPresentCount('');
+    setIsLoading(false);
   }, [modalData]);
 
   if (!showModal || !modalData) return null;
@@ -59,9 +64,33 @@ export const AppointmentModal = ({
   const isCompletedOrFailed = isCompleted || isFailed;
 
   const handleSend = async () => {
-    // ... existing validation code ...
+    // Start loading
+    setIsLoading(true);
 
     try {
+      // Phase 1 (TO_REVIEW): Make sure user has approved or rejected, and left a non-empty message
+      if (isToReview) {
+        if (!approveVisit) {
+          setApprovalError(true);
+          setIsLoading(false);
+          return;
+        }
+        if (!message.trim()) {
+          setMessageError(true);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Validate present count only if "arrive" is chosen in second phase
+      if (isConfirmed && approveVisit === 'arrive') {
+        if (!presentCount) {
+          setPresentCountError(true);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Determine the new status based on action
       let newStatus = modalData.status;
       if (approveVisit === 'yes') {
@@ -73,9 +102,6 @@ export const AppointmentModal = ({
       } else if (approveVisit === 'arrive') {
         newStatus = 'COMPLETED';
       }
-
-      // Get token from localStorage or wherever you store it
-      const token = localStorage.getItem('token'); // Adjust this according to your auth implementation
 
       // Prepare email data
       const emailData = {
@@ -93,9 +119,7 @@ export const AppointmentModal = ({
         }
       };
 
-
-
-      // Send email notification - fix: Actually calling the API and handling response
+      // Attempt to send the email notification
       try {
         const response = await axios.post(
           `${API_URL}/api/auth/send-email-notification`,
@@ -110,24 +134,24 @@ export const AppointmentModal = ({
         console.log('Email notification sent:', response.data);
       } catch (emailError) {
         console.error('Error sending email notification:', emailError);
-        // Continue with the process even if email fails
+        // Even if email fails, proceed with status update
       }
 
-      // Handle the present count update when completing an appointment
+      // If user arrived, update with presentCount
       if (approveVisit === 'arrive') {
         const presentValue = parseInt(presentCount, 10) || 0;
-
-        // Send both status and present_count in the same update
         await updateAppointmentStatus(modalData.appointmentId, newStatus, presentValue);
       } else {
-        // For other status changes, just update the status
+        // Otherwise, only update status
         await updateAppointmentStatus(modalData.appointmentId, newStatus);
       }
 
-      // Trigger parent component update and close modal
+      // Trigger parent component's success callback, close modal
       onSend && onSend();
     } catch (err) {
       console.error('Error while updating status or sending email:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -173,7 +197,10 @@ export const AppointmentModal = ({
 
             <div className="mb-6">
               <div className="text-gray-600 text-sm mb-1">Address</div>
-              <div className="text-blue-500 text-lg">{modalData.street}, {modalData.barangay}, {modalData.city_municipality}, {modalData.province}</div>
+              <div className="text-blue-500 text-lg">
+                {modalData.street}, {modalData.barangay}, {modalData.city_municipality},{' '}
+                {modalData.province}
+              </div>
             </div>
 
             <div className="mb-6">
@@ -226,8 +253,10 @@ export const AppointmentModal = ({
                   <div className="text-base mb-3">Approve Visit?</div>
                   <div className="flex gap-4">
                     <button
-                      className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'yes' ?
-                        'bg-[#6F3FFF] text-white' : 'bg-gray-200 text-gray-800'}`}
+                      className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'yes'
+                          ? 'bg-[#6F3FFF] text-white'
+                          : 'bg-gray-200 text-gray-800'
+                        }`}
                       onClick={() => {
                         setApproveVisit('yes');
                         setApprovalError(false);
@@ -236,8 +265,10 @@ export const AppointmentModal = ({
                       Yes
                     </button>
                     <button
-                      className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'no' ?
-                        'bg-red-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                      className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'no'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-200 text-gray-800'
+                        }`}
                       onClick={() => {
                         setApproveVisit('no');
                         setApprovalError(false);
@@ -257,8 +288,8 @@ export const AppointmentModal = ({
                 <div className="mb-6">
                   <div className="text-base mb-3">Leave a message</div>
                   <textarea
-                    className={`w-full p-4 border ${messageError ? 'border-red-500' : 'border-gray-300'} 
-                      rounded-md h-[120px] overflow-y-auto resize-none text-base`}
+                    className={`w-full p-4 border ${messageError ? 'border-red-500' : 'border-gray-300'
+                      } rounded-md h-[120px] overflow-y-auto resize-none text-base`}
                     value={message}
                     onChange={(e) => {
                       setMessage(e.target.value);
@@ -274,7 +305,8 @@ export const AppointmentModal = ({
                     </p>
                   )}
                   <div className="text-sm text-gray-500 mt-2">
-                    This will automatically send to {modalData.email || 'michael18ricafrente@gmail.com'}
+                    This will automatically send to{' '}
+                    {modalData.email || 'michael18ricafrente@gmail.com'}
                   </div>
                 </div>
               </>
@@ -287,15 +319,19 @@ export const AppointmentModal = ({
                   <div className="text-base mb-3">Appointment Action</div>
                   <div className="flex gap-4">
                     <button
-                      className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'cancel' ?
-                        'bg-red-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                      className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'cancel'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-gray-200 text-gray-800'
+                        }`}
                       onClick={() => setApproveVisit('cancel')}
                     >
                       Cancel
                     </button>
                     <button
-                      className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'arrive' ?
-                        'bg-green-600 text-white' : 'bg-gray-200 text-gray-800'}`}
+                      className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'arrive'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-gray-200 text-gray-800'
+                        }`}
                       onClick={() => setApproveVisit('arrive')}
                     >
                       Arrive
@@ -308,8 +344,8 @@ export const AppointmentModal = ({
                   <div className="mb-6">
                     <div className="text-base mb-3">Cancellation Message</div>
                     <textarea
-                      className={`w-full p-4 border ${messageError ? 'border-red-500' : 'border-gray-300'} 
-                        rounded-md h-[120px] overflow-y-auto resize-none text-base`}
+                      className={`w-full p-4 border ${messageError ? 'border-red-500' : 'border-gray-300'
+                        } rounded-md h-[120px] overflow-y-auto resize-none text-base`}
                       value={message}
                       onChange={(e) => {
                         setMessage(e.target.value);
@@ -320,7 +356,8 @@ export const AppointmentModal = ({
                       placeholder="Enter cancellation reason (optional)"
                     />
                     <div className="text-sm text-gray-500 mt-2">
-                      This will automatically send to {modalData.email || 'michael18ricafrente@gmail.com'}
+                      This will automatically send to{' '}
+                      {modalData.email || 'michael18ricafrente@gmail.com'}
                     </div>
                   </div>
                 )}
@@ -333,7 +370,9 @@ export const AppointmentModal = ({
                     <div className="grid grid-cols-2 gap-x-6 mb-4">
                       <div>
                         <div className="text-gray-600 mb-2">Expected Visitors:</div>
-                        <div className="text-2xl font-semibold">{modalData.populationCount || '0'}</div>
+                        <div className="text-2xl font-semibold">
+                          {modalData.populationCount || '0'}
+                        </div>
                       </div>
 
                       <div>
@@ -341,7 +380,8 @@ export const AppointmentModal = ({
                         <div className="flex items-center gap-3">
                           <input
                             type="number"
-                            className={`border ${presentCountError ? 'border-red-500' : 'border-gray-300'} rounded-md p-3 w-full text-lg`}
+                            className={`border ${presentCountError ? 'border-red-500' : 'border-gray-300'
+                              } rounded-md p-3 w-full text-lg`}
                             value={presentCount}
                             onChange={(e) => {
                               setPresentCount(e.target.value);
@@ -366,7 +406,7 @@ export const AppointmentModal = ({
                       </div>
                     </div>
 
-                    {/* Add completion message field */}
+                    {/* Add completion message field (optional) */}
                     <div className="mt-4">
                       <div className="text-base mb-2">Completion Message</div>
                       <textarea
@@ -376,12 +416,14 @@ export const AppointmentModal = ({
                         placeholder="Enter completion message (optional)"
                       />
                       <div className="text-sm text-gray-500 mt-2">
-                        This will automatically send to {modalData.email || 'michael18ricafrente@gmail.com'}
+                        This will automatically send to{' '}
+                        {modalData.email || 'michael18ricafrente@gmail.com'}
                       </div>
                     </div>
 
                     <div className="text-sm text-gray-500 mt-4">
-                      Enter the number of visitors who actually attended. Click "All Present" if everyone arrived.
+                      Enter the number of visitors who actually attended. Click "All Present" if
+                      everyone arrived.
                     </div>
                   </div>
                 )}
@@ -401,20 +443,23 @@ export const AppointmentModal = ({
             {isCompletedOrFailed && (
               <div className="mb-6 text-center text-xl">
                 <div className="px-6 py-3 bg-gray-100 rounded-lg text-gray-700">
-                  This appointment is {modalData.status.toLowerCase()}. No further actions are available.
+                  This appointment is {modalData.status.toLowerCase()}. No further actions are
+                  available.
                 </div>
               </div>
             )}
 
-            {/* Action buttons based on state */}
+            {/** Action buttons based on state */}
             <div className="flex justify-end mt-6">
-              {/* Done button - shown for active states */}
+              {/** While loading, disable the button and show a loading message */}
               {(isToReview || isConfirmed) && (
                 <button
-                  className="bg-[#6F3FFF] text-white px-10 py-3 rounded-md hover:opacity-90 text-lg font-medium"
+                  className={`${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#6F3FFF] hover:opacity-90'
+                    } text-white px-10 py-3 rounded-md text-lg font-medium transition-colors`}
                   onClick={handleSend}
+                  disabled={isLoading}
                 >
-                  Done
+                  {isLoading ? 'Processing...' : 'Done'}
                 </button>
               )}
 
