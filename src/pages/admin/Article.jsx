@@ -54,14 +54,18 @@ const ArticleForm = () => {
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Underline,
+      Underline, // Add Underline extension
       TextAlign.configure({
         types: ['heading', 'paragraph'],
         alignments: ['left', 'center', 'right', 'justify'],
       }),
-      TwoColumnBlock, // Add the TwoColumnBlock extension
+      TwoColumnBlock, // Add the two-column block extension
     ],
-    content: "", // Initial content
+    content: "", 
+    onUpdate: ({ editor }) => {
+      // You can add this if you want to debug the editor content
+      // console.log(editor.getHTML());
+    },
   });
   // Fetch articles on component mount
   useEffect(() => {
@@ -515,139 +519,140 @@ const ArticleForm = () => {
 
                   {/* Tiptap Rich Text Editor */}
                   <div className="space-y-2">
-                    <label className="font-bold">Body</label>
-                    <div className="flex items-center gap-2 p-2 bg-[#d6c2ad] rounded border border-blue-400">
-                      {/* Heading buttons */}
-                      <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map((level) => (
-                          <button
-                            key={level}
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              editor?.chain().focus().toggleHeading({ level }).run();
-                            }}
-                            className={`text-sm px-2 py-1 border rounded-sm ${
-                              editor?.isActive('heading', { level }) ? 'bg-white' : ''
-                            }`}
-                          >
-                            H{level}
-                          </button>
-                        ))}
-                      </div>
+    <label className="font-bold">Body</label>
+    <div className="flex flex-wrap items-center gap-2 p-2 bg-[#d6c2ad] rounded border border-blue-400">
+      {/* Heading buttons */}
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((level) => (
+          <button
+            key={level}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              editor?.chain().focus().toggleHeading({ level }).run();
+            }}
+            className={`text-sm px-2 py-1 border rounded-sm ${
+              editor?.isActive('heading', { level }) ? 'bg-white' : ''
+            }`}
+          >
+            H{level}
+          </button>
+        ))}
+      </div>
 
-                      {/* Divider */}
-                      <div className="border-l h-6 mx-2" />
-                      
-                      {/* Formatting buttons */}
-                      <div className="flex gap-1 ml-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            editor?.chain().focus().toggleBold().run();
-                          }}
-                          className={`p-1 border rounded ${editor?.isActive("bold") ? "bg-white" : ""}`}
-                        >
-                          <Bold size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            editor?.chain().focus().toggleUnderline().run();
-                          }}
-                          className={`p-1 border rounded ${editor?.isActive("underline") ? "bg-white" : ""}`}
-                        >
-                          <UnderlineIcon size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            editor?.chain().focus().toggleItalic().run();
-                          }}
-                          className={`p-1 border rounded ${editor?.isActive("italic") ? "bg-white" : ""}`}
-                        >
-                          <Italic size={16} />
-                        </button>
-                      </div>
-                      
-                      {/* Divider */}
-                      <div className="border-l h-6 mx-2" />
-                      
-                      {/* Text alignment buttons */}
-                      <div className="flex gap-1">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            editor?.chain().focus().setTextAlign("left").run();
-                          }}
-                          className={`p-1 border rounded ${editor?.isActive({ textAlign: "left" }) ? "bg-white" : ""}`}
-                        >
-                          <AlignLeft size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            editor?.chain().focus().setTextAlign("center").run();
-                          }}
-                          className={`p-1 border rounded ${editor?.isActive({ textAlign: "center" }) ? "bg-white" : ""}`}
-                        >
-                          <AlignCenter size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            editor?.chain().focus().setTextAlign("right").run();
-                          }}
-                          className={`p-1 border rounded ${editor?.isActive({ textAlign: "right" }) ? "bg-white" : ""}`}
-                        >
-                          <AlignRight size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            editor?.chain().focus().setTextAlign("justify").run();
-                          }}
-                          className={`p-1 border rounded ${editor?.isActive({ textAlign: "justify" }) ? "bg-white" : ""}`}
-                        >
-                          <AlignJustify size={16} />
-                        </button>
-                        {/* Add this button to your toolbar */}
-                        <div className="border-l h-6 mx-2" />
-  
-  {/* Two Column Layout Button */}
-  <button
-    type="button"
-    onClick={(e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      editor?.chain().focus().insertTwoColumnBlock().run();
-    }}
-    className="p-1 border rounded"
-    title="Insert Two Column Layout"
-  >
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="2" y="4" width="9" height="16" stroke="currentColor" strokeWidth="2" />
-      <rect x="13" y="4" width="9" height="16" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  </button>
-
-                      </div>
-                    </div>
+      {/* Divider */}
+      <div className="border-l h-6 mx-2" />
+      
+      {/* Formatting buttons */}
+      <div className="flex gap-1 ml-2">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor?.chain().focus().toggleBold().run();
+          }}
+          className={`p-1 border rounded ${editor?.isActive("bold") ? "bg-white" : ""}`}
+        >
+          <Bold size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor?.chain().focus().toggleUnderline().run();
+          }}
+          className={`p-1 border rounded ${editor?.isActive("underline") ? "bg-white" : ""}`}
+        >
+          <UnderlineIcon size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor?.chain().focus().toggleItalic().run();
+          }}
+          className={`p-1 border rounded ${editor?.isActive("italic") ? "bg-white" : ""}`}
+        >
+          <Italic size={16} />
+        </button>
+      </div>
+      
+      {/* Divider */}
+      <div className="border-l h-6 mx-2" />
+      
+      {/* Text alignment buttons */}
+      <div className="flex gap-1">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor?.chain().focus().setTextAlign("left").run();
+          }}
+          className={`p-1 border rounded ${editor?.isActive({ textAlign: "left" }) ? "bg-white" : ""}`}
+        >
+          <AlignLeft size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor?.chain().focus().setTextAlign("center").run();
+          }}
+          className={`p-1 border rounded ${editor?.isActive({ textAlign: "center" }) ? "bg-white" : ""}`}
+        >
+          <AlignCenter size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor?.chain().focus().setTextAlign("right").run();
+          }}
+          className={`p-1 border rounded ${editor?.isActive({ textAlign: "right" }) ? "bg-white" : ""}`}
+        >
+          <AlignRight size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editor?.chain().focus().setTextAlign("justify").run();
+          }}
+          className={`p-1 border rounded ${editor?.isActive({ textAlign: "justify" }) ? "bg-white" : ""}`}
+        >
+          <AlignJustify size={16} />
+        </button>
+      </div>
+      
+      {/* Divider */}
+      <div className="border-l h-6 mx-2" />
+      
+      {/* Two Column Layout Button */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          editor?.chain().focus().insertTwoColumnBlock().run();
+        }}
+        className="p-1 border rounded"
+        title="Insert Two Column Layout"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="4" width="9" height="16" stroke="currentColor" strokeWidth="2" />
+          <rect x="13" y="4" width="9" height="16" stroke="currentColor" strokeWidth="2" />
+        </svg>
+      </button>
+    </div>
+                    
 
                     {/* Editor body */}
                     <div className="border rounded p-4 min-h-[150px]" onClick={(e) => e.stopPropagation()}>
@@ -715,15 +720,16 @@ const ArticleForm = () => {
                   )}
                   
                   <div className="prose max-w-none">
-                    {editor?.getHTML() ? (
-                      <div 
-                        className="editor-content-preview" 
-                        dangerouslySetInnerHTML={{ __html: editor.getHTML() }} 
-                      />
-                    ) : (
-                      <p className="text-gray-400 italic">Article content will appear here...</p>
-                    )}
-                  </div>
+                      {editor?.getHTML() ? (
+                        <div 
+                          className="editor-content-preview" 
+                          dangerouslySetInnerHTML={{ __html: editor.getHTML() }} 
+                        />
+                      ) : (
+                        <p className="text-gray-400 italic">Article content will appear here...</p>
+                      )}
+                    </div>
+
                 </div>
               </div>
             </div>

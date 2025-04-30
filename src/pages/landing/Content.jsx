@@ -13,7 +13,7 @@ const municipalities = [
 ];
 
 const BASE_URL = 'http://localhost:5000';  
-const token = localStorage.getItem('token'); // Remove if public
+
 
 const Content = () => {
   const [articles, setArticles]     = useState([]);

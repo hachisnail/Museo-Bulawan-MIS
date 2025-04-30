@@ -1,4 +1,4 @@
-// src/components/editor/TwoColumnBlock.js
+// components/editor/TwoColumnBlock.js
 import { Node } from '@tiptap/core'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import TwoColumnComponent from './TwoColumnComponent'
@@ -8,11 +8,9 @@ export const TwoColumnBlock = Node.create({
   
   group: 'block',
   
-  content: '(paragraph|heading)+',
+  content: 'block+ block+',
   
   defining: true,
-  
-  isolating: true,
   
   parseHTML() {
     return [
@@ -22,7 +20,7 @@ export const TwoColumnBlock = Node.create({
     ]
   },
   
-  renderHTML({ HTMLAttributes }) {
+  renderHTML() {
     return ['div', { 'data-type': 'two-column-block', class: 'two-column-grid' }, 0]
   },
   
@@ -32,18 +30,20 @@ export const TwoColumnBlock = Node.create({
   
   addCommands() {
     return {
-      insertTwoColumnBlock: () => ({ commands, chain }) => {
-        return commands.insertContent({
-          type: this.name,
-          content: [
-            {
-              type: 'paragraph',
-            },
-            {
-              type: 'paragraph',
-            }
-          ]
-        })
+      insertTwoColumnBlock: () => ({ chain }) => {
+        return chain()
+          .insertContent({
+            type: this.name,
+            content: [
+              {
+                type: 'paragraph',
+              },
+              {
+                type: 'paragraph',
+              }
+            ]
+          })
+          .run()
       }
     }
   }
