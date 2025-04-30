@@ -48,7 +48,7 @@ const ArticleForm = () => {
   const token = localStorage.getItem('token');
   
   // Define path to your uploads folder - important for displaying images in the modal
-  const BASE_URL = "http://localhost:5000";
+  const BASE_URL = import.meta.env.VITE_API_URL
   const UPLOAD_PATH = `${BASE_URL}/uploads/`;
 
   const editor = useEditor({

@@ -100,9 +100,10 @@ export const getAllArticles = async (req, res) => {
 };
 
 export const getPublicArticles = async (req, res) => {
+  console.log("Hit /api/public-article/:id")
   try {
     const articles = await Article.findAll({
-      attributes: ['images', 'title', 'article_category', 'upload_date'],
+      attributes: ['article_id','images', 'title', 'article_category', 'upload_date'],
       order: [['created_at', 'DESC']],
     });
 
@@ -115,6 +116,43 @@ export const getPublicArticles = async (req, res) => {
   } catch (error) {
     console.error('Error fetching public articles:', error);
     return res.status(500).json({ message: 'Server error retrieving public articles.' });
+  }
+};
+
+//display specific article
+export const getPublicArticle = async (req, res) => {
+  try {
+    const { id } = req.params;  
+
+    if (!id) {
+      return res.status(400).json({ message: 'Article ID is required.' }); // Handle case where no ID is provided
+    }
+
+    // Fetch the specific article by article_id
+    const article = await Article.findOne({
+      where: { article_id: id },
+      attributes: [
+        'article_id',         // article_id (Primary Key, auto_increment)
+        'title',              // title (Article title)
+        'user_id',            // user_id (User who posted the article)
+        'upload_date',        // upload_date (When the article was uploaded)
+        'images',             // images (Article images, stored as text)
+        'article_category',   // article_category (Category of the article)
+        'description',        // description (Full description of the article)
+        'author',             // author (Author of the article)
+        'address',            // address (Address linked to the article, optional)
+        'status',             // status (Article status, e.g., 'pending' or 'posted')
+        'upload_period_start',// upload_period_start (Start of the article visibility period)
+        'upload_period_end',  // upload_period_end (End of the article visibility period)
+        'created_at',         // created_at (Timestamp of when the article was created)
+        'updated_at'          // updated_at (Timestamp of when the article was last updated)
+      ]
+    });
+
+    return res.json(article);
+  } catch (error) {
+    console.error('Error fetching public article:', error);
+    return res.status(500).json({ message: 'Server error retrieving public article.' });
   }
 };
 
