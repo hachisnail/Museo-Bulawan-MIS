@@ -1,10 +1,19 @@
 import React, { useState } from 'react'
 import AdminNav from '../../components/navbar/AdminNav'
-import ArtifactView from '../../components/modals/ArtifactView'
+import { ArtifactView, ArtifactAdd } from '../../components/modals/ArtifactModal'
 import CustomDatePicker from '../../components/function/CustomDatePicker'
+
 
 const Artifact = () => {
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [isAddArtifactOpen, setIsAddArtifactOpen] = useState(false)
+
+  const toggleArtifactModal = () => {
+    setIsAddArtifactOpen(prev => !prev)
+  }
+  const closeArtifactModal = () => {
+    setIsAddArtifactOpen(false)
+  }
 
   return (
     <>
@@ -13,7 +22,12 @@ const Artifact = () => {
         <div className='bg-[#1C1B19] w-auto min-h-full h-full min-w-[6rem] sm:min-w-auto'>
           <AdminNav />
         </div>
+
         <div className='w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
+          
+          
+          {isAddArtifactOpen ?  (<ArtifactAdd onClose={closeArtifactModal} />) : (
+          <>
           <span className=' text-5xl font-semibold'>Artifact Inventory</span>
           <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
             <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
@@ -69,12 +83,12 @@ const Artifact = () => {
                     </div>
                   </div>
 
-                  <div className='w-full h-[5rem] flex justify-between items-center bg-[#6BFFD5]'>
+                  <button onClick={toggleArtifactModal} className='cursor-pointer w-full h-[5rem] flex justify-between items-center bg-[#6BFFD5]'>
                     <span className='text-2xl font-semibold ml-[1rem]'>Add New Artifacts</span>
                     <div className='w-[3rem] h-[3rem] flex items-center bg-[#D4DBFF] rounded-full border-2 border-[#000000] justify-center mr-[1rem]'>
                       <i className="fas fa-plus text-3xl"></i>
                     </div>
-                  </div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -177,6 +191,9 @@ const Artifact = () => {
               </div>
             </div>
           </div>
+          </>
+          )
+          }
         </div>
       </div>
     </>

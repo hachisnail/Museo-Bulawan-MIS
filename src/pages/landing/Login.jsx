@@ -10,7 +10,6 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // ✅ Check token on mount (localStorage or fallback_token cookie)
   useEffect(() => {
     const token = localStorage.getItem('token');
 
@@ -28,11 +27,10 @@ const Login = () => {
     }
 
     const API_URL = import.meta.env.VITE_API_URL;
-    // If no valid token in localStorage, check fallback cookie
     const checkCookieToken = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/auth/verify-cookie`, {
-          withCredentials: true // Include credentials if necessary
+          withCredentials: true 
         });
 
         if (res.status === 200 && res.data.token) {
@@ -40,7 +38,6 @@ const Login = () => {
           navigate('/admin/dashboard');
         }
       } catch (e) {
-        // fallback token not valid or expired
       }
     };
 
