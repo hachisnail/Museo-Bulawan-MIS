@@ -28,7 +28,7 @@ const Artifact = () => {
           
           {isAddArtifactOpen ?  (<ArtifactAdd onClose={closeArtifactModal} />) : (
           <>
-          <span className=' text-5xl font-semibold'>Artifact Inventory</span>
+          <span className=' text-5xl font-semibold'>Inventory</span>
           <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
             <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
               {/* info bar */}

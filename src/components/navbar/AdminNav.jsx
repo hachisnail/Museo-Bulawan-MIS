@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { jwtDecode } from 'jwt-decode'
 import axios from 'axios'
-import ConfirmationModal from '../modals/ConfirmationModal'
+import {ConfirmationModal} from '../modals/ConfirmationModal'
 
 import dashboard_ico from '../../../src/assets/dashboard_icon.png';
 import donation_ico from '../../../src/assets/donation.png'

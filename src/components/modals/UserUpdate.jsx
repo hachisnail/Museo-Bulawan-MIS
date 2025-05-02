@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import ConfirmationModal from '../../components/modals/ConfirmationModal'
+import {ConfirmationModal} from '../../components/modals/ConfirmationModal'
 
 const UserUpdate = ({ userId, onClose }) => {
   const [showConfirmation, setConfirmation] = useState(false)

@@ -80,10 +80,13 @@ export const ArtifactView = () => {
 export const ArtifactAdd = ({ onClose }) => {
   return (
     <>
-      <div className=' text-5xl font-semibold'>
-        <span onClick={onClose} className='cursor-pointer text-gray-700'>Artifact Inventory </span>
-        <span>&gt; Add Artifact</span>
+      <div className='gap-y-2 font-semibold flex flex-col'>
+        <span className='text-5xl '>Insert</span>
+        <div className='text-2xl'>
+        <span onClick={onClose} className='cursor-pointer text-gray-700 hover:text-black'>Artifact Inventory </span>
+        <span>&gt; Add New Artifact</span>
         </div>
+      </div>
 
       <div className='w-full h-full bg-black'>
 

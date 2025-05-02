@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-const ConfirmationModal = ({ title, description, icon, onClose }) => {
+export const ConfirmationModal = ({ title, description, icon, onClose }) => {
   const [confirmEnabled, setConfirmEnabled] = useState(false)
   const [secondsLeft, setSecondsLeft] = useState(5)
 
@@ -75,4 +75,3 @@ const ConfirmationModal = ({ title, description, icon, onClose }) => {
   )
 }
 
-export default ConfirmationModal
