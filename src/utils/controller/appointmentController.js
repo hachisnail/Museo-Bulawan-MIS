@@ -24,7 +24,8 @@ export const createAppointment = async (req, res, next) => {
       purpose_of_visit,
       population_count,
       preferred_date,
-      preferred_time,
+      start_time,  // Updated: now uses start_time
+      end_time,    // Updated: added end_time
       additional_notes
     } = req.body;
 
@@ -38,9 +39,9 @@ export const createAppointment = async (req, res, next) => {
 
     // Enforce time only for certain purposes
     const timesRequired = ['School Field Trip', 'Workshops or Classes'];
-    if (timesRequired.includes(purpose_of_visit) && !preferred_time) {
+    if (timesRequired.includes(purpose_of_visit) && (!start_time || !end_time)) {
       return res.status(400).json({
-        message: `Missing preferred_time for purpose: ${purpose_of_visit}`
+        message: `Missing start_time or end_time for purpose: ${purpose_of_visit}`
       });
     }
 
@@ -71,21 +72,16 @@ export const createAppointment = async (req, res, next) => {
       });
     }
 
-    // Insert new appointment
+    // Insert new appointment with start_time and end_time
     const appointment = await Appointment.create({
       visitor_id: visitor.visitor_id,
       purpose_of_visit,
       population_count,
       preferred_date,
-      preferred_time: preferred_time || 'Flexible',
+      start_time: start_time || null,  // Will be null if not provided
+      end_time: end_time || null,      // Will be null if not provided
       additional_notes
     });
-
-    // (Optional) Insert an initial status row here if you want:
-    // await AppointmentStatus.create({
-    //   appointment_id: appointment.appointment_id,
-    //   status: 'TO_REVIEW'
-    // });
 
     req.logDetails = {
       new: appointment.dataValues,
@@ -108,6 +104,7 @@ export const createAppointment = async (req, res, next) => {
     });
   }
 };
+
 
 
 export const updateAppointmentStatus = async (req, res) => {

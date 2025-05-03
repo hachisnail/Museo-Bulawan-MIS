@@ -25,6 +25,7 @@ const Appointment = () => {
     visitorRecords: []
   })
 
+
   // Stats from backend
   const [stats, setStats] = useState({
     approved: 0,
@@ -97,6 +98,21 @@ const Appointment = () => {
       year: 'numeric'
     });
   }
+
+  /**
+ * Format time display from start and end times
+ */
+  const formatTimeDisplay = (start_time, end_time) => {
+    if (!start_time || !end_time) {
+      return "Flexible";
+    }
+
+    // Format the start and end times to display format
+    const formattedStart = start_time.includes(':') ? start_time.substring(0, 5) : start_time;
+    const formattedEnd = end_time.includes(':') ? end_time.substring(0, 5) : end_time;
+
+    return `${formattedStart}-${formattedEnd}`;
+  };
 
 
   // Add these functions to your Appointment.jsx component
@@ -663,6 +679,7 @@ const Appointment = () => {
   const handleRowClick = (appt) => {
     if (!appt || !appt.Visitor) return
 
+    // Update the modal data setting code (around line 601)
     setModalData({
       appointmentId: appt.appointment_id,
       dateSent: appt.creation_date
@@ -677,7 +694,7 @@ const Appointment = () => {
       purpose: appt.purpose_of_visit || 'N/A',
       populationCount: appt.population_count || 0,
       preferredDate: appt.preferred_date || 'N/A',
-      preferredTime: appt.preferred_time || 'N/A',
+      preferredTime: formatTimeDisplay(appt.start_time, appt.end_time),
       notes: appt.additional_notes || 'N/A',
       organization: appt.Visitor.organization || 'N/A',
       street: appt.Visitor.street || '',
@@ -1002,8 +1019,9 @@ const Appointment = () => {
                               {appt.Visitor?.first_name} {appt.Visitor?.last_name}
                             </div>
                             <div className="px-4 py-3 border-b-1 border-gray-400">
-                              {appt.preferred_time}
+                              {formatTimeDisplay(appt.start_time, appt.end_time)}
                             </div>
+
                             <div className="px-4 py-3 border-b-1 border-gray-400">
                               {getStatusLabel(status)}
                             </div>

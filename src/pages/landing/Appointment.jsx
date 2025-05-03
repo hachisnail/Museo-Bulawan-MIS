@@ -15,6 +15,7 @@ function TypedDropdown({
   const [inputText, setInputText] = useState(selectedItem?.name || '');
   const [showDropdown, setShowDropdown] = useState(false);
   const wrapperRef = useRef(null);
+  const [selectedTime, setSelectedTime] = useState('');
 
   useEffect(() => {
     setInputText(selectedItem?.name || '');
@@ -126,6 +127,11 @@ const Appointment = () => {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
+  // Add state for time slot availability
+  const [timeSlotCounts, setTimeSlotCounts] = useState({});
+  const [timeSlotExclusive, setTimeSlotExclusive] = useState({});
+  const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
+
   const togglePurposeInfo = () => setShowPurposeInfo(!showPurposeInfo);
   const isTimeRequired = (purp) =>
     purp === 'School Field Trip' || purp === 'Workshops or Classes';
@@ -133,6 +139,166 @@ const Appointment = () => {
     purp === 'School Field Trip' ||
     purp === 'Workshops or Classes' ||
     purp === 'Others';
+
+  // Function to check time slot availability considering both appointments and schedules
+  // Update the checkTimeSlotAvailability function around line 160-230
+  const checkTimeSlotAvailability = async (date) => {
+    if (!date) return;
+
+    setIsLoadingTimeSlots(true);
+
+    try {
+      // Format date for API in YYYY-MM-DD format - FIXED to use local timezone
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const formattedDate = `${year}-${month}-${day}`;
+
+      // Get API URL from environment variables
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
+
+      // Time slots available in the appointment form
+      const timeSlots = ['09:00-10:29', '10:30-11:59', '01:00-02:29', '02:30-04:00'];
+
+      // Initialize counts and exclusive flags for each time slot
+      const counts = {};
+      const exclusive = {};
+
+      timeSlots.forEach(slot => {
+        counts[slot] = 0;
+        exclusive[slot] = false;
+      });
+
+      // Fetch appointments - UPDATED to use correct endpoint
+      try {
+        // Get the token from localStorage for authentication
+        const token = localStorage.getItem('token');
+
+        // Fetch ALL appointments instead of trying to filter by date on the server
+        const appointmentResponse = await axios.get(
+          `${API_URL}/api/auth/appointment`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          }
+        );
+
+        // Filter appointments for the selected date
+        const todayAppointments = appointmentResponse.data.filter(appointment => {
+          // Skip appointments without preferred_date
+          if (!appointment.preferred_date) return false;
+
+          // Extract date part only and compare with our formatted date
+          const appointmentDate = appointment.preferred_date.split('T')[0];
+          return appointmentDate === formattedDate;
+        });
+
+        // Process appointments for time slots
+        todayAppointments.forEach(appointment => {
+          // Only count CONFIRMED appointments
+          const status = (appointment.AppointmentStatus?.status || '').toUpperCase();
+          if (status === 'CONFIRMED') {
+            if (appointment.preferred_time && timeSlots.includes(appointment.preferred_time)) {
+              counts[appointment.preferred_time] += 1;
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching appointments:', error);
+      }
+
+      // Fetch schedules
+      try {
+        const token = localStorage.getItem('token');
+
+        // Use query parameter for schedules API (this is correct)
+        const scheduleResponse = await axios.get(
+          `${API_URL}/api/auth/schedules?date=${formattedDate}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          }
+        );
+
+        // Process schedules for each time slot
+        if (scheduleResponse.data && Array.isArray(scheduleResponse.data)) {
+          scheduleResponse.data
+            // Only consider active schedules (not COMPLETED ones)
+            .filter(schedule => schedule.status !== 'COMPLETED')
+            .forEach(schedule => {
+              if (schedule.start_time && schedule.end_time) {
+                timeSlots.forEach(slot => {
+                  // Extract time ranges
+                  const [slotStart, slotEnd] = slot.split('-');
+
+                  // Check for overlap between schedule and time slot
+                  if (checkTimeOverlap(schedule.start_time, schedule.end_time, slotStart, slotEnd)) {
+                    if (schedule.availability === 'EXCLUSIVE') {
+                      // Mark as exclusive
+                      exclusive[slot] = true;
+                    } else {
+                      // Add to count for SHARED schedules
+                      counts[slot] += 1;
+                    }
+                  }
+                });
+              }
+            });
+        }
+      } catch (error) {
+        console.error('Error fetching schedules:', error);
+      }
+
+      // Update states with results
+      setTimeSlotCounts(counts);
+      setTimeSlotExclusive(exclusive);
+
+    } catch (error) {
+      console.error('Error checking time slot availability:', error);
+    } finally {
+      setIsLoadingTimeSlots(false);
+    }
+  };
+
+
+  // Helper function to check time overlap
+  const checkTimeOverlap = (start1, end1, start2, end2) => {
+    // Convert times to minutes for easier comparison
+    const timeToMinutes = (timeStr) => {
+      // Convert 12-hour format to 24-hour if needed
+      if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) {
+        const isPM = timeStr.toLowerCase().includes('pm');
+        const timePart = timeStr.toLowerCase().replace(/am|pm/g, '').trim();
+        const [hourStr, minuteStr] = timePart.split(':');
+        let hour = parseInt(hourStr, 10);
+        const minute = parseInt(minuteStr || '0', 10);
+
+        if (isPM && hour < 12) hour += 12;
+        if (!isPM && hour === 12) hour = 0;
+
+        return hour * 60 + minute;
+      }
+
+      // Already in 24-hour format
+      const [hourStr, minuteStr] = timeStr.split(':');
+      const hour = parseInt(hourStr, 10);
+      const minute = parseInt(minuteStr || '0', 10);
+      return hour * 60 + minute;
+    };
+
+    const s1 = timeToMinutes(start1);
+    const e1 = timeToMinutes(end1);
+    const s2 = timeToMinutes(start2);
+    const e2 = timeToMinutes(end2);
+
+    // Two ranges overlap if one starts before the other ends
+    return s1 < e2 && s2 < e1;
+  };
+
+  // Fetch time slot availability when date changes
+  useEffect(() => {
+    if (selectedDate) {
+      checkTimeSlotAvailability(selectedDate);
+    }
+  }, [selectedDate]);
 
   // Automatically capitalize the first letter of the name fields
   const handleFirstNameChange = (e) => {
@@ -161,8 +327,16 @@ const Appointment = () => {
     // Close the modal
     setShowConfirmationModal(false);
 
-    // We remove the front-end fallback of `selectedTime || "Flexible"`
-    // because the backend is already handling that by default.
+    // Extract start and end times from the time range if selected
+    let startTimeValue = null;
+    let endTimeValue = null;
+
+    if (selectedTime) {
+      const [startTime, endTime] = selectedTime.split('-');
+      startTimeValue = startTime + ":00"; // Add seconds for SQL TIME format
+      endTimeValue = endTime + ":00";     // Add seconds for SQL TIME format
+    }
+
     const payload = {
       first_name: firstName,
       last_name: lastName,
@@ -176,16 +350,16 @@ const Appointment = () => {
       purpose_of_visit: purpose,
       population_count: populationCount,
       preferred_date: selectedDate
-        ? selectedDate.toISOString().split('T')[0]
+        ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
         : null,
       preferred_time: selectedTime,
+      start_time: startTimeValue,
+      end_time: endTimeValue,
       additional_notes: additionalNotes
-      // Removed creation_date since the controller no longer expects it
     };
 
     try {
-    const API_URL = import.meta.env.VITE_API_URL
-
+      const API_URL = import.meta.env.VITE_API_URL
       const response = await axios.post(
         `${API_URL}/api/auth/appointment`,
         payload
@@ -218,8 +392,6 @@ const Appointment = () => {
       console.error('Request failed:', error);
     }
   };
-
-
 
   return (
     <>
@@ -444,19 +616,16 @@ const Appointment = () => {
                     className="px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg w-full"
                   >
                     <option value="">Choose Purpose</option>
-                    <optgroup label="Educational Purposes">
-                      <option>Research</option>
-                      <option>Thesis or Dissertation Work</option>
-                      <option>School Field Trip</option>
-                      <option>Workshops or Classes</option>
+                    <optgroup label="Document Access Request">
+                      <option>Research Paper</option>
                     </optgroup>
-                    <optgroup label="Professional Engagements">
+                    <optgroup label="Engagements">
+                      <option>School Field Trip</option>
+                      <option>Museum Group Tour</option>
                       <option>Interviews</option>
                       <option>Collaboration Meetings</option>
                       <option>Photography or Media Projects</option>
                       <option>Conservation Consultation</option>
-                      <option>Donations</option>
-                      <option>Others</option>
                     </optgroup>
                   </select>
 
@@ -476,21 +645,12 @@ const Appointment = () => {
                           ?
                         </div>
                         <span className="font-semibold text-xl md:text-2xl">
-                          Educational Purposes
+                          Document Access Request
                         </span>
                       </div>
                       <ol className="list-decimal ml-8 mb-6 text-base md:text-lg">
                         <li>
-                          <strong>Research:</strong> Accessing archives or materials
-                        </li>
-                        <li>
-                          <strong>Thesis / Dissertation:</strong> Consulting artifacts
-                        </li>
-                        <li>
-                          <strong>School Field Trips:</strong> Coordinating visits
-                        </li>
-                        <li>
-                          <strong>Workshops or Classes:</strong> Art/history sessions
+                          <strong>Research Paper:</strong> Accessing archives or materials for academic research
                         </li>
                       </ol>
 
@@ -499,10 +659,16 @@ const Appointment = () => {
                           ?
                         </div>
                         <span className="font-semibold text-xl md:text-2xl">
-                          Professional Engagements
+                          Engagements
                         </span>
                       </div>
                       <ol className="list-decimal ml-8 text-base md:text-lg">
+                        <li>
+                          <strong>School Field Trip:</strong> Educational visits for students
+                        </li>
+                        <li>
+                          <strong>Museum Group Tour:</strong> Guided tours for visitor groups
+                        </li>
                         <li>
                           <strong>Interviews:</strong> Meeting museum staff
                         </li>
@@ -510,22 +676,17 @@ const Appointment = () => {
                           <strong>Collaboration Meetings:</strong> Joint projects
                         </li>
                         <li>
-                          <strong>Photography / Media:</strong> Shoots or filming
+                          <strong>Photography / Media Projects:</strong> Shoots or filming
                         </li>
                         <li>
                           <strong>Conservation Consultation:</strong> Advice/services
-                        </li>
-                        <li>
-                          <strong>Donations:</strong> Offering items/funds
-                        </li>
-                        <li>
-                          <strong>Others:</strong> More specialized engagements
                         </li>
                       </ol>
                     </div>
                   )}
                 </div>
               </div>
+
 
               {/* Population Count */}
               <div className="grid grid-cols-1 md:grid-cols-12 items-center gap-4">
@@ -570,26 +731,68 @@ const Appointment = () => {
                       )}
                     </label>
                     <div className="md:col-span-3 flex flex-wrap gap-2 md:gap-3">
-                      {['09:00-10:29', '10:30-11:59', '01:00-02:29', '02:30-04:00'].map((time) => (
-                        <label
-                          key={time}
-                          className={`cursor-pointer border-2 border-black px-4 py-2 rounded-md flex items-center justify-center hover:bg-gray-100 ${selectedTime === time ? 'bg-[#cfdac8]' : ''
-                            }`}
-                        >
-                          <input
-                            type="radio"
-                            name="preferredTime"
-                            value={time}
-                            required={isTimeRequired(purpose)}
-                            className="hidden"
-                            onChange={() => setSelectedTime(time)}
-                          />
-                          <span className="text-sm md:text-lg font-medium">
-                            {time}
-                          </span>
-                        </label>
-                      ))}
+                      {['09:00-10:29', '10:30-11:59', '01:00-02:29', '02:30-04:00'].map((time) => {
+                        // Check if slot is unavailable due to exclusivity or count limit
+                        const isExclusive = timeSlotExclusive[time];
+                        const count = timeSlotCounts[time] || 0;
+                        const isAtLimit = count >= 5;
+                        const isUnavailable = isExclusive || isAtLimit;
+
+                        // Determine reason for unavailability for tooltip
+                        let unavailabilityReason = '';
+                        if (isExclusive) {
+                          unavailabilityReason = 'This time slot has an exclusive schedule and is not available.';
+                        } else if (isAtLimit) {
+                          unavailabilityReason = 'This time slot has reached the maximum limit of 5 appointments.';
+                        }
+
+                        return (
+                          <div key={time} className="relative group">
+                            <label
+                              className={`cursor-pointer border-2 border-black px-4 py-2 rounded-md flex items-center justify-center hover:bg-gray-100 
+                                ${selectedTime === time ? 'bg-[#cfdac8]' : ''}
+                                ${isUnavailable ? 'opacity-50 cursor-not-allowed' : ''}
+                              `}
+                            >
+                              <input
+                                type="radio"
+                                name="preferredTime"
+                                value={time}
+                                required={isTimeRequired(purpose)}
+                                className="hidden"
+                                onChange={() => !isUnavailable && setSelectedTime(time)}
+                                disabled={isUnavailable}
+                              />
+                              <span className="text-sm md:text-lg font-medium">
+                                {time}
+                              </span>
+                              {isUnavailable && (
+                                <span className="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center text-red-600">
+                                  <i className="fa-solid fa-times text-xl"></i>
+                                </span>
+                              )}
+                            </label>
+
+                            {/* Hover tooltip for unavailable time slots */}
+                            {isUnavailable && (
+                              <div className="absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sm pointer-events-none">
+                                {unavailabilityReason}
+                                {isAtLimit && !isExclusive &&
+                                  <div className="mt-1 text-xs text-gray-500">
+                                    Current bookings: {count}/5
+                                  </div>
+                                }
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
+                    {isLoadingTimeSlots && (
+                      <div className="md:col-span-5 text-sm text-gray-500 mt-1">
+                        Checking availability...
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>

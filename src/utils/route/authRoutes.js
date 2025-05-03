@@ -40,7 +40,8 @@ import {
   getSchedules, 
   getScheduleById, 
   updateSchedule, 
-  deleteSchedule 
+  deleteSchedule ,
+  updateScheduleStatus
 } from '../controller/scheduleController.js';
 
 
@@ -70,10 +71,12 @@ router.post('/send-email-notification', autoLogout, sendEmailNotification);
 
 // Schedule routes
 router.post('/schedules', autoLogout, createSchedule, logAction('create', 'Schedule'));
-router.get('/schedules', autoLogout, getSchedules);
+router.get('/schedules', getSchedules);
 router.get('/schedules/:id', autoLogout, getScheduleById);
 router.put('/schedules/:id', autoLogout, updateSchedule, logAction('update', 'Schedule'));
 router.delete('/schedules/:id', autoLogout, deleteSchedule, logAction('delete', 'Schedule'));
+router.patch('/schedules/:id/status', autoLogout, updateScheduleStatus, logAction('update', 'ScheduleStatus'));
+
 
 
 router.get('/fetchLogs', autoLogout, fetchLog);

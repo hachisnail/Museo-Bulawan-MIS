@@ -10,9 +10,29 @@ import appointments from '../admin/sample.json'
 import axios from 'axios'
 import Toast from '../../components/function/Toast'
 import { useEffect } from 'react'
+import { AppointmentModal } from '../../components/modals/AppointmentModal'
 
 
 // ---------------- UTILITY FUNCTIONS ----------------
+// Add this function to the utility functions section (around line 70)
+function countOverlappingEvents(events, startTime, endTime) {
+  // Convert the new times to minutes for comparison
+  const newStart = timeStringToMinutes(startTime);
+  const newEnd = timeStringToMinutes(endTime);
+
+  // Create a reference event for comparison
+  const newEvent = { start: newStart, end: newEnd };
+
+  // Count events that would overlap with the new event
+  return events.filter(event => {
+    const eventStart = timeStringToMinutes(event.startTime);
+    const eventEnd = timeStringToMinutes(event.endTime);
+    return eventsOverlap(newEvent, { start: eventStart, end: eventEnd });
+  }).length;
+}
+
+// Modify the handleAddEvent function (around line 1023)
+
 
 // Safely build a YYYY-MM-DD string from a Date object (no UTC offset).
 function getLocalDateString(dateObj) {
@@ -48,11 +68,13 @@ function eventsOverlap(a, b) {
 
 
 // ---------------- DAY SCHEDULER ----------------
+// DayScheduler updated to show clean cards and empty state message
 const DayScheduler = ({
   appointments,
   selectedDate,
   onSelectAppointment,
-  selectedAppointment
+  selectedAppointment,
+  isLoading
 }) => {
   // Convert `selectedDate` to local date string
   const selectedDateStr = getLocalDateString(selectedDate)
@@ -133,39 +155,59 @@ const DayScheduler = ({
   }
 
   // Logic to reposition the hover card when hovering
+  // Logic to reposition the hover card when hovering
   const handleMouseEnter = (e) => {
-    const parentRect = e.currentTarget.parentNode.getBoundingClientRect()
-    const hoverCard = e.currentTarget.querySelector('.hover-card')
-    if (!hoverCard) return
+    const parentRect = e.currentTarget.parentNode.getBoundingClientRect();
+    const hoverCard = e.currentTarget.querySelector('.hover-card');
+    if (!hoverCard) return;
 
     // Remove any old inline positioning
-    hoverCard.style.removeProperty('top')
+    hoverCard.style.removeProperty('top');
+    hoverCard.style.removeProperty('left');
+    // Reset transform origin to default
+    hoverCard.style.transformOrigin = 'top left';
 
     setTimeout(() => {
-      const hoverRect = hoverCard.getBoundingClientRect()
+      const hoverRect = hoverCard.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
 
-      // If bottom of card overflows parent
+      // Check for right edge overflow (against viewport)
+      if (hoverRect.right > viewportWidth - 20) {
+        const overflowRight = hoverRect.right - (viewportWidth - 20);
+        hoverCard.style.left = `-${overflowRight}px`;
+        hoverCard.style.transformOrigin = 'top right';
+      }
+
+      // Check for left edge overflow
+      if (hoverRect.left < 20) {
+        const overflowLeft = 20 - hoverRect.left;
+        hoverCard.style.left = `${overflowLeft}px`;
+        hoverCard.style.transformOrigin = 'top left';
+      }
+
+      // Check bottom overflow
       if (hoverRect.bottom > parentRect.bottom) {
-        const overflowBottom = hoverRect.bottom - parentRect.bottom
-        hoverCard.style.top = `-${overflowBottom + 8}px`
+        const overflowBottom = hoverRect.bottom - parentRect.bottom;
+        hoverCard.style.top = `-${overflowBottom + 8}px`;
       }
 
-      // If top of card is above parent
+      // Check top overflow
       if (hoverRect.top < parentRect.top) {
-        const overflowTop = parentRect.top - hoverRect.top
-        hoverCard.style.top = `${overflowTop + 8}px`
+        const overflowTop = parentRect.top - hoverRect.top;
+        hoverCard.style.top = `${overflowTop + 8}px`;
       }
-    }, 0)
+    }, 10); // Small delay to ensure DOM has updated
   }
 
   const handleMouseLeave = (e) => {
-    const hoverCard = e.currentTarget.querySelector('.hover-card')
+    const hoverCard = e.currentTarget.querySelector('.hover-card');
     if (hoverCard) {
-      hoverCard.style.removeProperty('top')
+      hoverCard.style.removeProperty('top');
+      hoverCard.style.removeProperty('left');
+      hoverCard.style.removeProperty('transform-origin');
     }
   }
 
-  // Add this with other state declarations
 
 
 
@@ -218,6 +260,19 @@ const DayScheduler = ({
           />
         ))}
 
+        {/* Empty state message when no events */}
+        {events.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center bg-white bg-opacity-80 rounded-lg p-6 shadow-md">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900">No events scheduled</h3>
+              <p className="text-gray-600 mt-1">There are no schedules or appointments for this day.</p>
+            </div>
+          </div>
+        )}
+
         {/* Render each event */}
         {events.map((ev) => {
           const startOffset = ev.start - dayStart
@@ -229,8 +284,7 @@ const DayScheduler = ({
           const left = `${(ev.laneIndex / ev.laneCount) * 100}%`
 
           // Highlight if selected
-          const isSelected =
-            selectedAppointment && selectedAppointment.id === ev.id
+          const isSelected = selectedAppointment && selectedAppointment.id === ev.id
 
           return (
             <div
@@ -252,54 +306,54 @@ const DayScheduler = ({
                 width
               }}
             >
-              {/* Normal (non-hover) view */}
+              {/* Normal (non-hover) view - SIMPLIFIED */}
               <div
                 className={`
-                    w-full h-full
-                    border ${isSelected ? 'border-white bg-gray-500 text-white' : 'border-gray-300 bg-white'}
-                    rounded shadow-sm p-2 flex flex-col justify-between relative
-                    transition-all overflow-hidden
-                    group-hover:opacity-0
-                    ${ev.isAppointment ? 'border-l-4 border-l-blue-500' : ''}
-                    ${ev.isSchedule && ev.availability === 'EXCLUSIVE' ? 'border-l-4 border-l-red-500' : ''}
-                    ${ev.isSchedule && ev.availability === 'SHARED' ? 'border-l-4 border-l-green-500' : ''}
-                  `}
+                  w-full h-full
+                  border ${isSelected ? 'border-white bg-gray-500 text-white' : 'border-gray-300 bg-white'}
+                  rounded shadow-sm p-2 flex flex-col justify-between relative
+                  transition-all overflow-hidden
+                  group-hover:opacity-0
+                  ${ev.isAppointment ? 'border-l-4 border-l-blue-500' : ''}
+                  ${ev.isSchedule && ev.availability === 'EXCLUSIVE' ? 'border-l-4 border-l-red-500' : ''}
+                  ${ev.isSchedule && ev.availability === 'SHARED' ? 'border-l-4 border-l-green-500' : ''}
+                `}
               >
                 <div
-                  className={`
-                      pl-2 h-full flex flex-col justify-between relative
-                    `}
+                  className="pl-2 h-full flex flex-col justify-between relative"
                 >
                   <div className="flex-1 overflow-hidden">
+                    {/* Title with proper formatting */}
                     <p className="font-bold text-xs sm:text-sm truncate">
                       {ev.title}
                     </p>
-                    {ev.organizer && (
+
+                    {/* For appointments, show visitor name instead of organizer */}
+                    {ev.isAppointment && ev.organizer && (
                       <p className="text-[10px] sm:text-xs truncate">
-                        {ev.organizer}
+                        Visitor: {ev.organizer}
                       </p>
                     )}
-                    {ev.numPeople && (
+
+                    {/* People count only for appointments */}
+                    {ev.isAppointment && ev.numPeople && (
                       <p className="text-[10px] sm:text-xs truncate">
                         {ev.numPeople}
                       </p>
                     )}
-                    {ev.isAppointment && (
-                      <p className="text-[10px] sm:text-xs truncate text-blue-500">
-                        Appointment
-                      </p>
-                    )}
-                    {ev.isSchedule && (
-                      <p className="text-[10px] sm:text-xs truncate text-green-500">
-                        {ev.availability === 'EXCLUSIVE' ? 'Exclusive Schedule' : 'Shared Schedule'}
-                      </p>
-                    )}
+
+                    {/* Simple type label without availability text */}
+                    <p className={`text-[10px] sm:text-xs truncate ${ev.isAppointment ? 'text-blue-500' : 'text-green-500'}`}>
+                      {ev.isAppointment ? 'Appointment' : 'Schedule'}
+                    </p>
                   </div>
+
+                  {/* Time display at the bottom */}
                   <p
                     className={`
-                        absolute bottom-1 right-2 text-[10px] sm:text-xs
-                        ${isSelected ? '' : 'text-gray-400'}
-                      `}
+                      absolute bottom-1 right-2 text-[10px] sm:text-xs
+                      ${isSelected ? '' : 'text-gray-400'}
+                    `}
                   >
                     {formatTimeTo12H(ev.startTime)} - {formatTimeTo12H(ev.endTime)}
                   </p>
@@ -309,103 +363,97 @@ const DayScheduler = ({
               {/* Hover (expanded) view */}
               <div
                 className={`
-                    hover-card
-                    absolute top-0 left-0 w-[20rem] max-w-[90vw]
-                    min-h-[6rem]
-                    border ${isSelected ? 'border-white' : 'border-gray-300'}
-                    rounded-lg shadow-2xl p-4
-                    flex flex-col justify-between
-                    z-50 opacity-0 group-hover:opacity-100
-                    transition-all duration-300 ease-in-out
-                    ${isSelected ? 'bg-gray-500 text-white' : 'bg-white'}
-                    hover:scale-90
-                    origin-top-left
-                    w-full
-                    ${ev.isAppointment ? 'border-l-4 border-l-blue-500' : ''}
-                    ${ev.isSchedule && ev.availability === 'EXCLUSIVE' ? 'border-l-4 border-l-red-500' : ''}
-                    ${ev.isSchedule && ev.availability === 'SHARED' ? 'border-l-4 border-l-green-500' : ''}
-                  `}
+    hover-card
+    absolute top-0 left-0 w-[20rem] max-w-[90vw]
+    min-h-[8rem]
+    border ${isSelected ? 'border-white' : 'border-gray-300'}
+    rounded-lg shadow-2xl p-4
+    flex flex-col justify-between
+    z-50 opacity-0 group-hover:opacity-100
+    transition-all duration-300 ease-in-out
+    ${isSelected ? 'bg-gray-500 text-white' : 'bg-white'}
+    origin-top-left
+    ${ev.isAppointment ? 'border-l-4 border-l-blue-500' : ''}
+    ${ev.isSchedule && ev.availability === 'EXCLUSIVE' ? 'border-l-4 border-l-red-500' : ''}
+    ${ev.isSchedule && ev.availability === 'SHARED' ? 'border-l-4 border-l-green-500' : ''}
+  `}
+                style={{
+                  width: '20rem',
+                  height: 'auto',
+                  minHeight: '8rem',
+                  // The positioning will now be handled by JavaScript
+                }}
               >
-                <div
-                  className={`
-                      pl-3 flex-1 flex flex-col justify-between relative
-                    `}
-                >
-                  <div className="flex-1 overflow-visible">
-                    <p className="font-bold text-base break-words">{ev.title}</p>
-                    {ev.organizer && <p className="text-sm break-words">{ev.organizer}</p>}
-                    {ev.numPeople && <p className="text-sm break-words">{ev.numPeople}</p>}
 
-                    {/* Event type and availability indicator */}
-                    {ev.isAppointment && (
-                      <div className="mt-2 mb-1">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs font-medium">
-                          <i className="fas fa-calendar-check mr-1"></i> Appointment
-                        </span>
-                        <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium">
-                          <i className="fas fa-users mr-1"></i> Shared
-                        </span>
-                      </div>
-                    )}
+                <div className="pl-3 flex-1 flex flex-col justify-between relative">
+                  {/* Content area with proper spacing */}
+                  <div className="flex-1 overflow-visible pb-8"> {/* Adding padding at bottom to prevent overlap with time */}
+                    {/* Title with proper formatting */}
+                    <p className="font-bold text-base mb-1 break-words">{ev.title}</p>
 
-                    {ev.isSchedule && (
-                      <div className="mt-2 mb-1">
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs font-medium">
-                          <i className="fas fa-calendar mr-1"></i> Schedule
-                        </span>
-                        <span className={`ml-2 px-2 py-1 ${ev.availability === 'EXCLUSIVE' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'} rounded-md text-xs font-medium`}>
-                          <i className={`fas ${ev.availability === 'EXCLUSIVE' ? 'fa-lock' : 'fa-users'} mr-1`}></i>
-                          {ev.availability === 'EXCLUSIVE' ? 'Exclusive' : 'Shared'}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Status indicator for appointments */}
-                    {ev.isAppointment && ev.status && (
-                      <div className="mt-1 mb-2">
-                        <span className={`px-2 py-1 rounded-md text-xs font-medium
-                            ${ev.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' : ''}
-                            ${ev.status === 'TO_REVIEW' ? 'bg-yellow-100 text-yellow-800' : ''}
-                            ${ev.status === 'REJECTED' ? 'bg-red-100 text-red-800' : ''}
-                            ${ev.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' : ''}
-                            ${ev.status === 'FAILED' ? 'bg-gray-100 text-gray-800' : ''}
-                          `}>
-                          <i className={`fas ${ev.status === 'CONFIRMED' ? 'fa-check-circle' :
-                            ev.status === 'TO_REVIEW' ? 'fa-clock' :
-                              ev.status === 'REJECTED' ? 'fa-times-circle' :
-                                ev.status === 'COMPLETED' ? 'fa-flag-checkered' :
-                                  'fa-exclamation-circle'
-                            } mr-1`}></i>
-                          {ev.status.replace('_', ' ').charAt(0) + ev.status.replace('_', ' ').slice(1).toLowerCase()}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Description if available */}
-                    {ev.description && (
-                      <p className="text-sm break-words mt-2 text-gray-600">
-                        {ev.description}
+                    {/* For appointments only, show visitor information */}
+                    {ev.isAppointment && ev.organizer && (
+                      <p className="text-sm mb-1 break-words">
+                        <span className="font-medium">Visitor:</span> {ev.organizer}
                       </p>
                     )}
+
+                    {/* People count only for appointments */}
+                    {ev.isAppointment && ev.numPeople && (
+                      <p className="text-sm mb-2 break-words">{ev.numPeople}</p>
+                    )}
+
+                    {/* Type badges - more detailed in hover mode */}
+                    <div className="mt-1 mb-1 flex flex-wrap gap-1">
+                      {ev.isAppointment && (
+                        <>
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md text-xs font-medium inline-block mb-1">
+                            <i className="fas fa-calendar-check mr-1"></i> Appointment
+                          </span>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-md text-xs font-medium inline-block mb-1">
+                            <i className="fas fa-users mr-1"></i> Shared
+                          </span>
+                        </>
+                      )}
+
+                      {ev.isSchedule && (
+                        <>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs font-medium inline-block mb-1">
+                            <i className="fas fa-calendar mr-1"></i> Schedule
+                          </span>
+                          <span className={`px-2 py-1 ${ev.availability === 'EXCLUSIVE' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'} rounded-md text-xs font-medium inline-block mb-1`}>
+                            <i className={`fas ${ev.availability === 'EXCLUSIVE' ? 'fa-lock' : 'fa-users'} mr-1`}></i>
+                            {ev.availability === 'EXCLUSIVE' ? 'Exclusive' : 'Shared'}
+                          </span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Description with limit to prevent overflow */}
+                    {ev.description && (
+                      <div className="mt-2">
+                        <p className="text-sm break-words text-gray-600 max-h-16 overflow-y-auto">
+                          {ev.description.length > 100 ? `${ev.description.substring(0, 100)}...` : ev.description}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <p
-                    className={`
-                        absolute bottom-2 right-3 text-xs sm:text-sm
-                        ${isSelected ? 'text-white' : 'text-gray-400'}
-                      `}
-                  >
+
+                  {/* Time at the bottom */}
+                  <p className={`absolute bottom-0 right-3 text-xs sm:text-sm ${isSelected ? 'text-white' : 'text-gray-400'}`}>
                     {formatTimeTo12H(ev.startTime)} - {formatTimeTo12H(ev.endTime)}
                   </p>
                 </div>
               </div>
+
             </div>
           )
-
         })}
       </div>
     </div>
   )
 }
+
 
 
 // ---------------- MAIN SCHEDULE PAGE ----------------
@@ -436,9 +484,200 @@ const Schedule = () => {
   const [isLoading, setIsLoading] = useState(false)
   const API_URL = import.meta.env.VITE_API_URL || '/api'
   // Fetch data when component mounts or selectedDate changes
+  // Add these with other state variables in the Schedule component
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [modalData, setModalData] = useState(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  // Add these state variables with your other state declarations
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [todayTours, setTodayTours] = useState([]);
+  const [viewedDate, setViewedDate] = useState(new Date());
+
+
   useEffect(() => {
-    fetchEvents()
-  }, [selectedDate, dateString])
+    console.log("Date changed, fetching events for:", dateString);
+    fetchEvents();
+  }, [selectedDate, dateString]);
+
+  // Add this useEffect to load all events for the month when component mounts or month/year view changes
+  useEffect(() => {
+    // Fetch events for the entire month to populate calendar counts
+    const fetchMonthEvents = async () => {
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+
+          setIsLoading(false);
+          return;
+        }
+
+        // Use viewedDate instead of selectedDate to determine which month to fetch
+        const year = viewedDate.getFullYear();
+        const month = viewedDate.getMonth();
+
+        console.log(`Fetching calendar events for month: ${month + 1}/${year}`);
+
+        // Get all schedules
+        const schedulesResponse = await axios.get(
+          `${API_URL}/api/auth/schedules`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        // Get all appointments
+        const appointmentsResponse = await axios.get(
+          `${API_URL}/api/auth/appointment`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        console.log("All schedules:", schedulesResponse.data.length);
+        console.log("All appointments:", appointmentsResponse.data.length);
+
+        // Filter schedules for this month and process them
+        const monthSchedules = schedulesResponse.data
+          .filter(schedule => {
+            if (!schedule.date) return false;
+
+            // Parse date properly and compare year and month
+            const scheduleDate = new Date(schedule.date);
+            return !isNaN(scheduleDate.getTime()) &&
+              scheduleDate.getMonth() === month &&
+              scheduleDate.getFullYear() === year;
+          })
+          .map(schedule => ({
+            id: `schedule-${schedule.schedule_id}`,
+            date: schedule.date.split('T')[0], // Normalize date format
+            isActive: schedule.status !== 'COMPLETED',
+            isSchedule: true
+          }));
+
+        console.log("Month-filtered schedules:", monthSchedules.length);
+
+        // Filter appointments for this month and process them
+        const monthAppointments = appointmentsResponse.data
+          .filter(appointment => {
+            // Skip appointments without preferred_date
+            if (!appointment.preferred_date) return false;
+
+            // Extract date and normalize format (remove time portion if present)
+            const dateStr = appointment.preferred_date.split('T')[0];
+            const appointmentDate = new Date(dateStr);
+
+            // Check if date is valid and in current month/year
+            return !isNaN(appointmentDate.getTime()) &&
+              appointmentDate.getMonth() === month &&
+              appointmentDate.getFullYear() === year;
+          })
+          .map(appointment => ({
+            id: `appointment-${appointment.appointment_id}`,
+            date: appointment.preferred_date.split('T')[0],
+            isActive: (appointment.AppointmentStatus?.status || '').toUpperCase() === 'CONFIRMED',
+            isAppointment: true
+          }));
+
+        console.log("Month-filtered appointments:", monthAppointments.length);
+
+        // Combine both types of events
+        const allEvents = [...monthSchedules, ...monthAppointments];
+        console.log(`Total filtered calendar events: ${allEvents.length}`);
+
+        setCalendarEvents(allEvents);
+
+      } catch (error) {
+        console.error('Error fetching monthly events:', error);
+
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMonthEvents();
+  }, [viewedDate, API_URL,]);
+
+
+
+
+
+
+  // Handle mark as done button click
+  const handleMarkAsDone = async () => {
+    if (!selectedAppointment) return;
+
+    if (selectedAppointment.isAppointment) {
+      try {
+        const token = localStorage.getItem('token');
+        const appointmentId = selectedAppointment.id.replace('appointment-', '');
+
+        // Get the full appointment data
+        const response = await axios.get(
+          `${API_URL}/api/auth/attendance/${appointmentId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        // Set up the data for the AppointmentModal
+        setModalData({
+          appointmentId,
+          fromFirstName: selectedAppointment.organizer.split(' ')[0] || '',
+          fromLastName: selectedAppointment.organizer.split(' ').slice(1).join(' ') || '',
+          email: response.data?.email || '',
+          phone: response.data?.phone || '',
+          purpose: selectedAppointment.title || '',
+          populationCount: parseInt(selectedAppointment.numPeople) || 0,
+          preferredDate: selectedAppointment.date || '',
+          preferredTime: `${selectedAppointment.startTime} - ${selectedAppointment.endTime}`,
+          notes: selectedAppointment.description || '',
+          status: 'CONFIRMED', // Force confirmed status to show arrive/cancel options
+        });
+
+        // Show the appointment modal
+        setShowAppointmentModal(true);
+
+      } catch (error) {
+        console.error('Error fetching appointment details:', error);
+        showToast('Error loading appointment details', 'error');
+      }
+    } else if (selectedAppointment.isSchedule) {
+      // For schedules, show a confirmation dialog
+      setShowConfirmModal(true);
+    }
+  };
+
+  // Handle schedule confirmation
+  const handleScheduleConfirm = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      const scheduleId = selectedAppointment.schedule_id;
+
+      // Update schedule status to COMPLETED
+      const response = await axios.patch(
+        `${API_URL}/api/auth/schedules/${scheduleId}/status`,
+        { status: 'COMPLETED' },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      showToast('Schedule marked as completed', 'success');
+      setSelectedAppointment(null); // Clear selection
+      setShowConfirmModal(false);
+      fetchEvents(); // Refresh the view
+
+    } catch (error) {
+      console.error('Error updating schedule status:', error);
+      showToast('Error updating schedule status', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
 
   const handleAddEvent = async () => {
     try {
@@ -450,6 +689,15 @@ const Schedule = () => {
 
       if (newStartTime >= newEndTime) {
         showToast('Start time must be earlier than end time', 'error');
+        return;
+      }
+
+      // Check for overlapping limit - NEW CODE
+      const overlappingCount = countOverlappingEvents(backendEvents, newStartTime, newEndTime);
+
+      // Enforce limit of 5 overlapping events
+      if (overlappingCount >= 5) {
+        showToast('Maximum limit reached: Cannot add more than 5 overlapping events at the same time', 'error');
         return;
       }
 
@@ -499,6 +747,9 @@ const Schedule = () => {
       setNewEndTime('10:00');
       setNewAvailability('SHARED');
 
+      // Refresh the events to show the newly added event
+      fetchEvents();
+
     } catch (error) {
       console.error('Error creating schedule:', error);
 
@@ -511,22 +762,167 @@ const Schedule = () => {
     }
   };
 
-  // Fetch both schedules and appointments from the backend
-  // Fetch both schedules and appointments from the backend
-  const fetchEvents = async () => {
-    setIsLoading(true)
+
+
+  // Fetch all tours for the selected date (including completed ones)
+  // Lines 1-42
+  const fetchTodayTours = async () => {
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('token');
       if (!token) {
-        showToast("Not authenticated. Please log in.", 'error')
-        setIsLoading(false)
-        return
+        showToast("Not authenticated. Please log in.", 'error');
+        return;
       }
 
       // Format date for API
-      const formattedDate = dateString
+      const formattedDate = dateString;
+      console.log("Fetching today's tours for:", formattedDate);
 
-      // Fetch schedules
+      // Get all schedules for today (including completed ones)
+      const schedulesResponse = await axios.get(
+        `${API_URL}/api/auth/schedules?date=${formattedDate}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      // Get all appointments
+      const appointmentsResponse = await axios.get(
+        `${API_URL}/api/auth/appointment`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      console.log("Today's schedules:", schedulesResponse.data.length);
+      console.log("All appointments:", appointmentsResponse.data.length);
+
+      // Process all schedules for today
+      const todaySchedules = schedulesResponse.data
+        .filter(schedule => schedule && schedule.date)  // Ensure date exists
+        .map(schedule => ({
+          id: `schedule-${schedule.schedule_id}`,
+          title: schedule.title || 'Schedule',
+          organizer: 'Schedule',
+          date: schedule.date,
+          startTime: schedule.start_time,
+          endTime: schedule.end_time,
+          isDone: schedule.status === 'COMPLETED',
+          isSchedule: true
+        }));
+
+      console.log("Processed schedules:", todaySchedules.length);
+
+      // Filter appointments for today's date and process them
+      // Only include CONFIRMED and COMPLETED appointments
+      const todayAppointments = appointmentsResponse.data
+        .filter(appointment => {
+          // Skip if preferred_date is missing
+          if (!appointment.preferred_date) {
+            return false;
+          }
+
+          // Normalize date format by removing any time portion
+          const appointmentDate = appointment.preferred_date.split('T')[0];
+          const matchesDate = appointmentDate === formattedDate;
+
+          if (matchesDate) {
+            console.log(`Found appointment for ${formattedDate}:`, appointment.appointment_id);
+          }
+
+          return matchesDate;
+        })
+        .filter(appointment => {
+          // Only include CONFIRMED and COMPLETED appointments (case-insensitive)
+          const status = (appointment.AppointmentStatus?.status || '').toUpperCase();
+          return status === 'CONFIRMED' || status === 'COMPLETED';
+        })
+        .map(appointment => {
+          // Process time values
+          let startTime = "09:00";
+          let endTime = "10:00";
+
+          // Try direct time fields first
+          if (appointment.start_time && appointment.end_time) {
+            startTime = appointment.start_time;
+            endTime = appointment.end_time;
+            console.log(`Using direct time fields for ${appointment.appointment_id}: ${startTime}-${endTime}`);
+          }
+          // Fall back to preferred_time if available
+          else if (appointment.preferred_time && typeof appointment.preferred_time === 'string') {
+            try {
+              const timeParts = appointment.preferred_time.split('-');
+              if (timeParts[0]) startTime = convertTo24Hour(timeParts[0].trim());
+              if (timeParts[1]) endTime = convertTo24Hour(timeParts[1].trim());
+              console.log(`Parsed preferred_time for ${appointment.appointment_id}: ${startTime}-${endTime}`);
+            } catch (error) {
+              console.error("Error parsing preferred_time:", appointment.preferred_time, error);
+              // Keep default times on error
+            }
+          }
+
+          return {
+            id: `appointment-${appointment.appointment_id}`,
+            title: appointment.purpose_of_visit || 'Visitor Appointment',
+            organizer: appointment.Visitor ?
+              `${appointment.Visitor.first_name || ''} ${appointment.Visitor.last_name || ''}`.trim() :
+              'Unknown Visitor',
+            numPeople: `${appointment.population_count || 1} visitors`,
+            date: appointment.preferred_date.split('T')[0],
+            startTime,
+            endTime,
+            isDone: (appointment.AppointmentStatus?.status || '').toUpperCase() === 'COMPLETED',
+            isAppointment: true
+          };
+        });
+
+      console.log("Processed appointments:", todayAppointments.length);
+
+      // Combine and sort by start time
+      const allTours = [...todaySchedules, ...todayAppointments];
+      allTours.sort((a, b) => {
+        return timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime);
+      });
+
+      console.log("Today's total tours:", allTours.length);
+      setTodayTours(allTours);
+
+    } catch (error) {
+      console.error('Error fetching today tours:', error);
+      showToast('Error loading today\'s tours', 'error');
+    }
+  };
+
+  // Add useEffect to fetch today's tours when date changes
+  useEffect(() => {
+    fetchTodayTours();
+  }, [selectedDate, dateString]);
+
+  // Add useEffect to fetch today's tours when date changes
+  useEffect(() => {
+    fetchTodayTours();
+  }, [selectedDate, dateString]);
+  // Add useEffect to fetch today's tours when date changes
+  useEffect(() => {
+    fetchTodayTours();
+  }, [selectedDate, dateString]);
+
+  const fetchEvents = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showToast("Not authenticated. Please log in.", 'error');
+        setIsLoading(false);
+        return;
+      }
+
+      // Format date for API
+      const formattedDate = dateString;
+      console.log("Fetching data for date:", formattedDate);
+
+      // FETCH SCHEDULES 
+      console.log("Fetching schedules from:", `${API_URL}/api/auth/schedules?date=${formattedDate}`);
       const schedulesResponse = await axios.get(
         `${API_URL}/api/auth/schedules?date=${formattedDate}`,
         {
@@ -534,88 +930,177 @@ const Schedule = () => {
             Authorization: `Bearer ${token}`
           }
         }
-      )
+      );
+      console.log("Raw schedules data:", schedulesResponse.data);
 
-      console.log("Schedules response:", schedulesResponse.data)
+      // Process schedules
+      // Process schedules - filter out COMPLETED status
+      const scheduleEvents = schedulesResponse.data
+        .filter(schedule => schedule.status !== 'COMPLETED')
+        .map(schedule => ({
+          id: `schedule-${schedule.schedule_id}`,
+          title: schedule.title || 'Unnamed Schedule',
+          description: schedule.description || '',
+          date: schedule.date,
+          startTime: schedule.start_time,
+          endTime: schedule.end_time,
+          availability: schedule.availability || 'SHARED',
+          status: schedule.status || 'ACTIVE',
+          isSchedule: true,
+          schedule_id: schedule.schedule_id // Store the ID for easier access later
+        }));
 
-      // Fetch appointments
-      const appointmentsResponse = await axios.get(
-        `${API_URL}/api/auth/appointment?date=${formattedDate}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
+      console.log("Processed schedule events:", scheduleEvents);
+
+      // FETCH ALL APPOINTMENTS
+      console.log("Fetching appointments from:", `${API_URL}/api/auth/appointment`);
+      let appointmentsResponse;
+      try {
+        appointmentsResponse = await axios.get(
+          `${API_URL}/api/auth/appointment`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
+        );
+        console.log("Raw appointments data count:", appointmentsResponse.data.length);
+      } catch (appointmentError) {
+        console.error("Error fetching appointments:", appointmentError);
+        showToast('Failed to load appointments', 'error');
+        appointmentsResponse = { data: [] };
+      }
+
+      // CONFIRMED APPOINTMENTS ONLY - Filter by status and date
+      const confirmedAppointments = appointmentsResponse.data.filter(appointment => {
+        if (!appointment || !appointment.preferred_date) {
+          return false;
         }
-      )
 
-      console.log("Appointments response:", appointmentsResponse.data)
+        // Check if status is CONFIRMED
+        const status = appointment.AppointmentStatus?.status || '';
+        const isConfirmed = status.toUpperCase() === 'CONFIRMED';
 
-      // Convert appointments to the same format as schedules
-      const appointmentEvents = appointmentsResponse.data.map(appointment => {
-        // Default time if preferred_time is missing
+        // Normalize date format by removing any time portion
+        const appointmentDate = appointment.preferred_date.split('T')[0];
+
+        // Match both date and CONFIRMED status
+        const matches = appointmentDate === formattedDate && isConfirmed;
+
+        if (matches) {
+          console.log("Found CONFIRMED appointment for selected date:", appointment);
+        }
+
+        return matches;
+      });
+
+      console.log("CONFIRMED appointments count:", confirmedAppointments.length);
+
+      // Process CONFIRMED appointments
+      const appointmentEvents = confirmedAppointments.map(appointment => {
+        // Handle time formats
         let startTime = "09:00";
         let endTime = "10:00";
 
-        if (appointment.preferred_time && typeof appointment.preferred_time === 'string') {
-          const timeParts = appointment.preferred_time.split('-');
-          if (timeParts.length > 0 && timeParts[0]) {
-            startTime = timeParts[0].trim();
+        // Try to use direct time fields first
+        if (appointment.start_time && appointment.end_time) {
+          startTime = appointment.start_time;
+          endTime = appointment.end_time;
+        }
+        // Fall back to preferred_time if available
+        else if (appointment.preferred_time && appointment.preferred_time.includes('-')) {
+          const [startPart, endPart] = appointment.preferred_time.split('-').map(t => t.trim());
 
-            if (timeParts.length > 1 && timeParts[1]) {
-              endTime = timeParts[1].trim();
-            } else {
-              // Calculate end time by adding 1 hour to start time
-              const [hours, minutes] = startTime.split(':').map(part => parseInt(part, 10));
-              if (!isNaN(hours)) {
-                const newHours = (hours + 1) % 24;
-                endTime = `${newHours.toString().padStart(2, '0')}:${minutes ? minutes.toString().padStart(2, '0') : '00'}`;
-              }
-            }
+          // Convert from 12-hour format (9:00 AM) to 24-hour format (09:00)
+          if (startPart) {
+            startTime = convertTo24Hour(startPart);
+          }
+
+          if (endPart) {
+            endTime = convertTo24Hour(endPart);
+          } else {
+            // If no end time, add 1 hour to start time
+            const hourVal = parseInt(startTime.split(':')[0], 10);
+            const minuteVal = parseInt(startTime.split(':')[1], 10);
+            const newHour = (hourVal + 1) % 24;
+            endTime = `${newHour.toString().padStart(2, '0')}:${minuteVal.toString().padStart(2, '0')}`;
           }
         }
 
         return {
           id: `appointment-${appointment.appointment_id}`,
-          title: appointment.purpose_of_visit || 'Appointment',
+          title: appointment.purpose_of_visit || 'Unnamed Appointment',
           description: appointment.additional_notes || '',
-          date: appointment.preferred_date,
+          date: appointment.preferred_date.split('T')[0],
           startTime,
           endTime,
-          organizer: `${appointment.Visitor?.first_name || ''} ${appointment.Visitor?.last_name || ''}`.trim(),
+          organizer: appointment.Visitor ?
+            `${appointment.Visitor.first_name || ''} ${appointment.Visitor.last_name || ''}`.trim() :
+            'Unknown Visitor',
           numPeople: `${appointment.population_count || 1} visitors`,
-          availability: 'SHARED', // Appointments are automatically shared
           isAppointment: true,
-          status: appointment.AppointmentStatus?.status || 'TO_REVIEW'
+          status: 'CONFIRMED',
+          availability: 'SHARED' // All appointments are shared by default
         };
-      })
+      });
 
-      // Convert schedules to the expected format
-      const scheduleEvents = schedulesResponse.data.map(schedule => ({
-        id: `schedule-${schedule.schedule_id}`,
-        title: schedule.title,
-        description: schedule.description || '',
-        date: schedule.date,
-        startTime: schedule.start_time,
-        endTime: schedule.end_time,
-        availability: schedule.availability,
-        isSchedule: true
-      }))
+      console.log("Processed appointment events:", appointmentEvents);
 
-      console.log("Schedule events:", scheduleEvents)
-      console.log("Appointment events:", appointmentEvents)
+      // Combine and set events
+      const allEvents = [...appointmentEvents, ...scheduleEvents];
+      console.log("Final combined events:", allEvents);
+      console.log("Total events:", allEvents.length);
 
-      // Combine both types of events
-      const allEvents = [...appointmentEvents, ...scheduleEvents]
-      console.log("All events:", allEvents)
-      setBackendEvents(allEvents)
-
+      setBackendEvents(allEvents);
     } catch (error) {
-      console.error('Error fetching events:', error)
-      showToast('Failed to load events', 'error')
+      console.error('Error in fetchEvents:', error);
+      showToast('Error loading schedule data', 'error');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+
+
+  // Make sure to call this function when the component mounts and when the date changes
+  useEffect(() => {
+    console.log("Date changed, fetching events for:", dateString);
+    fetchEvents();
+  }, [selectedDate, dateString]);
+
+
+
+  // Helper function to convert 12-hour time format to 24-hour format
+  // Handles "9:00 AM", "9:00", etc.
+  const convertTo24Hour = (timeStr) => {
+    if (!timeStr) return "09:00";
+
+    // Check if time string has AM/PM
+    const hasAMPM = timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm');
+
+    if (hasAMPM) {
+      // Handle 12-hour format with AM/PM
+      const isPM = timeStr.toLowerCase().includes('pm');
+      // Remove AM/PM and trim
+      const cleanTime = timeStr.toLowerCase().replace(/am|pm/g, '').trim();
+      const [hourStr, minuteStr] = cleanTime.split(':');
+      let hour = parseInt(hourStr, 10);
+      const minute = parseInt(minuteStr || '0', 10);
+
+      // Convert to 24-hour format
+      if (isPM && hour < 12) hour += 12;
+      if (!isPM && hour === 12) hour = 0;
+
+      return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    } else {
+      // Already in 24-hour format or just missing AM/PM
+      const [hourStr, minuteStr] = timeStr.split(':');
+      const hour = parseInt(hourStr, 10);
+      const minute = parseInt(minuteStr || '0', 10);
+
+      return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+  };
+
 
 
   // Helper function to add an hour to a time string (e.g., "09:00" -> "10:00")
@@ -681,24 +1166,46 @@ const Schedule = () => {
                     onChange={setSelectedDate}
                     value={selectedDate}
                     tileClassName="relative"
+                    // Add this prop to detect month changes
+                    onActiveStartDateChange={({ activeStartDate }) => {
+                      console.log("Calendar view changed to:", activeStartDate);
+                      setViewedDate(activeStartDate);
+                    }}
                     tileContent={({ date, view }) => {
                       if (view === 'month') {
-                        // Build local date string for the tile's date
-                        const ds = getLocalDateString(date)
-                        const count = appointments.filter((apt) => apt.date === ds).length
-                        if (count > 0) {
-                          return (
-                            <span className="absolute top-1 right-1 rounded-full bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center">
-                              {count}
-                            </span>
-                          )
-                        }
+                        // Get the date string in YYYY-MM-DD format for comparison
+                        const ds = getLocalDateString(date);
+
+                        // Count active schedules for this date
+                        const activeSchedules = calendarEvents.filter(event =>
+                          event.date === ds && event.isSchedule && event.isActive
+                        ).length;
+
+                        // Count confirmed appointments for this date
+                        const confirmedAppointments = calendarEvents.filter(event =>
+                          event.date === ds && event.isAppointment && event.isActive
+                        ).length;
+
+                        // Total count of events
+                        const totalCount = activeSchedules + confirmedAppointments;
+
+                        // Only show badge if there are events (no zero badges)
+                        return totalCount > 0 ? (
+                          <span className="absolute top-1 right-1 rounded-full bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center">
+                            {totalCount}
+                          </span>
+                        ) : null;
                       }
-                      return null
+                      return null;
                     }}
                     showNeighboringMonth={false}
                     className="p-2 rounded-lg mx-auto text-lg"
                   />
+
+
+
+
+
                 </div>
               </div>
 
@@ -706,45 +1213,53 @@ const Schedule = () => {
               <div className="min-w-[31rem] max-w-[31rem] flex flex-col min-h-[35rem] bg-white rounded-xl shadow-xl p-5">
                 <span className="text-2xl font-semibold mb-4">Today's Scheduled Tours</span>
                 <div className="w-full border-t border-gray-200 pt-4 space-y-3 max-h-120 overflow-y-auto">
-                  {todaysTours.length === 0 && (
+                  {todayTours.length === 0 && (
                     <div className="bg-gray-100 text-gray-700 p-3 rounded-lg">
                       No Scheduled Tours
                     </div>
                   )}
-                  {todaysTours.map((tour, idx) => (
+                  {todayTours.map((tour, idx) => (
                     <div
                       key={tour.id || idx}
                       className={`
-                        ${idx % 2 === 0 ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'}
-                        p-3 rounded-lg flex items-center justify-between
-                      `}
+          ${idx % 2 === 0 ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'}
+          p-3 rounded-lg flex items-center justify-between
+        `}
                     >
-                      <div className="flex items-center">
+                      <div className="flex items-center flex-grow">
                         <div
                           className={`
-                            ${idx % 2 === 0 ? 'bg-gray-800 text-white' : 'bg-gray-300 text-gray-800'}
-                            px-3 py-1.5 rounded mr-3 text-sm
-                          `}
+              ${idx % 2 === 0 ? 'bg-gray-800 text-white' : 'bg-gray-300 text-gray-800'}
+              px-3 py-1.5 rounded mr-3 text-sm
+            `}
                         >
-                          {tour.startTime}-{tour.endTime}
+                          {formatTimeTo12H(tour.startTime)}-{formatTimeTo12H(tour.endTime)}
                         </div>
-                        <div>
+                        <div className="flex-grow">
                           <div className="font-medium">
-                            {tour.organizer ? tour.organizer : 'No Name'}
+                            {tour.organizer || 'No Name'}
+                          </div>
+                          <div className="text-sm truncate max-w-[150px]">
+                            {tour.title}
                           </div>
                           {tour.numPeople && (
                             <div className="text-sm">{tour.numPeople}</div>
                           )}
                         </div>
                       </div>
-                      {/* Example label for first item only, can remove if unwanted */}
-                      {idx === 0 && (
-                        <div className="bg-green-500 text-xs px-2 py-1 rounded">tour done</div>
+                      {/* Show "done" label for completed tours */}
+                      {tour.isDone && (
+                        <div className="bg-green-500 text-xs px-2 py-1 rounded whitespace-nowrap">
+                          tour done
+                        </div>
                       )}
                     </div>
                   ))}
                 </div>
               </div>
+
+
+
             </div>
 
             {/* MIDDLE SECTION - Day Scheduler */}
@@ -778,12 +1293,13 @@ const Schedule = () => {
               </div>
               <div className="w-full h-full bg-white p-5 rounded-xl shadow-xl">
                 <DayScheduler
-                  appointments={backendEvents}
+                  appointments={backendEvents}  // Use backendEvents here
                   selectedDate={selectedDate}
                   onSelectAppointment={setSelectedAppointment}
                   selectedAppointment={selectedAppointment}
                   isLoading={isLoading}
                 />
+
 
               </div>
             </div>
@@ -912,6 +1428,21 @@ const Schedule = () => {
                     </div>
                   </div>
 
+                  {/* Exclusive Event Warning/Helper */}
+                  <div className="mt-2">
+                    <div className="flex items-start">
+                      <i className="fas fa-info-circle text-blue-500 mr-2 mt-1"></i>
+                      <p className="text-xs text-gray-600">
+                        <span className="font-medium">Note:</span> You cannot schedule during times that have exclusive events.
+                        {newAvailability === 'EXCLUSIVE' && (
+                          <span className="block mt-1 text-amber-600">
+                            This event will be marked as exclusive and will block other events during this time slot.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Add Event Button */}
                   <button
                     className="w-full bg-[#A6A3F6] text-white py-3 rounded-lg font-semibold hover:bg-[#8e8aec] transition-all flex items-center justify-center gap-2"
@@ -924,49 +1455,75 @@ const Schedule = () => {
 
 
 
-              {/* Selected Appointment */}
+              {/* Selected Appointment/Schedule */}
               <div className="w-full shadow-xl bg-white rounded-xl p-6">
-                <h2 className="text-xl font-bold mb-4">Selected Appointment</h2>
+                <h2 className="text-xl font-bold mb-4">Selected Event</h2>
                 {selectedAppointment ? (
                   <>
+                    {/* Title with label based on type */}
                     <p className="mb-2">
-                      <strong>Title:</strong> {selectedAppointment.title}
+                      <strong>{selectedAppointment.isAppointment ? 'Purpose:' : 'Title:'}</strong> {selectedAppointment.title}
                     </p>
-                    <p className="mb-2">
-                      <strong>Organizer:</strong>{' '}
-                      {selectedAppointment.organizer || '—'}
-                    </p>
+
+                    {/* Show Visitor only for appointments */}
+                    {selectedAppointment.isAppointment && selectedAppointment.organizer && (
+                      <p className="mb-2">
+                        <strong>Visitor:</strong> {selectedAppointment.organizer}
+                      </p>
+                    )}
+
+                    {/* Time for both types */}
                     <p className="mb-2">
                       <strong>Time:</strong>{' '}
                       {formatTimeTo12H(selectedAppointment.startTime)} -{' '}
                       {formatTimeTo12H(selectedAppointment.endTime)}
                     </p>
-                    {selectedAppointment.numPeople && (
+
+                    {/* Number of People only for appointments */}
+                    {selectedAppointment.isAppointment && selectedAppointment.numPeople && (
                       <p className="mb-2">
                         <strong>Number of People:</strong>{' '}
                         {selectedAppointment.numPeople}
                       </p>
                     )}
+
+                    {/* Availability only for schedules */}
+                    {selectedAppointment.isSchedule && (
+                      <p className="mb-2">
+                        <strong>Availability:</strong>{' '}
+                        <span className={`px-2 py-1 rounded-md text-xs font-medium ${selectedAppointment.availability === 'EXCLUSIVE'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-green-100 text-green-800'
+                          }`}>
+                          {selectedAppointment.availability}
+                        </span>
+                      </p>
+                    )}
+
+                    {/* Description for both types */}
                     {selectedAppointment.description && (
                       <p className="mb-2">
                         <strong>Description:</strong>{' '}
-                        {selectedAppointment.description}
+                        <span className="text-gray-700">{selectedAppointment.description}</span>
                       </p>
                     )}
-                    <button
-                      onClick={() => {
-                        // Mark as completed...
-                        setSelectedAppointment(null)
-                      }}
-                      className="mt-4 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition-colors"
-                    >
-                      Mark as Done
-                    </button>
+
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleMarkAsDone}
+                        className="mt-4 bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition-colors"
+                      >
+                        Mark as Done
+                      </button>
+                    </div>
+
                   </>
                 ) : (
-                  <p className="text-gray-500 italic">No appointment selected</p>
+                  <p className="text-gray-500 italic">No event selected</p>
                 )}
               </div>
+
             </div>
           </div>
         </div>
@@ -986,6 +1543,79 @@ const Schedule = () => {
         isVisible={toastConfig.isVisible}
         onClose={hideToast}
       />
+      {/* AppointmentModal for completing appointments */}
+      {showAppointmentModal && (
+        <AppointmentModal
+          showModal={showAppointmentModal}
+          modalData={modalData}
+          onClose={() => {
+            setShowAppointmentModal(false);
+            // Also clear selection when modal is closed
+            setSelectedAppointment(null);
+          }}
+          onSend={() => {
+            setShowAppointmentModal(false);
+            setSelectedAppointment(null); // Add this line to clear selection
+            fetchEvents(); // Refresh events
+          }}
+          updateAppointmentStatus={async (id, status, presentCount) => {
+            try {
+              const token = localStorage.getItem('token');
+              await axios.patch(
+                `${API_URL}/api/auth/appointment/${id}/status`,
+                {
+                  status,
+                  present_count: presentCount
+                },
+                {
+                  headers: { Authorization: `Bearer ${token}` }
+                }
+              );
+              showToast(`Appointment status updated to ${status}`, 'success');
+              fetchEvents(); // Refresh events
+              setSelectedAppointment(null); // Also add here to ensure selection is cleared
+            } catch (error) {
+              console.error('Error updating appointment status:', error);
+              showToast('Error updating appointment status', 'error');
+            }
+          }}
+        />
+      )}
+
+
+      {/* Confirmation modal for schedules */}
+      {showConfirmModal && (
+        // Replace the existing modal backdrop div with this:
+
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Mark Schedule as Completed</h3>
+            <p className="mb-6">
+              Are you sure you want to mark this schedule as completed?
+              <br />
+              <span className="font-semibold">{selectedAppointment?.title}</span>
+              <br />
+              <span className="text-sm text-gray-500">
+                {selectedAppointment?.date}, {formatTimeTo12H(selectedAppointment?.startTime)} - {formatTimeTo12H(selectedAppointment?.endTime)}
+              </span>
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleScheduleConfirm}
+                className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </>
   )

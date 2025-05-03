@@ -1,4 +1,4 @@
-// models/Schedule.js
+// models/Schedule.js - Add status field
 
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../database.js'; 
@@ -11,18 +11,16 @@ const Schedule = sequelize.define('Schedule', {
   },
   title: {
     type: DataTypes.STRING,
-    allowNull: false, // Required field
+    allowNull: false,
   },
   description: {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  // DATE type para sa petsa ng schedule
   date: {
-    type: DataTypes.DATEONLY, // Para sa petsa lang
+    type: DataTypes.DATEONLY,
     allowNull: false,
   },
-  // TIME type para sa oras
   start_time: {
     type: DataTypes.TIME,
     allowNull: false,
@@ -34,11 +32,16 @@ const Schedule = sequelize.define('Schedule', {
   availability: {
     type: DataTypes.ENUM('SHARED', 'EXCLUSIVE'),
     allowNull: false,
-    defaultValue: 'SHARED', // Default availability
+    defaultValue: 'SHARED',
+  },
+  status: {
+    type: DataTypes.ENUM('ACTIVE', 'COMPLETED'),
+    allowNull: false,
+    defaultValue: 'ACTIVE', // Default status is ACTIVE
   },
 }, {
   tableName: 'schedules',
-  timestamps: true, // Para sa createdAt at updatedAt
+  timestamps: true,
 });
 
 export default Schedule;
