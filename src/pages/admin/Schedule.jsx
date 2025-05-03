@@ -153,60 +153,58 @@ const DayScheduler = ({
     })
   }
 
-  // Logic to reposition the hover card when hovering
-  // Logic to reposition the hover card when hovering
   const handleMouseEnter = (e) => {
+    // Use offsetParent or a closer container if parentNode is not the true bounding box
+    // but for most cases, parentNode might suffice. Adjust if needed.
     const parentRect = e.currentTarget.parentNode.getBoundingClientRect();
     const hoverCard = e.currentTarget.querySelector('.hover-card');
     if (!hoverCard) return;
 
-    // Remove any old inline positioning
+    // Reset positioning
     hoverCard.style.removeProperty('top');
     hoverCard.style.removeProperty('left');
-    // Reset transform origin to default
-    hoverCard.style.transformOrigin = 'top left';
+    hoverCard.style.removeProperty('transform-origin');
 
     setTimeout(() => {
       const hoverRect = hoverCard.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
 
-      // Check for right edge overflow (against viewport)
-      if (hoverRect.right > viewportWidth - 20) {
-        const overflowRight = hoverRect.right - (viewportWidth - 20);
+      // -- RIGHT OVERFLOW --
+      if (hoverRect.right > parentRect.right) {
+        const overflowRight = hoverRect.right - parentRect.right + 8;
         hoverCard.style.left = `-${overflowRight}px`;
         hoverCard.style.transformOrigin = 'top right';
       }
 
-      // Check for left edge overflow
-      if (hoverRect.left < 20) {
-        const overflowLeft = 20 - hoverRect.left;
+      // -- LEFT OVERFLOW --
+      if (hoverRect.left < parentRect.left) {
+        const overflowLeft = parentRect.left - hoverRect.left + 8;
         hoverCard.style.left = `${overflowLeft}px`;
         hoverCard.style.transformOrigin = 'top left';
       }
 
-      // Check bottom overflow
+      // -- BOTTOM OVERFLOW --
       if (hoverRect.bottom > parentRect.bottom) {
-        const overflowBottom = hoverRect.bottom - parentRect.bottom;
-        hoverCard.style.top = `-${overflowBottom + 8}px`;
+        const overflowBottom = hoverRect.bottom - parentRect.bottom + 8;
+        hoverCard.style.top = `-${overflowBottom}px`;
+        // Keep transform origin at top so it “slides up” if needed
       }
 
-      // Check top overflow
+      // -- TOP OVERFLOW --
       if (hoverRect.top < parentRect.top) {
-        const overflowTop = parentRect.top - hoverRect.top;
-        hoverCard.style.top = `${overflowTop + 8}px`;
+        const overflowTop = parentRect.top - hoverRect.top + 8;
+        hoverCard.style.top = `${overflowTop}px`;
       }
-    }, 10); // Small delay to ensure DOM has updated
-  }
+    }, 10);
+  };
 
   const handleMouseLeave = (e) => {
     const hoverCard = e.currentTarget.querySelector('.hover-card');
-    if (hoverCard) {
-      hoverCard.style.removeProperty('top');
-      hoverCard.style.removeProperty('left');
-      hoverCard.style.removeProperty('transform-origin');
-    }
-  }
+    if (!hoverCard) return;
 
+    hoverCard.style.removeProperty('top');
+    hoverCard.style.removeProperty('left');
+    hoverCard.style.removeProperty('transform-origin');
+  };
 
 
 
