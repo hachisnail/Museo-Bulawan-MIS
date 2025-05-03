@@ -12,7 +12,6 @@ import Toast from '../../components/function/Toast'
 import { useEffect } from 'react'
 import { AppointmentModal } from '../../components/modals/AppointmentModal'
 
-
 // ---------------- UTILITY FUNCTIONS ----------------
 // Add this function to the utility functions section (around line 70)
 function countOverlappingEvents(events, startTime, endTime) {
@@ -493,113 +492,390 @@ const Schedule = () => {
   const [todayTours, setTodayTours] = useState([]);
   const [viewedDate, setViewedDate] = useState(new Date());
 
+  // Schedule.jsx - Lines 967-1161
 
-  useEffect(() => {
-    console.log("Date changed, fetching events for:", dateString);
-    fetchEvents();
-  }, [selectedDate, dateString]);
+  // Define utility functions for data fetching
+  const fetchEvents = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showToast("Not authenticated. Please log in.", 'error');
+        setIsLoading(false);
+        return;
+      }
 
-  // Add this useEffect to load all events for the month when component mounts or month/year view changes
-  useEffect(() => {
-    // Fetch events for the entire month to populate calendar counts
-    const fetchMonthEvents = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
+      // Format date for API
+      const formattedDate = dateString;
+      console.log("Fetching data for date:", formattedDate);
 
-          setIsLoading(false);
-          return;
-        }
-
-        // Use viewedDate instead of selectedDate to determine which month to fetch
-        const year = viewedDate.getFullYear();
-        const month = viewedDate.getMonth();
-
-        console.log(`Fetching calendar events for month: ${month + 1}/${year}`);
-
-        // Get all schedules
-        const schedulesResponse = await axios.get(
-          `${API_URL}/api/auth/schedules`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
+      // FETCH SCHEDULES 
+      console.log("Fetching schedules from:", `${API_URL}/api/auth/schedules?date=${formattedDate}`);
+      const schedulesResponse = await axios.get(
+        `${API_URL}/api/auth/schedules?date=${formattedDate}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-        );
+        }
+      );
+      console.log("Raw schedules data:", schedulesResponse.data);
 
-        // Get all appointments
-        const appointmentsResponse = await axios.get(
+      // Process schedules - filter out COMPLETED status
+      const scheduleEvents = schedulesResponse.data
+        .filter(schedule => schedule.status !== 'COMPLETED')
+        .map(schedule => ({
+          id: `schedule-${schedule.schedule_id}`,
+          title: schedule.title || 'Unnamed Schedule',
+          description: schedule.description || '',
+          date: schedule.date,
+          startTime: schedule.start_time,
+          endTime: schedule.end_time,
+          availability: schedule.availability || 'SHARED',
+          status: schedule.status || 'ACTIVE',
+          isSchedule: true,
+          schedule_id: schedule.schedule_id // Store the ID for easier access later
+        }));
+
+      console.log("Processed schedule events:", scheduleEvents);
+
+      // FETCH ALL APPOINTMENTS
+      console.log("Fetching appointments from:", `${API_URL}/api/auth/appointment`);
+      let appointmentsResponse;
+      try {
+        appointmentsResponse = await axios.get(
           `${API_URL}/api/auth/appointment`,
           {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
           }
         );
-
-        console.log("All schedules:", schedulesResponse.data.length);
-        console.log("All appointments:", appointmentsResponse.data.length);
-
-        // Filter schedules for this month and process them
-        const monthSchedules = schedulesResponse.data
-          .filter(schedule => {
-            if (!schedule.date) return false;
-
-            // Parse date properly and compare year and month
-            const scheduleDate = new Date(schedule.date);
-            return !isNaN(scheduleDate.getTime()) &&
-              scheduleDate.getMonth() === month &&
-              scheduleDate.getFullYear() === year;
-          })
-          .map(schedule => ({
-            id: `schedule-${schedule.schedule_id}`,
-            date: schedule.date.split('T')[0], // Normalize date format
-            isActive: schedule.status !== 'COMPLETED',
-            isSchedule: true
-          }));
-
-        console.log("Month-filtered schedules:", monthSchedules.length);
-
-        // Filter appointments for this month and process them
-        const monthAppointments = appointmentsResponse.data
-          .filter(appointment => {
-            // Skip appointments without preferred_date
-            if (!appointment.preferred_date) return false;
-
-            // Extract date and normalize format (remove time portion if present)
-            const dateStr = appointment.preferred_date.split('T')[0];
-            const appointmentDate = new Date(dateStr);
-
-            // Check if date is valid and in current month/year
-            return !isNaN(appointmentDate.getTime()) &&
-              appointmentDate.getMonth() === month &&
-              appointmentDate.getFullYear() === year;
-          })
-          .map(appointment => ({
-            id: `appointment-${appointment.appointment_id}`,
-            date: appointment.preferred_date.split('T')[0],
-            isActive: (appointment.AppointmentStatus?.status || '').toUpperCase() === 'CONFIRMED',
-            isAppointment: true
-          }));
-
-        console.log("Month-filtered appointments:", monthAppointments.length);
-
-        // Combine both types of events
-        const allEvents = [...monthSchedules, ...monthAppointments];
-        console.log(`Total filtered calendar events: ${allEvents.length}`);
-
-        setCalendarEvents(allEvents);
-
-      } catch (error) {
-        console.error('Error fetching monthly events:', error);
-
-      } finally {
-        setIsLoading(false);
+        console.log("Raw appointments data count:", appointmentsResponse.data.length);
+      } catch (appointmentError) {
+        console.error("Error fetching appointments:", appointmentError);
+        showToast('Failed to load appointments', 'error');
+        appointmentsResponse = { data: [] };
       }
-    };
 
+      // CONFIRMED APPOINTMENTS ONLY - Filter by status and date
+      const confirmedAppointments = appointmentsResponse.data.filter(appointment => {
+        if (!appointment || !appointment.preferred_date) {
+          return false;
+        }
+
+        // Check if status is CONFIRMED
+        const status = appointment.AppointmentStatus?.status || '';
+        const isConfirmed = status.toUpperCase() === 'CONFIRMED';
+
+        // Normalize date format by removing any time portion
+        const appointmentDate = appointment.preferred_date.split('T')[0];
+
+        // Match both date and CONFIRMED status
+        const matches = appointmentDate === formattedDate && isConfirmed;
+
+        if (matches) {
+          console.log("Found CONFIRMED appointment for selected date:", appointment);
+        }
+
+        return matches;
+      });
+
+      console.log("CONFIRMED appointments count:", confirmedAppointments.length);
+
+      // Process CONFIRMED appointments
+      const appointmentEvents = confirmedAppointments.map(appointment => {
+        // Handle time formats
+        let startTime = "09:00";
+        let endTime = "10:00";
+
+        // Try to use direct time fields first
+        if (appointment.start_time && appointment.end_time) {
+          startTime = appointment.start_time;
+          endTime = appointment.end_time;
+        }
+        // Fall back to preferred_time if available
+        else if (appointment.preferred_time && appointment.preferred_time.includes('-')) {
+          const [startPart, endPart] = appointment.preferred_time.split('-').map(t => t.trim());
+
+          // Convert from 12-hour format (9:00 AM) to 24-hour format (09:00)
+          if (startPart) {
+            startTime = convertTo24Hour(startPart);
+          }
+
+          if (endPart) {
+            endTime = convertTo24Hour(endPart);
+          } else {
+            // If no end time, add 1 hour to start time
+            const hourVal = parseInt(startTime.split(':')[0], 10);
+            const minuteVal = parseInt(startTime.split(':')[1], 10);
+            const newHour = (hourVal + 1) % 24;
+            endTime = `${newHour.toString().padStart(2, '0')}:${minuteVal.toString().padStart(2, '0')}`;
+          }
+        }
+
+        return {
+          id: `appointment-${appointment.appointment_id}`,
+          title: appointment.purpose_of_visit || 'Unnamed Appointment',
+          description: appointment.additional_notes || '',
+          date: appointment.preferred_date.split('T')[0],
+          startTime,
+          endTime,
+          organizer: appointment.Visitor ?
+            `${appointment.Visitor.first_name || ''} ${appointment.Visitor.last_name || ''}`.trim() :
+            'Unknown Visitor',
+          numPeople: `${appointment.population_count || 1} visitors`,
+          isAppointment: true,
+          status: 'CONFIRMED',
+          availability: 'SHARED' // All appointments are shared by default
+        };
+      });
+
+      console.log("Processed appointment events:", appointmentEvents);
+
+      // Combine and set events
+      const allEvents = [...appointmentEvents, ...scheduleEvents];
+      console.log("Final combined events:", allEvents);
+      console.log("Total events:", allEvents.length);
+
+      setBackendEvents(allEvents);
+    } catch (error) {
+      console.error('Error in fetchEvents:', error);
+      showToast('Error loading schedule data', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchTodayTours = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showToast("Not authenticated. Please log in.", 'error');
+        return;
+      }
+
+      // Format date for API
+      const formattedDate = dateString;
+      console.log("Fetching today's tours for:", formattedDate);
+
+      // Get all schedules for today (including completed ones)
+      const schedulesResponse = await axios.get(
+        `${API_URL}/api/auth/schedules?date=${formattedDate}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      // Get all appointments
+      const appointmentsResponse = await axios.get(
+        `${API_URL}/api/auth/appointment`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      console.log("Today's schedules:", schedulesResponse.data.length);
+      console.log("All appointments:", appointmentsResponse.data.length);
+
+      // Process all schedules for today
+      const todaySchedules = schedulesResponse.data
+        .filter(schedule => schedule && schedule.date)  // Ensure date exists
+        .map(schedule => ({
+          id: `schedule-${schedule.schedule_id}`,
+          title: schedule.title || 'Schedule',
+          organizer: 'Schedule',
+          date: schedule.date,
+          startTime: schedule.start_time,
+          endTime: schedule.end_time,
+          isDone: schedule.status === 'COMPLETED',
+          isSchedule: true
+        }));
+
+      console.log("Processed schedules:", todaySchedules.length);
+
+      // Filter appointments for today's date and process them
+      // Only include CONFIRMED and COMPLETED appointments
+      const todayAppointments = appointmentsResponse.data
+        .filter(appointment => {
+          // Skip if preferred_date is missing
+          if (!appointment.preferred_date) {
+            return false;
+          }
+
+          // Normalize date format by removing any time portion
+          const appointmentDate = appointment.preferred_date.split('T')[0];
+          const matchesDate = appointmentDate === formattedDate;
+
+          if (matchesDate) {
+            console.log(`Found appointment for ${formattedDate}:`, appointment.appointment_id);
+          }
+
+          return matchesDate;
+        })
+        .filter(appointment => {
+          // Only include CONFIRMED and COMPLETED appointments (case-insensitive)
+          const status = (appointment.AppointmentStatus?.status || '').toUpperCase();
+          return status === 'CONFIRMED' || status === 'COMPLETED';
+        })
+        .map(appointment => {
+          // Process time values
+          let startTime = "09:00";
+          let endTime = "10:00";
+
+          // Try direct time fields first
+          if (appointment.start_time && appointment.end_time) {
+            startTime = appointment.start_time;
+            endTime = appointment.end_time;
+            console.log(`Using direct time fields for ${appointment.appointment_id}: ${startTime}-${endTime}`);
+          }
+          // Fall back to preferred_time if available
+          else if (appointment.preferred_time && typeof appointment.preferred_time === 'string') {
+            try {
+              const timeParts = appointment.preferred_time.split('-');
+              if (timeParts[0]) startTime = convertTo24Hour(timeParts[0].trim());
+              if (timeParts[1]) endTime = convertTo24Hour(timeParts[1].trim());
+              console.log(`Parsed preferred_time for ${appointment.appointment_id}: ${startTime}-${endTime}`);
+            } catch (error) {
+              console.error("Error parsing preferred_time:", appointment.preferred_time, error);
+              // Keep default times on error
+            }
+          }
+
+          return {
+            id: `appointment-${appointment.appointment_id}`,
+            title: appointment.purpose_of_visit || 'Visitor Appointment',
+            organizer: appointment.Visitor ?
+              `${appointment.Visitor.first_name || ''} ${appointment.Visitor.last_name || ''}`.trim() :
+              'Unknown Visitor',
+            numPeople: `${appointment.population_count || 1} visitors`,
+            date: appointment.preferred_date.split('T')[0],
+            startTime,
+            endTime,
+            isDone: (appointment.AppointmentStatus?.status || '').toUpperCase() === 'COMPLETED',
+            isAppointment: true
+          };
+        });
+
+      console.log("Processed appointments:", todayAppointments.length);
+
+      // Combine and sort by start time
+      const allTours = [...todaySchedules, ...todayAppointments];
+      allTours.sort((a, b) => {
+        return timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime);
+      });
+
+      console.log("Today's total tours:", allTours.length);
+      setTodayTours(allTours);
+
+    } catch (error) {
+      console.error('Error fetching today tours:', error);
+      showToast('Error loading today\'s tours', 'error');
+    }
+  };
+
+  const fetchMonthEvents = async () => {
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Use viewedDate instead of selectedDate to determine which month to fetch
+      const year = viewedDate.getFullYear();
+      const month = viewedDate.getMonth();
+
+      console.log(`Fetching calendar events for month: ${month + 1}/${year}`);
+
+      // Get all schedules
+      const schedulesResponse = await axios.get(
+        `${API_URL}/api/auth/schedules`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      // Get all appointments
+      const appointmentsResponse = await axios.get(
+        `${API_URL}/api/auth/appointment`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+
+      console.log("All schedules:", schedulesResponse.data.length);
+      console.log("All appointments:", appointmentsResponse.data.length);
+
+      // Filter schedules for this month and process them
+      const monthSchedules = schedulesResponse.data
+        .filter(schedule => {
+          if (!schedule.date) return false;
+
+          // Parse date properly and compare year and month
+          const scheduleDate = new Date(schedule.date);
+          return !isNaN(scheduleDate.getTime()) &&
+            scheduleDate.getMonth() === month &&
+            scheduleDate.getFullYear() === year;
+        })
+        .map(schedule => ({
+          id: `schedule-${schedule.schedule_id}`,
+          date: schedule.date.split('T')[0], // Normalize date format
+          isActive: schedule.status !== 'COMPLETED',
+          isSchedule: true
+        }));
+
+      console.log("Month-filtered schedules:", monthSchedules.length);
+
+      // Filter appointments for this month and process them
+      const monthAppointments = appointmentsResponse.data
+        .filter(appointment => {
+          // Skip appointments without preferred_date
+          if (!appointment.preferred_date) return false;
+
+          // Extract date and normalize format (remove time portion if present)
+          const dateStr = appointment.preferred_date.split('T')[0];
+          const appointmentDate = new Date(dateStr);
+
+          // Check if date is valid and in current month/year
+          return !isNaN(appointmentDate.getTime()) &&
+            appointmentDate.getMonth() === month &&
+            appointmentDate.getFullYear() === year;
+        })
+        .map(appointment => ({
+          id: `appointment-${appointment.appointment_id}`,
+          date: appointment.preferred_date.split('T')[0],
+          isActive: (appointment.AppointmentStatus?.status || '').toUpperCase() === 'CONFIRMED',
+          isAppointment: true
+        }));
+
+      console.log("Month-filtered appointments:", monthAppointments.length);
+
+      // Combine both types of events
+      const allEvents = [...monthSchedules, ...monthAppointments];
+      console.log(`Total filtered calendar events: ${allEvents.length}`);
+
+      setCalendarEvents(allEvents);
+
+    } catch (error) {
+      console.error('Error fetching monthly events:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Consolidated useEffect hooks
+  useEffect(() => {
+    console.log("Date changed, fetching data for:", dateString);
+    fetchEvents();
+    fetchTodayTours();
+  }, [selectedDate, dateString]);
+
+  // Separate useEffect for month view calendar events
+  useEffect(() => {
     fetchMonthEvents();
-  }, [viewedDate, API_URL,]);
-
-
-
+  }, [viewedDate, API_URL]);
 
 
 
@@ -764,308 +1040,9 @@ const Schedule = () => {
 
 
 
-  // Fetch all tours for the selected date (including completed ones)
-  // Lines 1-42
-  const fetchTodayTours = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showToast("Not authenticated. Please log in.", 'error');
-        return;
-      }
-
-      // Format date for API
-      const formattedDate = dateString;
-      console.log("Fetching today's tours for:", formattedDate);
-
-      // Get all schedules for today (including completed ones)
-      const schedulesResponse = await axios.get(
-        `${API_URL}/api/auth/schedules?date=${formattedDate}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      // Get all appointments
-      const appointmentsResponse = await axios.get(
-        `${API_URL}/api/auth/appointment`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-
-      console.log("Today's schedules:", schedulesResponse.data.length);
-      console.log("All appointments:", appointmentsResponse.data.length);
-
-      // Process all schedules for today
-      const todaySchedules = schedulesResponse.data
-        .filter(schedule => schedule && schedule.date)  // Ensure date exists
-        .map(schedule => ({
-          id: `schedule-${schedule.schedule_id}`,
-          title: schedule.title || 'Schedule',
-          organizer: 'Schedule',
-          date: schedule.date,
-          startTime: schedule.start_time,
-          endTime: schedule.end_time,
-          isDone: schedule.status === 'COMPLETED',
-          isSchedule: true
-        }));
-
-      console.log("Processed schedules:", todaySchedules.length);
-
-      // Filter appointments for today's date and process them
-      // Only include CONFIRMED and COMPLETED appointments
-      const todayAppointments = appointmentsResponse.data
-        .filter(appointment => {
-          // Skip if preferred_date is missing
-          if (!appointment.preferred_date) {
-            return false;
-          }
-
-          // Normalize date format by removing any time portion
-          const appointmentDate = appointment.preferred_date.split('T')[0];
-          const matchesDate = appointmentDate === formattedDate;
-
-          if (matchesDate) {
-            console.log(`Found appointment for ${formattedDate}:`, appointment.appointment_id);
-          }
-
-          return matchesDate;
-        })
-        .filter(appointment => {
-          // Only include CONFIRMED and COMPLETED appointments (case-insensitive)
-          const status = (appointment.AppointmentStatus?.status || '').toUpperCase();
-          return status === 'CONFIRMED' || status === 'COMPLETED';
-        })
-        .map(appointment => {
-          // Process time values
-          let startTime = "09:00";
-          let endTime = "10:00";
-
-          // Try direct time fields first
-          if (appointment.start_time && appointment.end_time) {
-            startTime = appointment.start_time;
-            endTime = appointment.end_time;
-            console.log(`Using direct time fields for ${appointment.appointment_id}: ${startTime}-${endTime}`);
-          }
-          // Fall back to preferred_time if available
-          else if (appointment.preferred_time && typeof appointment.preferred_time === 'string') {
-            try {
-              const timeParts = appointment.preferred_time.split('-');
-              if (timeParts[0]) startTime = convertTo24Hour(timeParts[0].trim());
-              if (timeParts[1]) endTime = convertTo24Hour(timeParts[1].trim());
-              console.log(`Parsed preferred_time for ${appointment.appointment_id}: ${startTime}-${endTime}`);
-            } catch (error) {
-              console.error("Error parsing preferred_time:", appointment.preferred_time, error);
-              // Keep default times on error
-            }
-          }
-
-          return {
-            id: `appointment-${appointment.appointment_id}`,
-            title: appointment.purpose_of_visit || 'Visitor Appointment',
-            organizer: appointment.Visitor ?
-              `${appointment.Visitor.first_name || ''} ${appointment.Visitor.last_name || ''}`.trim() :
-              'Unknown Visitor',
-            numPeople: `${appointment.population_count || 1} visitors`,
-            date: appointment.preferred_date.split('T')[0],
-            startTime,
-            endTime,
-            isDone: (appointment.AppointmentStatus?.status || '').toUpperCase() === 'COMPLETED',
-            isAppointment: true
-          };
-        });
-
-      console.log("Processed appointments:", todayAppointments.length);
-
-      // Combine and sort by start time
-      const allTours = [...todaySchedules, ...todayAppointments];
-      allTours.sort((a, b) => {
-        return timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime);
-      });
-
-      console.log("Today's total tours:", allTours.length);
-      setTodayTours(allTours);
-
-    } catch (error) {
-      console.error('Error fetching today tours:', error);
-      showToast('Error loading today\'s tours', 'error');
-    }
-  };
-
-  // Add useEffect to fetch today's tours when date changes
-  useEffect(() => {
-    fetchTodayTours();
-  }, [selectedDate, dateString]);
-
-  // Add useEffect to fetch today's tours when date changes
-  useEffect(() => {
-    fetchTodayTours();
-  }, [selectedDate, dateString]);
-  // Add useEffect to fetch today's tours when date changes
-  useEffect(() => {
-    fetchTodayTours();
-  }, [selectedDate, dateString]);
-
-  const fetchEvents = async () => {
-    setIsLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showToast("Not authenticated. Please log in.", 'error');
-        setIsLoading(false);
-        return;
-      }
-
-      // Format date for API
-      const formattedDate = dateString;
-      console.log("Fetching data for date:", formattedDate);
-
-      // FETCH SCHEDULES 
-      console.log("Fetching schedules from:", `${API_URL}/api/auth/schedules?date=${formattedDate}`);
-      const schedulesResponse = await axios.get(
-        `${API_URL}/api/auth/schedules?date=${formattedDate}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
-      console.log("Raw schedules data:", schedulesResponse.data);
-
-      // Process schedules
-      // Process schedules - filter out COMPLETED status
-      const scheduleEvents = schedulesResponse.data
-        .filter(schedule => schedule.status !== 'COMPLETED')
-        .map(schedule => ({
-          id: `schedule-${schedule.schedule_id}`,
-          title: schedule.title || 'Unnamed Schedule',
-          description: schedule.description || '',
-          date: schedule.date,
-          startTime: schedule.start_time,
-          endTime: schedule.end_time,
-          availability: schedule.availability || 'SHARED',
-          status: schedule.status || 'ACTIVE',
-          isSchedule: true,
-          schedule_id: schedule.schedule_id // Store the ID for easier access later
-        }));
-
-      console.log("Processed schedule events:", scheduleEvents);
-
-      // FETCH ALL APPOINTMENTS
-      console.log("Fetching appointments from:", `${API_URL}/api/auth/appointment`);
-      let appointmentsResponse;
-      try {
-        appointmentsResponse = await axios.get(
-          `${API_URL}/api/auth/appointment`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
-        console.log("Raw appointments data count:", appointmentsResponse.data.length);
-      } catch (appointmentError) {
-        console.error("Error fetching appointments:", appointmentError);
-        showToast('Failed to load appointments', 'error');
-        appointmentsResponse = { data: [] };
-      }
-
-      // CONFIRMED APPOINTMENTS ONLY - Filter by status and date
-      const confirmedAppointments = appointmentsResponse.data.filter(appointment => {
-        if (!appointment || !appointment.preferred_date) {
-          return false;
-        }
-
-        // Check if status is CONFIRMED
-        const status = appointment.AppointmentStatus?.status || '';
-        const isConfirmed = status.toUpperCase() === 'CONFIRMED';
-
-        // Normalize date format by removing any time portion
-        const appointmentDate = appointment.preferred_date.split('T')[0];
-
-        // Match both date and CONFIRMED status
-        const matches = appointmentDate === formattedDate && isConfirmed;
-
-        if (matches) {
-          console.log("Found CONFIRMED appointment for selected date:", appointment);
-        }
-
-        return matches;
-      });
-
-      console.log("CONFIRMED appointments count:", confirmedAppointments.length);
-
-      // Process CONFIRMED appointments
-      const appointmentEvents = confirmedAppointments.map(appointment => {
-        // Handle time formats
-        let startTime = "09:00";
-        let endTime = "10:00";
-
-        // Try to use direct time fields first
-        if (appointment.start_time && appointment.end_time) {
-          startTime = appointment.start_time;
-          endTime = appointment.end_time;
-        }
-        // Fall back to preferred_time if available
-        else if (appointment.preferred_time && appointment.preferred_time.includes('-')) {
-          const [startPart, endPart] = appointment.preferred_time.split('-').map(t => t.trim());
-
-          // Convert from 12-hour format (9:00 AM) to 24-hour format (09:00)
-          if (startPart) {
-            startTime = convertTo24Hour(startPart);
-          }
-
-          if (endPart) {
-            endTime = convertTo24Hour(endPart);
-          } else {
-            // If no end time, add 1 hour to start time
-            const hourVal = parseInt(startTime.split(':')[0], 10);
-            const minuteVal = parseInt(startTime.split(':')[1], 10);
-            const newHour = (hourVal + 1) % 24;
-            endTime = `${newHour.toString().padStart(2, '0')}:${minuteVal.toString().padStart(2, '0')}`;
-          }
-        }
-
-        return {
-          id: `appointment-${appointment.appointment_id}`,
-          title: appointment.purpose_of_visit || 'Unnamed Appointment',
-          description: appointment.additional_notes || '',
-          date: appointment.preferred_date.split('T')[0],
-          startTime,
-          endTime,
-          organizer: appointment.Visitor ?
-            `${appointment.Visitor.first_name || ''} ${appointment.Visitor.last_name || ''}`.trim() :
-            'Unknown Visitor',
-          numPeople: `${appointment.population_count || 1} visitors`,
-          isAppointment: true,
-          status: 'CONFIRMED',
-          availability: 'SHARED' // All appointments are shared by default
-        };
-      });
-
-      console.log("Processed appointment events:", appointmentEvents);
-
-      // Combine and set events
-      const allEvents = [...appointmentEvents, ...scheduleEvents];
-      console.log("Final combined events:", allEvents);
-      console.log("Total events:", allEvents.length);
-
-      setBackendEvents(allEvents);
-    } catch (error) {
-      console.error('Error in fetchEvents:', error);
-      showToast('Error loading schedule data', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
 
-  // Make sure to call this function when the component mounts and when the date changes
-  useEffect(() => {
-    console.log("Date changed, fetching events for:", dateString);
-    fetchEvents();
-  }, [selectedDate, dateString]);
+
 
 
 
