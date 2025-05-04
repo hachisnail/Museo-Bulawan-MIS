@@ -3,55 +3,85 @@ import axios from 'axios';
 import AdminNav from '../../components/navbar/AdminNav';
 import CustomDatePicker from '../../components/function/CustomDatePicker';
 import AcquisitionModal from '../../components/modals/AcquisitionModal';
+import SelectedDonatorModal from '../../components/modals/SelectedDonatorModal';
+
 import Toast from '../../components/function/Toast';
 
 const Acquisition = () => {
-  // Date and form states
+  // Existing state variables remain...
   const [selectedDate, setSelectedDate] = useState(null);
   const [forms, setForms] = useState([]);
   const [acquisitions, setAcquisitions] = useState([]);
-  
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedForm, setSelectedForm] = useState(null);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState(null);
   const [selectedResponse, setSelectedResponse] = useState(null);
-  
-  // Donation modal states
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
   const [selectedDonationForm, setSelectedDonationForm] = useState(null);
-  
-  // Confirmation modal state
   const [confirmationModal, setConfirmationModal] = useState({ action: '', open: false });
-  
-  // Tab and UI state
   const [activeTab, setActiveTab] = useState('form');
   const [expandedDonator, setExpandedDonator] = useState(null);
   const [highlightedDonator, setHighlightedDonator] = useState(null);
-  
-  // Count states
   const [donationCount, setDonationCount] = useState(0);
   const [lendingCount, setLendingCount] = useState(0);
   const [acceptedCount, setAcceptedCount] = useState(0);
   const [rejectedCount, setRejectedCount] = useState(0);
-
-  // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All Actions');
   const [columnFilter, setColumnFilter] = useState('');
   const [sortDirection, setSortDirection] = useState('asc');
   const [filteredData, setFilteredData] = useState({ acquisitions: [] });
-
-  // Toast message state
   const [toastConfig, setToastConfig] = useState({
     isVisible: false,
     message: '',
     type: 'success'
   });
 
-  const token = localStorage.getItem('token');
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  // Add state for document management
+  const [documentView, setDocumentView] = useState(false);
+  const [storedDocuments, setStoredDocuments] = useState([]);
+
+  
+
+  // Function to fetch documents from localStorage
+  const fetchDocuments = () => {
+    const docs = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('document_')) {
+        try {
+          const docData = JSON.parse(localStorage.getItem(key));
+          docs.push({ 
+            key: key, 
+            ...docData
+          });
+        } catch (error) {
+          console.error('Error parsing document from localStorage:', error);
+        }
+      }
+    }
+    setStoredDocuments(docs);
+  };
+
+  // Function to handle document download
+  const handleDocumentDownload = (doc) => {
+    const link = document.createElement('a');
+    link.href = doc.data; // Use the data URL directly
+    link.download = doc.name || 'document';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Function to delete document
+  const handleDocumentDelete = (key) => {
+    if (window.confirm('Are you sure you want to delete this document?')) {
+      localStorage.removeItem(key);
+      fetchDocuments();
+      showToast('Document deleted successfully', 'success');
+    }
+  };
 
   // Toast functions
   const showToast = (message, type = 'success') => {
@@ -68,6 +98,9 @@ const Acquisition = () => {
       isVisible: false
     });
   };
+
+  const token = localStorage.getItem('token');
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
   // Format date functions
   const formatDate = (date) => {
@@ -129,53 +162,6 @@ const Acquisition = () => {
     );
   };
 
-  // Filter forms based on search and status
-  const filterForms = (forms) => {
-    return forms.filter(form => {
-      // Search matching
-      const matchesSearch = !searchQuery || 
-                          (form.artifact_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          form.Donator?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      // Status filtering
-      const formStatus = form.ContributionType?.status;
-      const transferStatus = form.ContributionType?.transfer_status;
-      
-      // Match forms based on either normal status or transfer status
-      const matchesStatus = 
-        statusFilter === 'All Actions' || 
-        standardizeStatus(formStatus) === statusFilter ||
-        // Fix for transfer status filtering
-        (statusFilter === 'Acquired' && standardizeStatus(transferStatus) === 'Acquired') ||
-        (statusFilter === 'Failed' && standardizeStatus(transferStatus) === 'Failed');
-      
-      // Date filtering based on selectedDate (replaced date range)
-      let matchesDate = true;
-      if (selectedDate) {
-        const formDate = new Date(form.donation_date || form.createdAt);
-        const selectedDateTime = new Date(selectedDate);
-        
-        // Compare only the date part (year, month, day)
-        matchesDate = 
-          formDate.getFullYear() === selectedDateTime.getFullYear() && 
-          formDate.getMonth() === selectedDateTime.getMonth() && 
-          formDate.getDate() === selectedDateTime.getDate();
-      }
-      
-      return matchesSearch && matchesStatus && matchesDate;
-    });
-  };
-
-  // Handle sort functionality
-  const handleSort = (column) => {
-    if (columnFilter === column) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setColumnFilter(column);
-      setSortDirection('asc');
-    }
-  };
-
   // Fetch forms from backend
   const fetchForms = async () => {
     try {
@@ -216,6 +202,42 @@ const Acquisition = () => {
     }
   };
 
+  // Filter forms based on search and status
+  const filterForms = (forms) => {
+    return forms.filter(form => {
+      // Search matching
+      const matchesSearch = !searchQuery || 
+                          (form.artifact_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          form.Donator?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // Status filtering
+      const formStatus = form.ContributionType?.status;
+      const transferStatus = form.ContributionType?.transfer_status;
+      
+      // Match forms based on either normal status or transfer status
+      const matchesStatus = 
+        statusFilter === 'All Actions' || 
+        standardizeStatus(formStatus) === statusFilter ||
+        (statusFilter === 'Acquired' && standardizeStatus(transferStatus) === 'Acquired') ||
+        (statusFilter === 'Failed' && standardizeStatus(transferStatus) === 'Failed');
+      
+      // Date filtering based on selectedDate
+      let matchesDate = true;
+      if (selectedDate) {
+        const formDate = new Date(form.donation_date || form.createdAt);
+        const selectedDateTime = new Date(selectedDate);
+        
+        // Compare only the date part (year, month, day)
+        matchesDate = 
+          formDate.getFullYear() === selectedDateTime.getFullYear() && 
+          formDate.getMonth() === selectedDateTime.getMonth() && 
+          formDate.getDate() === selectedDateTime.getDate();
+      }
+      
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  };
+
   // Handle date change
   const handleDateChange = (date) => {
     setSelectedDate(date);
@@ -226,42 +248,40 @@ const Acquisition = () => {
     }
   };
 
+  // Handle confirmation action
+  const handleConfirmAction = async () => {
+    if (!selectedForm) return;
 
- // Handle confirmation action
-const handleConfirmAction = async () => {
-  if (!selectedForm) return;
+    try {
+      const status = confirmationAction === 'approve' ? 'accepted' : 'rejected';
 
-  try {
-    const status = confirmationAction === 'approve' ? 'accepted' : 'rejected';
+      // Update the form status
+      await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/status`, { status });
 
-    // Update the form status
-    await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/status`, { status });
+      // If the form is rejected, automatically set transfer status to Failed
+      if (status === 'rejected') {
+        await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
+          transfer_status: 'Failed'
+        });
+      } else if (status === 'accepted') {
+        // If the form is accepted, set transfer status to On Progress
+        await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
+          transfer_status: 'On Progress'
+        });
+      }
 
-    // If the form is rejected, automatically set transfer status to Failed
-    if (status === 'rejected') {
-      await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
-        transfer_status: 'Failed'
-      });
-    } else if (status === 'accepted') {
-      // If the form is accepted, set transfer status to On Progress
-      await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
-        transfer_status: 'On Progress'
-      });
+      // Optionally, update the `updated_at` timestamp
+      await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/timestamp`);
+
+      showToast(`Form ${status === 'accepted' ? 'approved' : 'rejected'} successfully!`, 'success');
+      fetchForms(); // Refresh forms list
+    } catch (error) {
+      console.error('Error processing action:', error);
+      showToast('Failed to update form status', 'error');
     }
 
-    // Optionally, update the `updated_at` timestamp
-    await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/timestamp`);
-
-    showToast(`Form ${status === 'accepted' ? 'approved' : 'rejected'} successfully!`, 'success');
-    fetchForms(); // Refresh forms list
-  } catch (error) {
-    console.error('Error processing action:', error);
-    showToast('Failed to update form status', 'error');
-  }
-
-  setIsConfirmationOpen(false);
-};
-
+    setIsConfirmationOpen(false);
+  };
 
   // Handle delivery action
   const handleDeliveryAction = async (action) => {
@@ -303,6 +323,11 @@ const handleConfirmAction = async () => {
     setIsConfirmationOpen(true);
   };
 
+  const handleOpenModal = (form) => {
+    setSelectedForm(form);
+    setIsModalOpen(true);
+  };
+
   const handleOpenDonationModal = (form) => {
     setSelectedDonationForm(form);
     setIsDonationModalOpen(true);
@@ -311,11 +336,6 @@ const handleConfirmAction = async () => {
   const handleCloseDonationModal = () => {
     setIsDonationModalOpen(false);
     setSelectedDonationForm(null);
-  };
-
-  const handleOpenModal = (form) => {
-    setSelectedForm(form);
-    setIsModalOpen(true);
   };
 
   const handleToggleDropdown = (donorId) => {
@@ -328,9 +348,22 @@ const handleConfirmAction = async () => {
     }
   };
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-  };
+  // Fetch documents when tab changes or component loads
+  useEffect(() => {
+    if (documentView) {
+      fetchDocuments();
+    }
+  }, [documentView]);
+
+  // Initial data load
+  useEffect(() => {
+    fetchForms();
+  }, []);
+
+  // Effect to refresh data when date changes
+  useEffect(() => {
+    fetchForms();
+  }, [selectedDate]);
 
   // Group donations by donor for the donator records view
   const donationGroups = forms.reduce((acc, form) => {
@@ -350,11 +383,6 @@ const handleConfirmAction = async () => {
   }, {});
 
   const donationGroupsArray = Object.values(donationGroups);
-
-  // Initialize data on component mount
-  useEffect(() => {
-    fetchForms();
-  }, []);
 
   // Update filtered data when source data or filters change
   useEffect(() => {
@@ -407,11 +435,6 @@ const handleConfirmAction = async () => {
     setFilteredData({ acquisitions: filtered });
   }, [acquisitions, searchQuery, statusFilter, columnFilter, sortDirection, selectedDate]);
 
-  // Effect to refresh data when date changes
-  useEffect(() => {
-    fetchForms();
-  }, [selectedDate]);
-
   return (
     <>
       <div className='w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]'>
@@ -427,20 +450,21 @@ const handleConfirmAction = async () => {
           <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
             {/* Left Panel: Stats + Tabs */}
             <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
-              {/* Tab Selector */}
-              <div className='w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex justify-start py-2 gap-x-2'>
+              {/* Tab Selector - add Documents tab */}
+              <div className='w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex justify-start py-2 gap-x-2 flex-wrap'>
                 <button
-                  className={`px-4 h-full border-1 rounded-lg cursor-pointer ${activeTab === 'form' ? 'bg-black text-white' : 'border-gray-500'}`}
-                  onClick={() => handleTabChange('form')}
+                  className={`px-4 h-full border-1 rounded-lg cursor-pointer ${activeTab === 'form' && !documentView ? 'bg-black text-white' : 'border-gray-500'}`}
+                  onClick={() => { setActiveTab('form'); setDocumentView(false); }}
                 >
                   <span className='text-2xl font-semibold'>Form</span>
                 </button>
                 <button
-                  className={`px-4 h-full border-1 rounded-lg cursor-pointer ${activeTab === 'donationRecords' ? 'bg-black text-white' : 'border-gray-500'}`}
-                  onClick={() => handleTabChange('donationRecords')}
+                  className={`px-4 h-full border-1 rounded-lg cursor-pointer ${activeTab === 'donationRecords' && !documentView ? 'bg-black text-white' : 'border-gray-500'}`}
+                  onClick={() => { setActiveTab('donationRecords'); setDocumentView(false); }}
                 >
                   <span className='text-2xl font-semibold'>Donation Records</span>
                 </button>
+              
               </div>
 
               {/* Stats Section */}
@@ -718,7 +742,13 @@ const handleConfirmAction = async () => {
             </div>
           </div>
         </div>
+        <SelectedDonatorModal
+        isOpen={isDonationModalOpen}
+        onClose={handleCloseDonationModal}
+        selectedDonationForm={selectedDonationForm}
+      />
       </div>
+
 
       {/* Modals */}
       <AcquisitionModal

@@ -134,7 +134,8 @@ const Form = () => {
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [narrative, setNarrative] = useState('');
   const [images, setImages] = useState('');
-  const [documents, setDocuments] = useState('');
+  const [documentFiles, setDocumentFiles] = useState([]);
+  const [uploadedDocuments, setUploadedDocuments] = useState([]);
   const [relatedImages, setRelatedImages] = useState('');
 
   // Lending-specific fields
@@ -169,9 +170,72 @@ const Form = () => {
     setShowConfirmationModal(true);
   };
 
-  // Actual submit request
+  const handleDocumentUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const newDocumentFiles = [];
+    
+    files.forEach(file => {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`File ${file.name} is too large. Maximum size is 5MB.`);
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = () => {
+        const fileInfo = {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          data: reader.result, // Base64 encoded data
+          uploadDate: new Date().toISOString()
+        };
+        
+        // Store file data in local storage
+        const fileKey = `document_${Date.now()}_${file.name}`;
+        localStorage.setItem(fileKey, JSON.stringify(fileInfo));
+        
+        const newFile = { key: fileKey, ...fileInfo };
+        newDocumentFiles.push(newFile);
+        
+        if (newDocumentFiles.length === files.length) {
+          setUploadedDocuments(prev => [...prev, ...newDocumentFiles]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Reset the input value to allow selecting the same file again
+    e.target.value = '';
+  };
+  
+  // Remove document from state and local storage
+  const removeDocument = (fileKey) => {
+    localStorage.removeItem(fileKey);
+    setUploadedDocuments(prev => prev.filter(doc => doc.key !== fileKey));
+  };
+
+  // Cleanup URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      documentFiles.forEach(file => {
+        if (file.objectUrl) URL.revokeObjectURL(file.objectUrl);
+      });
+    };
+  }, [documentFiles]);
+
+  // Updated handleSubmit
   const handleSubmit = async () => {
     setShowConfirmationModal(false);
+
+    // Extract just the keys and minimal info for server submission
+    const documentKeys = uploadedDocuments.map(doc => ({
+      key: doc.key,
+      name: doc.name,
+      type: doc.type,
+      size: doc.size,
+      uploadDate: doc.uploadDate
+    }));
 
     // Build request payload
     const payload = {
@@ -195,12 +259,12 @@ const Form = () => {
       additional_info: additionalInfo,
       narrative,
       images,
-      documents,
+      documents: documentKeys, // Send just the keys and minimal info
       related_images: relatedImages,
-      transfer_status: 'on_progress', // Set fixed value here
+      transfer_status: 'on_progress',
 
       // If formType is 'lending', include the relevant fields
-      formType, // either "donation" or "lending"
+      formType,
       ...(formType === 'lending' && {
         durationPeriod,
         remarks,
@@ -210,14 +274,13 @@ const Form = () => {
     };
 
     try {
-      // Send data to your backend
       const response = await axios.post(
         'http://localhost:5000/api/auth/form',
         payload
       );
 
       if (response.status === 201) {
-        // Clear everything
+        // Clear form fields
         setFirstName('');
         setLastName('');
         setEmail('');
@@ -236,7 +299,7 @@ const Form = () => {
         setAdditionalInfo('');
         setNarrative('');
         setImages('');
-        setDocuments('');
+        setUploadedDocuments([]);
         setRelatedImages('');
 
         // Reset lending fields
@@ -255,6 +318,9 @@ const Form = () => {
       console.error('Request failed:', error);
     }
   };
+
+
+  
 
   return (
     <>
@@ -658,17 +724,40 @@ const Form = () => {
                 </div>
 
                 {/* Documentation Files */}
-                <div className="grid md:grid-cols-12 items-center gap-4 mb-6">
-                  <label className="col-span-5 md:col-span-3 text-xl font-bold">
+                
+            {/* Updated Documentation Files section */}
+            <div className="grid md:grid-cols-12 items-center gap-4 mb-6">
+                        <label className="col-span-5 md:col-span-3 text-xl font-bold">
                     Relevant Documentation
                   </label>
-                  <input
-                    type="file"
-                    multiple
-                    value={documents}
-                    onChange={(e) => setDocuments(e.target.value)}
-                    className="col-span-7 md:col-span-9 px-4 py-2 border-2 border-black rounded-2xl placeholder-gray-500 text-sm"
-                  />
+                  <div className="col-span-7 md:col-span-9 flex flex-col gap-2">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleDocumentUpload}
+                      className="px-4 py-2 border-2 border-black rounded-2xl text-sm"
+                    />
+                    
+                    {uploadedDocuments.length > 0 && (
+                      <div className="mt-2 border p-2 rounded-md">
+                        <p className="font-semibold mb-1">Uploaded Documents:</p>
+                        <ul className="space-y-1">
+                          {uploadedDocuments.map((doc, index) => (
+                            <li key={index} className="flex justify-between items-center">
+                              <span>{doc.name} ({Math.round(doc.size / 1024)} KB)</span>
+                              <button 
+                                onClick={() => removeDocument(doc.key)}
+                                className="text-red-600 hover:text-red-800"
+                                type="button"
+                              >
+                                Remove
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Related Images */}
