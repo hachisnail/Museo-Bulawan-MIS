@@ -209,7 +209,7 @@ export const ArtifactAdd = ({ onClose }) => {
 
       <form
         onSubmit={handleSubmit}
-        className="w-full h-full flex flex-col xl:flex-row gap-x-10 overflow-auto"
+        className="w-full h-full flex flex-col xl:flex-row gap-x-10 px-10 overflow-auto"
       >
         {/* Left Column */}
         <div className="h-auto w-full xl:w-[65rem] flex flex-col gap-y-6">

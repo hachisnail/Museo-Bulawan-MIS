@@ -11,6 +11,8 @@ import axios from 'axios'
 import Toast from '../../components/function/Toast'
 import { useEffect } from 'react'
 import { AppointmentModal } from '../../components/modals/AppointmentModal'
+import { connectWebSocket, closeWebSocket } from '../../utils/websocket'
+
 
 // ---------------- UTILITY FUNCTIONS ----------------
 // Add this function to the utility functions section (around line 70)
@@ -863,12 +865,39 @@ const Schedule = () => {
     }
   };
 
-  // Consolidated useEffect hooks
   useEffect(() => {
     console.log("Date changed, fetching data for:", dateString);
     fetchEvents();
     fetchTodayTours();
+  
+    const handleDataChange = () => {
+      console.log('WebSocket: Data changed, refreshing all components...');
+      
+      // Refresh all components that need updates
+      fetchEvents();         // Update day scheduler events
+      fetchTodayTours();     // Update today's scheduled tours
+      fetchMonthEvents();    // Update calendar view with event counts (this is key for calendar dots)
+    }
+  
+    const handleRefresh = () => {
+      console.log('WebSocket: Refresh command received, refreshing all components...');
+      
+      // Refresh all components that need updates
+      fetchEvents();         // Update day scheduler events
+      fetchTodayTours();     // Update today's scheduled tours
+      fetchMonthEvents();    // Update calendar view with event counts (this is key for calendar dots)
+    }
+  
+    // Connect to WebSocket and set up handlers
+    connectWebSocket(handleDataChange, handleRefresh);
+    
+    // Cleanup function to close WebSocket connection when component unmounts
+    return () => {
+      closeWebSocket();
+    }
   }, [selectedDate, dateString]);
+  
+  
 
   // Separate useEffect for month view calendar events
   useEffect(() => {
@@ -1185,7 +1214,7 @@ const Schedule = () => {
               </div>
 
               {/* Today's Scheduled Tours */}
-              <div className="min-w-[31rem] max-w-[31rem] flex flex-col min-h-[35rem] bg-white rounded-xl shadow-xl p-5">
+              <div className="min-w-[31rem] max-w-[31rem] flex flex-col min-h-[30rem] bg-white rounded-xl shadow-xl p-5">
                 <span className="text-2xl font-semibold mb-4">Today's Scheduled Tours</span>
                 <div className="w-full border-t border-gray-200 pt-4 space-y-3 max-h-120 overflow-y-auto">
                   {todayTours.length === 0 && (
