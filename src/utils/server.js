@@ -17,6 +17,7 @@ import Credential from './models/Credential.js';
 import Appointment from './models/Appointment.js';
 import Invitation from './models/Invitation.js';
 import Log from './models/Log.js';
+import Schedule from './models/Schedule.js';
 
 dotenv.config(); 
 
@@ -39,7 +40,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'hachsinail';
 const userConnections = new Map();
 
 const setupModelHooks = () => {
-  const models = [User, Credential, Appointment, Invitation, Log];
+  const models = [User, Credential, Appointment, Invitation, Log, Schedule];
   
   models.forEach(model => {
     model.addHook('afterCreate', (instance, options) => {

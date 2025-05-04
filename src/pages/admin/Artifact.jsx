@@ -26,7 +26,7 @@ const Artifact = () => {
         <div className='w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
           
           
-          {isAddArtifactOpen ?  (<ArtifactAdd onClose={closeArtifactModal} />) : (
+          {isAddArtifactOpen ? (<ArtifactAdd onClose={closeArtifactModal} />) : (
           <>
           <span className=' text-5xl font-semibold'>Inventory</span>
           <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
