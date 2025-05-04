@@ -6,7 +6,8 @@ import Calendar from 'react-calendar'
 import TimePicker from 'react-time-picker'
 import 'react-calendar/dist/Calendar.css'
 import 'react-time-picker/dist/TimePicker.css'
-import appointments from '../admin/sample.json'
+// import appointments from '../admin/sample.json'
+import LiveClock from '../../components/function/LiveClock'
 import axios from 'axios'
 import Toast from '../../components/function/Toast'
 import { useEffect } from 'react'
@@ -475,9 +476,9 @@ const Schedule = () => {
   const weekdayName = selectedDate.toLocaleString('default', { weekday: 'long' })
   const dayNum = selectedDate.getDate()
   // Filter only items that match selected day for "Today's Scheduled Tours"
-  const todaysTours = appointments
-    .filter((apt) => apt.date === dateString)
-    .sort((a, b) => timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime))
+  // const todaysTours = appointments
+  //   .filter((apt) => apt.date === dateString)
+  //   .sort((a, b) => timeStringToMinutes(a.startTime) - timeStringToMinutes(b.startTime))
 
   const [backendEvents, setBackendEvents] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -869,7 +870,7 @@ const Schedule = () => {
     console.log("Date changed, fetching data for:", dateString);
     fetchEvents();
     fetchTodayTours();
-  
+    fetchMonthEvents();
     const handleDataChange = () => {
       console.log('WebSocket: Data changed, refreshing all components...');
       
@@ -1311,17 +1312,16 @@ const Schedule = () => {
             {/* RIGHT SECTION - Clock, Form, and Selected Appointment */}
             <div className="min-w-[31rem] h-full flex flex-col gap-y-5">
               {/* Simple Clock (placeholder) */}
+              {/* Live Clock with Time Context */}
               <div className="w-full rounded-xl bg-white shadow-xl p-6 flex items-center justify-center gap-x-8 hover:shadow-2xl transition-shadow">
                 <div className="bg-gray-100 p-3 rounded-full">
                   <i className="text-5xl fa-solid fa-clock text-[#9590FF]" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-5xl font-bold">12:00pm</span>
-                  <span className="text-2xl font-semibold text-end text-[#9590FF]">
-                    Lunch Time
-                  </span>
+                  <LiveClock />
                 </div>
               </div>
+
 
               {/* Add Schedule */}
               <div className="w-full max-w-lg mx-auto rounded-2xl bg-white shadow-2xl p-8 space-y-6">
