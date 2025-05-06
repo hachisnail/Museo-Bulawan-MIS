@@ -100,8 +100,8 @@ export const getAllArticles = async (req, res) => {
 };
 
 export const getPublicArticles = async (req, res) => {
-  // console.log("Hit /api/public-article/:id")
-  const API_URL = import.meta.env.VITE_API_URL;
+  //  console.log("Hit /api/public-article/:id")
+   const API_URL = process.env.VITE_API_URL;
 
   try {
     const articles = await Article.findAll({
