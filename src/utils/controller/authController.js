@@ -5,33 +5,36 @@ import User from '../models/Users.js';
 import sessionManager from '../services/SessionManager.js';
 import tokenService from '../services/TokenService.js';
 
-// Dedicated helper function to extract real client IP in Coolify environment
+// Helper function specifically designed for Cloudflare Tunnel environments
 const getClientIP = (req) => {
-  // Debug logging to see what headers are available
-  console.log('===== IP DETECTION DEBUG INFO =====');
-  console.log('Headers:', JSON.stringify(req.headers, null, 2));
-  console.log('req.ip:', req.ip);
-  console.log('req.connection.remoteAddress:', req.connection?.remoteAddress);
-  console.log('req.socket.remoteAddress:', req.socket?.remoteAddress);
+  // For Cloudflare Tunnel, cf-connecting-ip is the most reliable header
+  // This works regardless of trust proxy settings in Express
   
-  // Coolify uses either x-forwarded-for or x-real-ip
-  // We need to force this regardless of trust proxy setting
-  const realIP = (
-    req.headers['x-forwarded-for'] ? 
-      req.headers['x-forwarded-for'].split(',')[0].trim() : 
-      null
-    ) ||
-    req.headers['x-real-ip'] ||
-    req.headers['cf-connecting-ip'] || 
-    (req.connection ? req.connection.remoteAddress : null) ||
-    (req.socket ? req.socket.remoteAddress : null) ||
+  console.log('===== CLOUDFLARE TUNNEL IP DETECTION =====');
+  
+  // Priority order for Cloudflare Tunnel environments
+  const clientIP = 
+    req.headers['cf-connecting-ip'] ||  // Cloudflare Tunnel specific (highest priority)
+    (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : null) ||
+    req.headers['true-client-ip'] ||    // Alternative Cloudflare header
+    req.headers['x-real-ip'] || 
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
     req.ip ||
-    '0.0.0.0'; // Last resort fallback
+    '0.0.0.0';  // Fallback
   
-  console.log('Detected client IP:', realIP);
-  console.log('=================================');
+  // Log all relevant headers to help debugging
+  console.log(`Cloudflare Client IP (cf-connecting-ip): ${req.headers['cf-connecting-ip'] || 'not set'}`);
+  console.log(`True Client IP (true-client-ip): ${req.headers['true-client-ip'] || 'not set'}`);
+  console.log(`Forwarded IP (x-forwarded-for): ${req.headers['x-forwarded-for'] || 'not set'}`);
+  console.log(`Real IP (x-real-ip): ${req.headers['x-real-ip'] || 'not set'}`);
+  console.log(`Express IP: ${req.ip || 'not set'}`);
+  console.log(`Connection Remote IP: ${req.connection?.remoteAddress || 'not available'}`);
+  console.log(`Socket Remote IP: ${req.socket?.remoteAddress || 'not available'}`);
+  console.log(`Final determined client IP: ${clientIP}`);
+  console.log('======================================');
   
-  return realIP;
+  return clientIP;
 };
 
 export const login = async (req, res) => {
@@ -51,17 +54,18 @@ export const login = async (req, res) => {
 
     console.log(`User ${credential.id} (${email}) authenticated successfully`);
 
-    // Force override any trust proxy settings to get the real client IP
-    const realClientIP = getClientIP(req);
-    
+    // Get real client IP from Cloudflare Tunnel
+    const clientIP = getClientIP(req);
+    console.log(`User ${credential.id} logging in from IP: ${clientIP}`);
+
     // Create a new session with the real client IP
     const session = await sessionManager.createSession({
       credentialId: credential.id,
-      ipAddress: realClientIP,
+      ipAddress: clientIP,
       userAgent: req.headers['user-agent']
     });
 
-    console.log(`Created new session ${session.id} for user ${credential.id} from IP ${realClientIP}`);
+    console.log(`Created new session ${session.id} for user ${credential.id}`);
 
     // Generate token with session ID included
     const payload = {
