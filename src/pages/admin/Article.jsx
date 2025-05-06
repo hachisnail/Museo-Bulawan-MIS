@@ -1,455 +1,241 @@
-// Updated Article.jsx file with proper column implementation
-import React, { useState, useEffect } from 'react';
-import AdminNav from '../../components/navbar/AdminNav';
+import React, { useEffect, useState } from 'react';
+import { Link, ScrollRestoration } from 'react-router-dom';
 import axios from 'axios';
-import CustomDatePicker from '../../components/function/CustomDatePicker';
-import { useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import TextAlign from '@tiptap/extension-text-align';
-import Underline from '@tiptap/extension-underline';
-import { ColumnExtension } from '@gocapsule/column-extension'
-import ArticleModal from '../../components/modals/ArticleModal'; 
 
-import {
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-} from 'lucide-react';
+import LandingNav from '../../components/navbar/LandingNav';
+import backgroundImage from '../../../src/assets/Fernando-Amorsolo-Women-Bathing-and-Washing Clothes-7463.png';
 
-const ArticleForm = () => {
-  // Form state
-  const [title, setTitle] = useState("")
-  const [author, setAuthor] = useState("")
-  const [category, setCategory] = useState("")
-  const [address, setAddress] = useState("")
-  const [selectedDate, setSelectedDate] = useState("")
-  const [thumbnail, setThumbnail] = useState(null)
-  const [showModal, setShowModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingArticleId, setEditingArticleId] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
-  
-  // Articles state
+// Example municipality list
+const municipalities = [
+  "Basud", "Capalonga", "Daet", "Jose Panganiban", "Labo",
+  "Mercedes", "Paracale", "San Lorenzo Ruiz", "San Vicente", 
+  "Santa Elena", "Talisay", "Vinzons"
+];
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+const Content = () => {
   const [articles, setArticles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filterDate, setFilterDate] = useState(new Date());
-  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const Categories = ['Education', 'Exhibit', 'Contents', 'Other'];
-  const token = localStorage.getItem('token');
-  
-  // Define path to your uploads folder - important for displaying images in the modal
-  const BASE_URL = import.meta.env.VITE_API_URL
-  const UPLOAD_PATH = `${BASE_URL}/uploads/`;
+  // Optional filters
+  const [keyword, setKeyword] = useState('');
+  const [category, setCategory] = useState('');
+  const [municipality, setMunicipality] = useState('');
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline, // Add Underline extension
-      TextAlign.configure({
-        types: ['heading', 'paragraph'],
-        alignments: ['left', 'center', 'right', 'justify'],
-      }),
-      ColumnExtension, // Use ColumnExtension (not as function call)
-    ],
-    content: "", 
-    onUpdate: ({ editor }) => {
-      // You can add this if you want to debug the editor content
-      console.log(editor.getHTML());
-    },
-  });
-  // Fetch articles on component mount
   useEffect(() => {
     fetchArticles();
   }, []);
 
-  // Fetch articles from the server
+  // Fetch articles (similar to admin logic, but in a "landing" style)
   const fetchArticles = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${BASE_URL}/api/auth/articles`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      });
-      
+      const response = await axios.get(`${API_URL}/api/auth/public-articles`);
       setArticles(response.data);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching articles:", err);
-      setError("Failed to load articles. Check that the API server is running.");
+      setError("Failed to load articles. (Unauthorized or server error)");
       setLoading(false);
     }
   };
 
-  // Handle form submission for new or edited articles
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-  
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("article_category", category);
-    formData.append("description", editor?.getHTML() || "");
-    formData.append("user_id", 1);
-    formData.append("author", author);
-    formData.append("address", address);
-    formData.append("selectedDate", selectedDate);
-  
-    // Only append thumbnail if it's a File object (not a string from existing image)
-    if (thumbnail && thumbnail instanceof File) {
-      formData.append("thumbnail", thumbnail);
-    }
-  
-    try {
-      let response;
-      
-      if (isEditing) {
-        
-        response = await axios.put(
-          `${BASE_URL}/api/auth/article/${editingArticleId}`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-            withCredentials: true,
-          }
-        );
-        console.log("Article updated successfully!", response.data);
-      } else {
-        // Create new article
-        response = await axios.post(
-          `${BASE_URL}/api/auth/article`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
-            },
-            withCredentials: true,
-          }
-        );
-        console.log("Article created successfully!", response.data);
-      }
-      
-      // Reset form and state
-      resetForm();
-      
-      // Refresh articles list
-      fetchArticles();
-    } catch (error) {
-      console.error(`Error ${isEditing ? 'updating' : 'creating'} article:`, error.response?.data || error.message);
-    }
-  };
-  
+  // Filter logic for demonstration: checks title, author, category, address
+  const filteredArticles = articles.filter((article) => {
+    const matchesKeyword = !keyword ||
+      article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
+      article.author?.toLowerCase().includes(keyword.toLowerCase());
 
-  // Reset form fields and editing state
-  const resetForm = () => {
-    setTitle("");
-    setAuthor("");
-    setCategory("");
-    setAddress("");
-    setSelectedDate("");
-    setThumbnail(null);
-    setPreviewImage(null);
-    editor?.commands.setContent("");
-    setShowModal(false);
-    setIsEditing(false);
-    setEditingArticleId(null);
-  };
+    const matchesCategory = !category ||
+      article.article_category?.toLowerCase() === category.toLowerCase();
 
-  // Handle row click to edit article
-  const handleRowClick = (article) => {
-    setIsEditing(true);
-    setEditingArticleId(article.article_id);
-    
-    // Set form values from article data
-    setTitle(article.title || "");
-    setAuthor(article.author || "");
-    setCategory(article.article_category || "");
-    setAddress(article.address || "");
-    
-    // Format date for the input field (YYYY-MM-DD)
-    if (article.upload_date) {
-      const date = new Date(article.upload_date);
-      const formattedDate = date.toISOString().split('T')[0];
-      setSelectedDate(formattedDate);
-    } else {
-      setSelectedDate("");
-    }
-    
-    // Set content in the editor
-    if (editor && article.description) {
-      editor.commands.setContent(article.description);
-    }
-    
-    // Handle thumbnail preview for editing
-    if (article.images) {
-      // If the image exists, we need to construct a URL to it
-      const imageUrl = `${UPLOAD_PATH}${article.images}`;
-      setPreviewImage(imageUrl);
-      setThumbnail(article.images);
-      // Store just the filename as a string (not a File object)      setThumbnail(article.images);
-    } else {
-      setPreviewImage(null);
-      setThumbnail(null);
-    }
-    
-    // Show the modal with populated data
-    setShowModal(true);
-  };
+    const matchesMunicipality = !municipality ||
+      article.address?.toLowerCase().includes(municipality.toLowerCase());
 
-  // Handle file input change
-  const handleThumbnailChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setThumbnail(file);
-      setPreviewImage(URL.createObjectURL(file));
-    }
-  };
-
-  // Filter articles based on search term
-  const filteredArticles = articles.filter(article => {
-    // Filter by search term
-    const searchMatch = !searchTerm || 
-      article.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.article_category?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return searchMatch;
+    return matchesKeyword && matchesCategory && matchesMunicipality;
   });
 
-  // Calculate counts
-  const postedCount = articles.filter(article => article.status === 'posted').length;
-  const pendingCount = articles.filter(article => article.status === 'pending').length;
-  const totalCount = articles.length;
-  
+  // Encode function for building a safe string
+  const encoded = (id, name) => {
+    const encodedString = `${id}::${name}`;
+    return btoa(encodedString);
+  };
+
+  // Function to build the proper image URL
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) {
+      return "https://fakeimg.pl/300x300?text=image?";
+    }
+    
+    // Check if the image already has a full URL
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // If it's just a filename, append it to the base URL
+    return `${API_URL}/uploads/${imagePath}`;
+  };
+
   return (
     <>
-      <div className='w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]'>
-        <div className='bg-[#1C1B19] w-auto min-h-full h-full min-w-[6rem] sm:min-w-auto'>
-          <AdminNav />
-        </div>
-        <div className='w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
-          <span className='text-5xl font-semibold'>Article Management</span>
-          <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
-            <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
-              {/* info bar */}
-              <div className='w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex justify-start py-2 gap-x-2'>
-                <button className='px-4 h-full border-1 border-black  text-white bg-black rounded-lg cursor-pointer'>
-                  <span className='text-2xl font-semibold'>Articles</span>
-                </button>
+      <ScrollRestoration />
+      <div className="bg-[#1C1B19] flex flex-col gap-y-4 w-screen pt-7 h-fit min-h-fit">
+        {/* Top Nav */}
+        <LandingNav />
+
+        {/* Background + Search UI */}
+        <div
+          className="w-screen h-[40rem] bg-cover bg-center bg-no-repeat relative"
+          style={{ backgroundImage: `url(${backgroundImage})` }}
+        >
+          <div className="absolute inset-0 flex justify-center items-center">
+            <div className="grid grid-cols-4 w-[90%] max-w-6xl h-15">
+              {/* Keyword Input */}
+              <div className="flex items-center justify-center bg-white text-black border-r border-black">
+                <input
+                  type="text"
+                  placeholder="Enter keyword"
+                  className="w-full h-full px-4 text-4xl lg:text-5xl bg-transparent focus:outline-none"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                />
               </div>
 
-              <div className='w-full h-full flex flex-col gap-y-[5rem]'>
-                <div className='bg-[#161616] px-4 h-[5rem] flex justify-between items-center rounded-sm'>
-                  <span className='text-2xl text-white font-semibold'>Articles</span>
-                  <div className='w-[6rem] h-[3rem] bg-[#D4DBFF] flex items-center justify-center rounded-md'>
-                    <span className='text-2xl text-black font-semibold'>{totalCount || 0}</span>
-                  </div>
-                </div>
-
-                <div className='w-full h-auto flex flex-col gap-y-7'>
-                  {/* Date */}
-                  <span className='text-2xl font-semibold text-[#727272]'>
-                    {new Date().toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}
-                  </span>
-                  <div className='w-full h-fit flex justify-between items-center'>
-                    <span className='text-2xl font-semibold'>Posted</span>
-                    <div className='w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center'>
-                      <span className='text-2xl font-semibold'>{postedCount || 0}</span>
-                    </div>
-                  </div>
-
-                  <div className='w-full h-fit flex justify-between items-center'>
-                    <span className='text-2xl font-semibold'>Pending</span>
-                    <div className='w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center'>
-                      <span className='text-2xl font-semibold'>{pendingCount || 0}</span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      resetForm();
-                      setShowModal(true);
-                    }}
-                    className="cursor-pointer flex items-center justify-between w-full px-6 py-4 bg-[#6BFFD5] text-black font-medium"
+              {/* Category Dropdown */}
+              <div className="relative flex items-center justify-center bg-white text-black border-r border-black">
+                <select
+                  className="w-full h-full px-4 text-4xl lg:text-5xl bg-transparent appearance-none focus:outline-none"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  <option value="">Category</option>
+                  <option value="Education">Education</option>
+                  <option value="Exhibit">Exhibit</option>
+                  <option value="Contents">Contents</option>
+                  <option value="Workshop">Workshop</option>
+                  <option value="Seminar">Seminar</option>
+                  {/* more if needed */}
+                </select>
+                <div className="pointer-events-none absolute right-2">
+                  <svg
+                    className="h-8 w-8 text-black"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <span className='text-2xl font-semibold'>Add New Article</span>
-                    <span className="border-2 border-black rounded-full p-2 flex items-center justify-center">
-                      <i className="fas fa-plus text-xl"></i>
-                    </span>
-                  </button>
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth="2" 
+                      d="M19 9l-7 7-7-7" 
+                    />
+                  </svg>
                 </div>
               </div>
-            </div>
 
-            <div className='w-full h-full flex flex-col gap-y-7 overflow-x-scroll overflow-y-scroll'>
-              {/* table */}
-              <div className='min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2'>
-                {/* Date Filter */}
-                <div className='flex-shrink-0'>
-                  <CustomDatePicker
-                    selected={filterDate}
-                    onChange={(date) => setFilterDate(date)}
-                    popperPlacement="bottom-start"
-                    popperClassName="z-50"
-                    customInput={
-                      <button className='px-3 h-16 rounded-lg border-1 border-gray-500 cursor-pointer'>
-                        <i className="text-gray-500 fa-regular fa-calendar text-4xl"></i>
-                      </button>
-                    }
-                  />
-                </div>
-
-                {/* Search Box */}
-                <div className="relative h-full min-w-[20rem]">
-                  <i className="text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"></i>
-                  <input
-                    type="text"
-                    placeholder="Search Articles"
-                    className="h-full pl-10 pr-3 py-2 border-1 border-gray-500 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                {/* Filter by Category */}
-                <div className="relative h-full min-w-48">
-                  <select 
-                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {/* Municipality Dropdown */}
+              <div className="relative flex items-center justify-center bg-white text-black border-r border-black">
+                <select
+                  className="w-full h-full px-4 text-4xl lg:text-5xl bg-transparent appearance-none focus:outline-none"
+                  value={municipality}
+                  onChange={(e) => setMunicipality(e.target.value)}
+                >
+                  <option value="">Municipality</option>
+                  {municipalities.map((mun) => (
+                    <option key={mun} value={mun}>
+                      {mun}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute right-2">
+                  <svg
+                    className="h-8 w-8 text-black"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <option value="">All Categories</option>
-                    {Categories.map((cat, index) => (
-                      <option key={index} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
-                </div>
-
-                {/* Filter by Status */}
-                <div className="relative h-full min-w-48">
-                  <select className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Status</option>
-                    <option value="posted">Posted</option>
-                    <option value="pending">Pending</option>
-                  </select>
-                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </div>
               </div>
 
-              {/* Article Table Header */}
-              <div className='min-w-[94rem] w-full  font-semibold h-fit grid grid-cols-5 justify-between'>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Date
-                </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Title
-                </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Author
-                </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Category
-                </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Status
-                </div>
-              </div>
-
-              {/* Article Table Data */}
-              <div className='w-full min-w-[94rem] h-full flex flex-col border-t-1 border-t-gray-400'>
-                {loading ? (
-                  <div className="col-span-5 py-8 text-center text-2xl text-gray-500">
-                    Loading articles...
-                  </div>
-                ) : error ? (
-                  <div className="col-span-5 py-8 text-center text-2xl text-red-500">
-                    {error}
-                    <div className="mt-4">
-                      <button 
-                        onClick={fetchArticles}
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                      >
-                        Try Again
-                      </button>
-                    </div>
-                  </div>
-                ) : filteredArticles.length > 0 ? (
-                  filteredArticles.map((article) => (
-                    <div
-                      key={article.article_id}
-                      className='min-w-[94rem] text-xl h-fit font-semibold grid grid-cols-5 hover:bg-gray-300 cursor-pointer'
-                      onClick={() => handleRowClick(article)}
-                    >
-                      <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400'>
-                        {article.upload_date ? new Date(article.upload_date).toLocaleDateString() : new Date(article.created_at).toLocaleDateString()}
-                      </div>
-                      <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400 truncate'>
-                        {article.title}
-                      </div>
-                      <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400'>
-                        {article.author || 'Unknown'}
-                      </div>
-                      <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400'>
-                        {article.article_category}
-                      </div>
-                      <div className='px-4 py-1 border-b-1 border-gray-400'>
-                        <span className={`text-white rounded-md px-4 py-1 ${
-                          article.status === 'posted' ? 'bg-[#4CAF50]' : 'bg-[#5C4624]'
-                        }`}>
-                          {article.status === 'posted' ? 'Posted' : 'Pending'}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
-                          <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
-                            <i className="fas fa-inbox text-5xl mb-4"></i>
-                            <p>No article found</p>
-                            <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
-                          </div>
-                  </div>
-                )}
-              </div>
+              {/* Search Button */}
+              <button
+                className="flex items-center justify-center text-4xl lg:text-5xl border-2 border-transparent bg-black text-white hover:bg-white hover:text-black hover:border-black transition-all duration-300 cursor-pointer"
+                onClick={fetchArticles}
+              >
+                Search
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Add/Edit Article Modal */}
-        <ArticleModal
-          showModal={showModal}
-          onClose={resetForm}
-          isEditing={isEditing}
-          editor={editor}
-          title={title}
-          setTitle={setTitle}
-          author={author}
-          setAuthor={setAuthor}
-          category={category}
-          setCategory={setCategory}
-          address={address}
-          setAddress={setAddress}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-          thumbnail={thumbnail}
-          previewImage={previewImage}
-          handleThumbnailChange={handleThumbnailChange}
-          Categories={Categories}
-          onSubmit={handleSubmit}
-          resetForm={resetForm}
-        />
+      {/* Articles Grid Section  */}
+      <div className="bg-[#1C1B19] min-h-screen py-15">
+        <div className="w-full px-4 mx-auto flex justify-around">
+          {loading && (
+            <div className="text-center text-white text-xl">
+              Loading articles...
+            </div>
+          )}
+          {error && (
+            <div className="text-center text-red-500 text-xl">
+              {error}
+            </div>
+          )}
+          {!loading && !error && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 gap-x-20">
+              {filteredArticles.map((article, index) => {
+                const imageSrc = getImageUrl(article.images);
+                
+                const displayDate = article.upload_date
+                  ? new Date(article.upload_date).toLocaleDateString()
+                  : "No Date";
+
+                return (
+                  <Link
+                    key={article.article_id || index}
+                    to={`/article/${encoded(article.article_id, article.title)}`}
+                    className="flex flex-col items-center text-center hover:opacity-90 transition duration-300"
+                  >
+                    {/* Thumbnail */}
+                    <img
+                      src={imageSrc}
+                      alt={`Article ${article.article_id}`}
+                      className="w-[300px] h-auto"
+                    />
+
+                    {/* Category */}
+                    <p className="text-[#F05454] text-base uppercase mt-2">
+                      {article.article_category || 'No Category'}
+                    </p>
+
+                    {/* Title */}
+                    <h2 className="text-white text-2xl font-bold mt-1">
+                      {article.title || 'Untitled'}
+                    </h2>
+
+                    {/* Date */}
+                    <p className="text-gray-300 text-base mt-1">
+                      {displayDate}
+                    </p>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </>
-  )
-}
+  );
+};
 
-export default ArticleForm
+export default Content;
