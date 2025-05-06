@@ -2,7 +2,7 @@ import React from 'react'
 import AdminNav from '../../components/navbar/AdminNav'
 import axios from 'axios';
 import { useState, useEffect } from 'react';
-import { connectWebSocket, closeWebSocket } from '../../utils/websocket';
+import { connectWebSocket, closeWebSocket } from '../../utils/services/websocket';
 
 
 const Log = () => {

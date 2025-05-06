@@ -1,3 +1,4 @@
+// LoginLogs.js
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../database.js';
 
@@ -28,10 +29,26 @@ const LoginLog = sequelize.define('LoginLog', {
     type: 'TIMESTAMP', 
     allowNull: true,   
   },
+  // New fields below
+  ip_address: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  user_agent: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
+  last_activity: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  terminated_reason: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  }
 }, {
   tableName: 'login_logs',
   timestamps: false,
 });
-
 
 export default LoginLog;

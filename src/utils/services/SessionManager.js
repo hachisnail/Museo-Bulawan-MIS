@@ -1,0 +1,280 @@
+// services/SessionManager.js
+import { sequelize } from '../database.js';
+import Credential from '../models/Credential.js';
+import LoginLog from '../models/LoginLogs.js';
+import User from '../models/Users.js';
+
+class SessionManager {
+  /**
+   * Checks if a user has an active session
+   * @param {number} credentialId - User's credential ID
+   * @returns {Promise<Object|null>} - Active session or null
+   */
+  async getActiveSession(credentialId) {
+    return await LoginLog.findOne({
+      where: { 
+        credential_id: credentialId, 
+        end: null 
+      },
+      order: [['start', 'DESC']]
+    });
+  }
+  
+  /**
+   * Updates the user's status
+   * @param {number} credentialId - User's credential ID
+   * @param {string} status - New status ('active' or 'inactive')
+   */
+  async updateUserStatus(credentialId, status) {
+    const user = await User.findOne({ 
+      where: { credential_id: credentialId } 
+    });
+    
+    if (user) {
+      await user.update({ 
+        status, 
+        modified_date: new Date()
+      });
+    }
+    
+    return user;
+  }
+  
+  /**
+   * Creates a new session after closing any existing ones
+   * @param {Object} sessionData - Session data
+   */
+  async createSession(sessionData) {
+    const { credentialId, ipAddress, userAgent } = sessionData;
+    const transaction = await sequelize.transaction();
+    
+    try {
+      // Check for existing sessions before ending them
+      const existingSessions = await LoginLog.findAll({
+        where: { credential_id: credentialId, end: null },
+        transaction
+      });
+      
+      console.log(`Found ${existingSessions.length} active sessions for user ${credentialId}`);
+      
+      // End any existing sessions for this user
+      await this.endAllSessions(credentialId, 'New login from another device', transaction);
+      
+      // Verify sessions were ended
+      const remainingSessions = await LoginLog.findAll({
+        where: { credential_id: credentialId, end: null },
+        transaction
+      });
+      console.log(`After ending sessions, found ${remainingSessions.length} remaining active sessions`);
+      
+      // Create a new session
+      const newSession = await LoginLog.create({
+        credential_id: credentialId,
+        start: new Date(),
+        end: null,
+        last_activity: new Date(),
+        ip_address: ipAddress,
+        user_agent: userAgent
+      }, { transaction });
+      
+      console.log(`Created new session with ID ${newSession.id}`);
+      
+      // Update user status
+      await this.updateUserStatus(credentialId, 'active', transaction);
+      
+      await transaction.commit();
+      return newSession;
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error creating session:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Updates the last activity timestamp for a session
+   * @param {number} credentialId - User's credential ID
+   * @param {number} sessionId - Optional session ID to update specific session
+   */
+  async updateActivity(credentialId, sessionId = null) {
+    if (sessionId) {
+      const session = await LoginLog.findOne({
+        where: { 
+          id: sessionId,
+          credential_id: credentialId,
+          end: null 
+        }
+      });
+      
+      if (session) {
+        await session.update({ last_activity: new Date() });
+      }
+      return session;
+    } else {
+      const session = await this.getActiveSession(credentialId);
+      if (session) {
+        await session.update({ last_activity: new Date() });
+      }
+      return session;
+    }
+  }
+  
+  /**
+   * Ends all active sessions for a user
+   * @param {number} credentialId - User's credential ID
+   * @param {string} reason - Reason for ending the session
+   */
+  async endAllSessions(credentialId, reason = 'User logout', transaction = null) {
+    const localTransaction = transaction || await sequelize.transaction();
+    
+    try {
+      console.log(`Ending all sessions for user ${credentialId}`);
+      
+      // Find all active sessions first to check
+      const activeSessions = await LoginLog.findAll({
+        where: { credential_id: credentialId, end: null },
+        transaction: localTransaction
+      });
+      
+      console.log(`Found ${activeSessions.length} active sessions to end`);
+      
+      // Update all active sessions to be ended
+      const [updatedCount] = await LoginLog.update(
+        { 
+          end: new Date(),
+          terminated_reason: reason
+        },
+        { 
+          where: { credential_id: credentialId, end: null },
+          transaction: localTransaction
+        }
+      );
+      
+      console.log(`Updated ${updatedCount} sessions to ended status`);
+      
+      // Only update user status if not in a transaction (meaning this is a standalone call)
+      if (!transaction) {
+        await this.updateUserStatus(credentialId, 'inactive', localTransaction);
+        await localTransaction.commit();
+      }
+      
+      return updatedCount > 0;
+    } catch (error) {
+      if (!transaction) {
+        await localTransaction.rollback();
+      }
+      console.error('Error ending sessions:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Ends a specific session
+   * @param {number} sessionId - Session ID to end
+   * @param {number} credentialId - User's credential ID
+   * @param {string} reason - Reason for ending the session
+   */
+  async endSession(sessionId, credentialId, reason = 'User logout') {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      console.log(`Ending specific session ${sessionId} for user ${credentialId}`);
+      
+      const session = await LoginLog.findOne({
+        where: { 
+          id: sessionId,
+          credential_id: credentialId,
+          end: null
+        },
+        transaction
+      });
+      
+      if (!session) {
+        console.log(`No active session found with ID ${sessionId}`);
+        await transaction.rollback();
+        return false;
+      }
+      
+      await session.update({ 
+        end: new Date(),
+        terminated_reason: reason
+      }, { transaction });
+      
+      console.log(`Session ${sessionId} marked as ended`);
+      
+      await this.updateUserStatus(credentialId, 'inactive', transaction);
+      
+      await transaction.commit();
+      return true;
+    } catch (error) {
+      await transaction.rollback();
+      console.error(`Error ending session ${sessionId}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Validates if a specific user session is active
+   * @param {number} credentialId - User's credential ID
+   * @param {number} sessionId - Session ID to validate (optional)
+   */
+  async validateSession(credentialId, sessionId = null) {
+    // If we have a session ID, validate that specific session
+    if (sessionId) {
+      const session = await LoginLog.findOne({
+        where: { 
+          id: sessionId,
+          credential_id: credentialId, 
+          end: null 
+        }
+      });
+      
+      if (!session) {
+        console.log(`Session ${sessionId} not found or is already ended`);
+        return false;
+      }
+      
+      await session.update({ last_activity: new Date() });
+      return true;
+    } else {
+      // Otherwise, just check if any session is active (fallback)
+      const session = await this.getActiveSession(credentialId);
+      if (!session) {
+        console.log(`No active sessions found for user ${credentialId}`);
+        return false;
+      }
+      
+      await session.update({ last_activity: new Date() });
+      return true;
+    }
+  }
+  
+  /**
+   * Updates user status with transaction support
+   */
+  async updateUserStatus(credentialId, status, transaction = null) {
+    try {
+      const user = await User.findOne({ 
+        where: { credential_id: credentialId },
+        ...(transaction ? { transaction } : {})
+      });
+      
+      if (user) {
+        console.log(`Updating user ${credentialId} status to ${status}`);
+        await user.update({ 
+          status, 
+          modified_date: new Date() 
+        }, transaction ? { transaction } : {});  // Fixed: Don't use spread operator here
+      } else {
+        console.log(`No user found for credential ID ${credentialId}`);
+      }
+      
+      return user;
+    } catch (error) {
+      console.error(`Error updating user ${credentialId} status:`, error);
+      throw error;
+    }
+  }
+}
+
+export default new SessionManager();

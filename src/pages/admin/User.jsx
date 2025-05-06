@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import {UserView, InviteModal} from '../../components/modals/UserModal'
 import AdminNav from '../../components/navbar/AdminNav'
 // import InviteModal from '../../components/modals/UserModal' // Import the new component?
-import { connectWebSocket, closeWebSocket } from '../../utils/websocket'
+import { connectWebSocket, closeWebSocket } from '../../utils/services/websocket'
 import {ConfirmationModal} from '../../components/modals/ConfirmationModal'
 
 import axios from 'axios'

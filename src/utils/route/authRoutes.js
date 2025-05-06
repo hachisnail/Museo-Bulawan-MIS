@@ -1,7 +1,7 @@
 // routes/authRoutes.js
 
 import express from 'express';
-import { login, logout, autoLogout, refreshToken, verifyCookie } from '../controller/authController.js';
+import { login, logout, autoLogout, refreshToken, verifyCookie, sessionStatus } from '../controller/authController.js';
 import { displayUsers, displaySpecificUser, getUserLoginLogs, fetchCredential } from '../controller/userController.js';
 import { 
   createAppointment, 
@@ -40,7 +40,8 @@ import {
   getSchedules, 
   getScheduleById, 
   updateSchedule, 
-  deleteSchedule 
+  deleteSchedule ,
+  updateScheduleStatus
 } from '../controller/scheduleController.js';
 
 
@@ -50,7 +51,10 @@ import {
 const router = express.Router();
 
 router.post('/login', login);
-router.post('/logout', logout);
+router.post('/logout', autoLogout, logout);
+router.get('/refresh-token', refreshToken);
+router.get('/verify-cookie', verifyCookie);
+router.get('/session-status', autoLogout, sessionStatus);
 
 router.get('/fetchUsers', autoLogout, displayUsers);
 router.get('/fetchUser/:id', autoLogout, displaySpecificUser);
@@ -70,10 +74,12 @@ router.post('/send-email-notification', autoLogout, sendEmailNotification);
 
 // Schedule routes
 router.post('/schedules', autoLogout, createSchedule, logAction('create', 'Schedule'));
-router.get('/schedules', autoLogout, getSchedules);
+router.get('/schedules', getSchedules);
 router.get('/schedules/:id', autoLogout, getScheduleById);
 router.put('/schedules/:id', autoLogout, updateSchedule, logAction('update', 'Schedule'));
 router.delete('/schedules/:id', autoLogout, deleteSchedule, logAction('delete', 'Schedule'));
+router.patch('/schedules/:id/status', autoLogout, updateScheduleStatus, logAction('update', 'ScheduleStatus'));
+
 
 
 router.get('/fetchLogs', autoLogout, fetchLog);

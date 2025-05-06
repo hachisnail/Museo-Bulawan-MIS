@@ -55,7 +55,24 @@ const Form = sequelize.define('Form', {
     type: DataTypes.TEXT
   },
   documents: {
-    type: DataTypes.TEXT
+    type: DataTypes.TEXT,
+    get() {
+      const rawValue = this.getDataValue('documents');
+      if (!rawValue) return [];
+      
+      try {
+        return JSON.parse(rawValue);
+      } catch (e) {
+        return rawValue; // Return as-is if parsing fails
+      }
+    },
+    set(value) {
+      if (typeof value === 'object') {
+        this.setDataValue('documents', JSON.stringify(value));
+      } else {
+        this.setDataValue('documents', value);
+      }
+    }
   },
   related_images: {
     type: DataTypes.TEXT
@@ -68,8 +85,6 @@ const Form = sequelize.define('Form', {
   tableName: 'form',
   timestamps: false
 });
-
-
 
 // Define relationships
 Donator.hasMany(Form, { foreignKey: 'donator_id' });

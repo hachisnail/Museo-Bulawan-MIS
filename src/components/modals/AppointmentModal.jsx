@@ -24,6 +24,9 @@ export const AppointmentModal = ({
   // Loading indicator while sending email / updating status
   const [isLoading, setIsLoading] = useState(false);
 
+  // Track if action is selected in confirmed phase
+  const [actionError, setActionError] = useState(false);
+
   const token = localStorage.getItem('token')
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -31,7 +34,7 @@ export const AppointmentModal = ({
   useEffect(() => {
     if (modalData && modalData.status) {
       if (modalData.status === 'CONFIRMED' || modalData.status === 'Confirmed') {
-        setApproveVisit('yes');
+        setApproveVisit('');
       } else if (modalData.status === 'REJECTED' || modalData.status === 'Rejected') {
         setApproveVisit('no');
       } else if (modalData.status === 'COMPLETED' || modalData.status === 'Completed') {
@@ -47,6 +50,7 @@ export const AppointmentModal = ({
     setMessageError(false);
     setApprovalError(false);
     setPresentCountError(false);
+    setActionError(false);
     setMessage("");
     setPresentCount('');
     setIsLoading(false);
@@ -82,12 +86,28 @@ export const AppointmentModal = ({
         }
       }
 
-      // Validate present count only if "arrive" is chosen in second phase
-      if (isConfirmed && approveVisit === 'arrive') {
-        if (!presentCount) {
-          setPresentCountError(true);
+      // Phase 2 (CONFIRMED): Make sure user has selected an action (cancel or arrive)
+      if (isConfirmed) {
+        if (!approveVisit) {
+          setActionError(true);
           setIsLoading(false);
           return;
+        }
+
+        // If cancel is selected, message is required
+        if (approveVisit === 'cancel' && !message.trim()) {
+          setMessageError(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // Validate present count only if "arrive" is chosen
+        if (approveVisit === 'arrive') {
+          if (!presentCount) {
+            setPresentCountError(true);
+            setIsLoading(false);
+            return;
+          }
         }
       }
 
@@ -104,10 +124,9 @@ export const AppointmentModal = ({
       }
 
       // Prepare email data
+      // Replace the existing emailData object with:
       const emailData = {
-        recipientEmail: modalData.email
-          ? `${modalData.email},michael18ricafrente@gmail.com`
-          : 'michael18ricafrente@gmail.com',
+        recipientEmail: modalData.email || '',
         subject: `Appointment ${newStatus.toLowerCase()} - Museo Bulawan`,
         message: message,
         status: newStatus,
@@ -163,14 +182,25 @@ export const AppointmentModal = ({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
-      onClick={onClose}
     >
       <div
         className="relative bg-white rounded-md shadow-lg p-8 w-[700px] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Close button */}
+        <button
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+          onClick={onClose}
+          aria-label="Close modal"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
         {/* Header with visitor name and date */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mt-10">
           <h2 className="text-2xl font-bold">
             {modalData.fromFirstName} {modalData.fromLastName}
           </h2>
@@ -226,10 +256,16 @@ export const AppointmentModal = ({
               <div className="text-blue-500 text-lg">{modalData.preferredDate}</div>
             </div>
 
+
             <div className="mb-6">
               <div className="text-gray-600 text-sm mb-1">Preferred Time</div>
-              <div className="text-blue-500 text-lg">{modalData.preferredTime}</div>
+              <div className="text-blue-500 text-lg">
+                {modalData.start_time && modalData.end_time
+                  ? `${modalData.start_time} - ${modalData.end_time}`
+                  : "Flexible"}
+              </div>
             </div>
+
           </div>
         </div>
 
@@ -254,8 +290,8 @@ export const AppointmentModal = ({
                   <div className="flex gap-4">
                     <button
                       className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'yes'
-                          ? 'bg-[#6F3FFF] text-white'
-                          : 'bg-gray-200 text-gray-800'
+                        ? 'bg-[#6F3FFF] text-white'
+                        : 'bg-gray-200 text-gray-800'
                         }`}
                       onClick={() => {
                         setApproveVisit('yes');
@@ -266,8 +302,8 @@ export const AppointmentModal = ({
                     </button>
                     <button
                       className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'no'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-gray-200 text-gray-800'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-200 text-gray-800'
                         }`}
                       onClick={() => {
                         setApproveVisit('no');
@@ -306,7 +342,7 @@ export const AppointmentModal = ({
                   )}
                   <div className="text-sm text-gray-500 mt-2">
                     This will automatically send to{' '}
-                    {modalData.email || 'michael18ricafrente@gmail.com'}
+                    {modalData.email}
                   </div>
                 </div>
               </>
@@ -320,23 +356,34 @@ export const AppointmentModal = ({
                   <div className="flex gap-4">
                     <button
                       className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'cancel'
-                          ? 'bg-red-600 text-white'
-                          : 'bg-gray-200 text-gray-800'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-200 text-gray-800'
                         }`}
-                      onClick={() => setApproveVisit('cancel')}
+                      onClick={() => {
+                        setApproveVisit('cancel');
+                        setActionError(false);
+                      }}
                     >
                       Cancel
                     </button>
                     <button
                       className={`px-8 py-3 rounded-md text-lg ${approveVisit === 'arrive'
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-200 text-gray-800'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-200 text-gray-800'
                         }`}
-                      onClick={() => setApproveVisit('arrive')}
+                      onClick={() => {
+                        setApproveVisit('arrive');
+                        setActionError(false);
+                      }}
                     >
                       Arrive
                     </button>
                   </div>
+                  {actionError && (
+                    <p className="text-sm text-red-500 mt-2">
+                      Please select Cancel or Arrive before continuing.
+                    </p>
+                  )}
                 </div>
 
                 {/* Add message field when canceling */}
@@ -353,11 +400,16 @@ export const AppointmentModal = ({
                           setMessageError(false);
                         }
                       }}
-                      placeholder="Enter cancellation reason (optional)"
+                      placeholder="Enter cancellation reason (required)"
                     />
+                    {messageError && (
+                      <p className="text-sm text-red-500 mt-1">
+                        Please enter a cancellation reason.
+                      </p>
+                    )}
                     <div className="text-sm text-gray-500 mt-2">
                       This will automatically send to{' '}
-                      {modalData.email || 'michael18ricafrente@gmail.com'}
+                      {modalData.email}
                     </div>
                   </div>
                 )}
@@ -417,7 +469,7 @@ export const AppointmentModal = ({
                       />
                       <div className="text-sm text-gray-500 mt-2">
                         This will automatically send to{' '}
-                        {modalData.email || 'michael18ricafrente@gmail.com'}
+                        {modalData.email}
                       </div>
                     </div>
 

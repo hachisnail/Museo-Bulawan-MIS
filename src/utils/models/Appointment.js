@@ -34,9 +34,13 @@ const Appointment = sequelize.define('Appointment', {
     type: DataTypes.DATEONLY,
     allowNull: false
   },
-  preferred_time: {
-    type: DataTypes.STRING(30),
-    allowNull: false
+  start_time: {
+    type: DataTypes.TIME,
+    allowNull: true,  // Can be null for "Flexible" time
+  },
+  end_time: {
+    type: DataTypes.TIME,
+    allowNull: true,  // Can be null for "Flexible" time
   },
   /**
    * Store creation_date with date & time

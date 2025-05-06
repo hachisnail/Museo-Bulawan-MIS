@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { Op } from 'sequelize';
-import LoginLog from './models/LoginLogs.js';
-import User from './models/Users.js';
+import LoginLog from '../models/LoginLogs.js';
+import User from '../models/Users.js';
 
 cron.schedule('*/5 * * * *', async () => {
   const now = new Date();

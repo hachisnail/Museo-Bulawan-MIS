@@ -4,6 +4,8 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { jwtDecode } from 'jwt-decode'
 import axios from 'axios'
 import {ConfirmationModal} from '../modals/ConfirmationModal'
+import LogoutButton from '../LogoutButton'
+
 
 import dashboard_ico from '../../../src/assets/dashboard_icon.png';
 import donation_ico from '../../../src/assets/donation.png'
@@ -32,36 +34,31 @@ const AdminNav = () => {
   }
 
   const handleLogout = async () => {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      console.error('No token found')
-      navigate('/login')
-      return
-    }
-
     try {
+      const token = localStorage.getItem('token');
+      console.log('Logging out user');
+      
       const API_URL = import.meta.env.VITE_API_URL;
-      document.cookie =
-        'fallback_token=; Max-Age=0; path=/; domain=' + window.location.hostname
-
-       await axios.post(`${API_URL}/api/auth/logout`,
-        {},
-        {
+      
+      await axios.post(
+        `${API_URL}/api/auth/logout`, 
+        {}, 
+        { 
           headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
+          withCredentials: true 
         }
-      )
-    } catch (error) {
-      console.error(
-        'Logout error:',
-        error.response ? error.response.data : error.message
-      )
-    } finally {
-      localStorage.clear()
-      navigate('/login')
+      );
+      
+      console.log('Logout successful');
+      localStorage.removeItem('token');
+      navigate('/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+      // Still remove token and redirect even if server request fails
+      localStorage.removeItem('token');
+      navigate('/login');
     }
-  }
-
+  };
   const token = localStorage.getItem('token')
   let role = 'unknown',
     first_name = 'unknown',

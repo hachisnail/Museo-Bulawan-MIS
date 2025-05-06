@@ -38,6 +38,12 @@ export const createForm = async (req, res) => {
     }
 
     // 2) Create the Form
+    // Convert documents to JSON string if it's an array or object
+    let documentsData = req.body.documents;
+    if (documentsData && typeof documentsData !== 'string') {
+      documentsData = JSON.stringify(documentsData);
+    }
+
     const newForm = await Form.create({
       donator_id: donatorId,
       artifact_name: req.body.artifact_name,
@@ -46,7 +52,7 @@ export const createForm = async (req, res) => {
       additional_info: req.body.additional_info,
       narrative: req.body.narrative,
       images: req.body.images,
-      documents: req.body.documents,
+      documents: documentsData,
       related_images: req.body.related_images,
       donation_date: new Date(),
       accession_status: 'Pending',
@@ -67,8 +73,6 @@ export const createForm = async (req, res) => {
       await newForm.update({ contribution_id: newContribution.id });
     } else {
       const newContribution = await ContributionType.create({
-
-        
         accession_type: 'Donation',
         status: 'Pending',
         transfer_status: 'On Progress'
@@ -101,11 +105,10 @@ export const getAllForms = async (req, res) => {
         {
           model: ContributionType,
         },
-        
       ],
     });
 
-    return res.status(200).json(forms); // Ensure this returns the updated_at field
+    return res.status(200).json(forms);
   } catch (error) {
     console.error('Error fetching forms:', error);
     return res.status(500).json({
@@ -151,7 +154,6 @@ export const updateFormStatus = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
-
 
 export const updateFormTimestamp = async (req, res) => {
   try {
@@ -208,5 +210,3 @@ export const updateTransferStatus = async (req, res) => {
     res.status(500).json({ message: 'Failed to update transfer status', error });
   }
 };
-
-

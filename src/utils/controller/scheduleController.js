@@ -130,7 +130,7 @@ export const updateSchedule = async (req, res) => {
       date: date || schedule.date,
       start_time: start_time || schedule.start_time,
       end_time: end_time || schedule.end_time,
-      availability: availability || schedule.availability,
+      availability: availability || schedule.availability
     });
     
     return res.status(200).json({
@@ -175,3 +175,45 @@ export const deleteSchedule = async (req, res) => {
     });
   }
 };
+
+/**
+ * Update schedule status
+ */
+export const updateScheduleStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    // Validate status
+    if (!status || !['ACTIVE', 'COMPLETED'].includes(status)) {
+      return res.status(400).json({
+        message: 'Invalid status. Must be either ACTIVE or COMPLETED'
+      });
+    }
+    
+    const schedule = await Schedule.findByPk(id);
+    
+    if (!schedule) {
+      return res.status(404).json({ 
+        message: 'Schedule not found' 
+      });
+    }
+    
+    // Update the schedule status
+    await schedule.update({
+      status
+    });
+    
+    return res.status(200).json({
+      message: 'Schedule status updated successfully',
+      schedule
+    });
+  } catch (error) {
+    console.error('Error updating schedule status:', error);
+    return res.status(500).json({
+      message: 'Server error updating schedule status',
+      error: error.message
+    });
+  }
+};
+
