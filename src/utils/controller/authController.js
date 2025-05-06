@@ -5,26 +5,33 @@ import User from '../models/Users.js';
 import sessionManager from '../services/SessionManager.js';
 import tokenService from '../services/TokenService.js';
 
-// Helper function to extract real client IP address
+// Dedicated helper function to extract real client IP in Coolify environment
 const getClientIP = (req) => {
-  // Most reliable method for getting real IP behind reverse proxies like Traefik (used by Coolify)
-  // Check multiple common headers and fallback options
-  const ip = (
-    req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : null) || 
+  // Debug logging to see what headers are available
+  console.log('===== IP DETECTION DEBUG INFO =====');
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('req.ip:', req.ip);
+  console.log('req.connection.remoteAddress:', req.connection?.remoteAddress);
+  console.log('req.socket.remoteAddress:', req.socket?.remoteAddress);
+  
+  // Coolify uses either x-forwarded-for or x-real-ip
+  // We need to force this regardless of trust proxy setting
+  const realIP = (
+    req.headers['x-forwarded-for'] ? 
+      req.headers['x-forwarded-for'].split(',')[0].trim() : 
+      null
+    ) ||
+    req.headers['x-real-ip'] ||
     req.headers['cf-connecting-ip'] || 
-    req.headers['x-real-ip'] || 
-    req.connection.remoteAddress || 
-    req.socket.remoteAddress ||
-    req.ip;
+    (req.connection ? req.connection.remoteAddress : null) ||
+    (req.socket ? req.socket.remoteAddress : null) ||
+    req.ip ||
+    '0.0.0.0'; // Last resort fallback
   
-  console.log('IP Detection Details:');
-  console.log(`- x-forwarded-for: ${req.headers['x-forwarded-for'] || 'not set'}`);
-  console.log(`- x-real-ip: ${req.headers['x-real-ip'] || 'not set'}`);
-  console.log(`- connection.remoteAddress: ${req.connection?.remoteAddress || 'not available'}`);
-  console.log(`- req.ip: ${req.ip || 'not set'}`);
-  console.log(`- Determined client IP: ${ip}`);
+  console.log('Detected client IP:', realIP);
+  console.log('=================================');
   
-  return ip;
+  return realIP;
 };
 
 export const login = async (req, res) => {
@@ -44,18 +51,17 @@ export const login = async (req, res) => {
 
     console.log(`User ${credential.id} (${email}) authenticated successfully`);
 
-    // Get actual client IP using our helper function
-    const clientIP = getClientIP(req);
-    console.log(`Login attempt from IP: ${clientIP}`);
-
-    // Create a new session (this will end any existing sessions)
+    // Force override any trust proxy settings to get the real client IP
+    const realClientIP = getClientIP(req);
+    
+    // Create a new session with the real client IP
     const session = await sessionManager.createSession({
       credentialId: credential.id,
-      ipAddress: clientIP,
+      ipAddress: realClientIP,
       userAgent: req.headers['user-agent']
     });
 
-    console.log(`Created new session ${session.id} for user ${credential.id}`);
+    console.log(`Created new session ${session.id} for user ${credential.id} from IP ${realClientIP}`);
 
     // Generate token with session ID included
     const payload = {
