@@ -22,10 +22,18 @@ export const login = async (req, res) => {
 
     console.log(`User ${credential.id} (${email}) authenticated successfully`);
 
+    // Get the actual client IP address using X-Forwarded-For header which is set by proxies like Traefik (used by Coolify)
+    const clientIp = req.headers['x-forwarded-for'] || 
+                     req.headers['x-real-ip'] || 
+                     req.connection.remoteAddress || 
+                     req.ip;
+
+    console.log(`Client connected from IP: ${clientIp}`);
+
     // Create a new session (this will end any existing sessions)
     const session = await sessionManager.createSession({
       credentialId: credential.id,
-      ipAddress: req.ip,
+      ipAddress: clientIp,
       userAgent: req.headers['user-agent']
     });
 
