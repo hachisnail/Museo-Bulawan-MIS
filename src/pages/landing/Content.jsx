@@ -12,18 +12,16 @@ const municipalities = [
   "Santa Elena", "Talisay", "Vinzons"
 ];
 
-const API_URL = import.meta.env.VITE_API_URL
-
-// const token = localStorage.getItem('token'); // Remove if public
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Content = () => {
-  const [articles, setArticles]     = useState([]);
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState('');
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Optional filters
-  const [keyword, setKeyword]       = useState('');
-  const [category, setCategory]     = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [category, setCategory] = useState('');
   const [municipality, setMunicipality] = useState('');
 
   useEffect(() => {
@@ -44,29 +42,26 @@ const Content = () => {
     }
   };
 
-  // Filter logic for demonstration: title, author, category, address
+  // Filter logic for demonstration: checks title, author, category, address
   const filteredArticles = articles.filter((article) => {
-    const matchesKeyword =
-      !keyword ||
+    const matchesKeyword = !keyword ||
       article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
       article.author?.toLowerCase().includes(keyword.toLowerCase());
-    const matchesCategory =
-      !category ||
+
+    const matchesCategory = !category ||
       article.article_category?.toLowerCase() === category.toLowerCase();
-    const matchesMunicipality =
-      !municipality ||
+
+    const matchesMunicipality = !municipality ||
       article.address?.toLowerCase().includes(municipality.toLowerCase());
 
     return matchesKeyword && matchesCategory && matchesMunicipality;
   });
-  // console.log(articles);
 
+  // Encode function for building a safe string
   const encoded = (id, name) => {
     const encodedString = `${id}::${name}`;
-  return btoa(encodedString);
+    return btoa(encodedString);
   };
-
-
 
   return (
     <>
@@ -82,7 +77,6 @@ const Content = () => {
         >
           <div className="absolute inset-0 flex justify-center items-center">
             <div className="grid grid-cols-4 w-[90%] max-w-6xl h-15">
-
               {/* Keyword Input */}
               <div className="flex items-center justify-center bg-white text-black border-r border-black">
                 <input
@@ -147,11 +141,11 @@ const Content = () => {
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth="2" 
-                      d="M19 9l-7 7-7-7" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
                     />
                   </svg>
                 </div>
@@ -187,9 +181,9 @@ const Content = () => {
               {filteredArticles.map((article, index) => {
                 // Construct an image URL if only filename is stored
                 const imageSrc = article.images
-                  ? `${API_URL}/uploads/${article.images}`
+                  ? article.images // It's already a full URL
                   : "https://fakeimg.pl/300x300?text=image?";
-                
+
                 const displayDate = article.upload_date
                   ? new Date(article.upload_date).toLocaleDateString()
                   : "No Date";
@@ -199,8 +193,9 @@ const Content = () => {
                     key={article.article_id || index}
                     to={`/article/${encoded(article.article_id, article.title)}`}
                     className="flex flex-col items-center text-center hover:opacity-90 transition duration-300"
-                  > 
+                  >
                     {/* Thumbnail */}
+                    
                     <img
                       src={imageSrc}
                       alt={`Article ${article.article_id}`}
