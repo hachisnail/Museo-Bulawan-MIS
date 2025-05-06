@@ -8,9 +8,27 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [clientIP, setClientIP] = useState(null); // Track the client's real IP
   const navigate = useNavigate();
   const location = useLocation(); // To access router state
   const API_URL = import.meta.env.VITE_API_URL;
+
+  // Detect the client's real IP address when component mounts
+  useEffect(() => {
+    const detectClientIP = async () => {
+      try {
+        const response = await axios.get('https://api.ipify.org?format=json');
+        if (response.data && response.data.ip) {
+          console.log('Client IP detected:', response.data.ip);
+          setClientIP(response.data.ip);
+        }
+      } catch (error) {
+        console.error('Error detecting client IP:', error);
+      }
+    };
+    //test
+    detectClientIP();
+  }, []);
 
   // Check for session messages passed from SessionHandler
   useEffect(() => {
@@ -96,9 +114,14 @@ const Login = () => {
 
     try {
       console.log('Attempting login');
+      // Include the detected real client IP in the login request
       const response = await axios.post(
         `${API_URL}/api/auth/login`,
-        { email, password },
+        { 
+          email, 
+          password,
+          clientIP // Include the real client IP if detected
+        },
         { withCredentials: true } // Needed for cookie
       );
 

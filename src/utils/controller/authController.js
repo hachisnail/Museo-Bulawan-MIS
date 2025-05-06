@@ -4,9 +4,37 @@ import Credential from '../models/Credential.js';
 import User from '../models/Users.js';
 import sessionManager from '../services/SessionManager.js';
 import tokenService from '../services/TokenService.js';
+import axios from 'axios';
+
+// Enhanced client identity detection specifically for Cloudflare Tunnel
+const getClientIP = (req) => {
+  // Priority order: Cloudflare headers first, then regular IP headers
+  const clientIP = 
+    req.headers['cf-connecting-ip'] || 
+    req.headers['true-client-ip'] ||
+    (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : null) ||
+    req.headers['x-real-ip'] || 
+    req.connection?.remoteAddress ||
+    req.socket?.remoteAddress ||
+    req.ip ||
+    '0.0.0.0';  // Fallback
+  
+  // Debug logging
+  console.log('==== CLIENT IP DETECTION (CLOUDFLARE TUNNEL) ====');
+  console.log(`CF-Connecting-IP: ${req.headers['cf-connecting-ip'] || 'not present'}`);
+  console.log(`True-Client-IP: ${req.headers['true-client-ip'] || 'not present'}`);
+  console.log(`X-Forwarded-For: ${req.headers['x-forwarded-for'] || 'not present'}`);
+  console.log(`X-Real-IP: ${req.headers['x-real-ip'] || 'not present'}`);
+  console.log(`Connection Remote Address: ${req.connection?.remoteAddress || 'not present'}`);
+  console.log(`req.ip: ${req.ip || 'not present'}`);
+  console.log(`Final IP used: ${clientIP}`);
+  console.log('==============================================');
+  
+  return clientIP;
+};
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, clientIP: providedClientIP } = req.body;
 
   try {
     // Verify credentials
@@ -22,10 +50,18 @@ export const login = async (req, res) => {
 
     console.log(`User ${credential.id} (${email}) authenticated successfully`);
 
+    // Get the client IP using our IP detection function
+    // If the client provided their real IP (from browser-side detection), use that
+    // Otherwise fall back to our server-side detection
+    const detectedIP = getClientIP(req);
+    const clientIP = providedClientIP || detectedIP;
+    
+    console.log(`User ${credential.id} logging in from IP: ${clientIP}`);
+
     // Create a new session (this will end any existing sessions)
     const session = await sessionManager.createSession({
       credentialId: credential.id,
-      ipAddress: req.ip,
+      ipAddress: clientIP,
       userAgent: req.headers['user-agent']
     });
 
