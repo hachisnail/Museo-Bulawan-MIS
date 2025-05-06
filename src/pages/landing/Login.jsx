@@ -26,7 +26,7 @@ const Login = () => {
         console.error('Error detecting client IP:', error);
       }
     };
-    
+    //test
     detectClientIP();
   }, []);
 
