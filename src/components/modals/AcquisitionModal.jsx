@@ -1,6 +1,8 @@
 // AcquisitionModal.jsx
-import React from 'react';
-import DocumentView from './DocumentView'; // Import from the same directory
+import React, { useState, useRef } from 'react';
+import axios from 'axios';
+import DocumentView from './DocumentView';
+import ImagePreview from './ImagePreview';
 
 const AcquisitionModal = ({
   isModalOpen,
@@ -20,6 +22,15 @@ const AcquisitionModal = ({
   handleDecline,
   handleDeliveryAction,
 }) => {
+  // Add state for image preview
+  const [previewImage, setPreviewImage] = useState(null);
+  
+  // Add state for email message and validation
+  const [emailMessage, setEmailMessage] = useState('');
+  const [messageError, setMessageError] = useState('');
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const messageRef = useRef(null);
+
   // Parsing document keys from the form
   const getDocumentKeys = (form) => {
     if (!form || !form.documents) return [];
@@ -65,6 +76,70 @@ const AcquisitionModal = ({
     ? new Date(selectedForm.donation_date).toLocaleDateString() 
     : 'N/A';
 
+  // Handle open image preview
+  const handleOpenPreview = (imagePath) => {
+    setPreviewImage(imagePath);
+  };
+
+  // Handle close image preview
+  const handleClosePreview = () => {
+    setPreviewImage(null);
+  };
+  
+  // Handle sending email and updating status
+  const handleSendEmailAndUpdateStatus = async () => {
+    // First validate that the message is not empty for pending forms
+    if (!emailMessage.trim()) {
+      setMessageError('Please enter a message to send with the email');
+      messageRef.current?.focus();
+      return;
+    }
+
+    setSendingEmail(true);
+    setMessageError('');
+    
+    try {
+      // Determine the status from the selected response
+      const newStatus = selectedResponse === 'yes' ? 'accepted' : 'rejected';
+      
+      // Send the email and update the status in one API call
+      const response = await axios.post(
+        `http://localhost:5000/api/auth/form/${selectedForm.id}/send-status-email`,
+        {
+          status: newStatus,
+          message: emailMessage
+        }
+      );
+      
+      if (response.data.success) {
+        // Show an alert on success
+        alert(`Email sent successfully to ${selectedForm.Donator?.email}`);
+        // Close the modal only after successful email sending
+        handleCloseModal();
+      } else {
+        setMessageError('Failed to send email: ' + response.data.message);
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      setMessageError(error.response?.data?.message || 'Failed to send email. Please try again.');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  // Custom close handler to prevent closing if no message is provided
+  const handleCustomCloseModal = () => {
+    // If status is pending and a response is selected, check for message
+    if (status === 'Pending' && selectedResponse && !emailMessage.trim()) {
+      setMessageError('Please enter a message before closing');
+      messageRef.current?.focus();
+      return;
+    }
+    
+    // Otherwise, allow closing
+    handleCloseModal();
+  };
+
   return (
     <>
       {/* Main Form Modal */}
@@ -104,7 +179,7 @@ const AcquisitionModal = ({
               <div className="col-span-1 flex items-end justify-end">
                 <button
                   className="text-xl font-bold p-2 rounded-full hover:bg-gray-300 transition-colors"
-                  onClick={handleCloseModal}
+                  onClick={handleCustomCloseModal} // Use custom close handler instead
                 >
                   X
                 </button>
@@ -112,7 +187,7 @@ const AcquisitionModal = ({
             </div>
           </div>
 
-          {/* Modal Content - Always the same regardless of status */}
+          {/* Modal Content */}
           <div className="mt-20 max-h-[50rem] overflow-y-auto px-4 py-4">
             <div className="space-y-4">
               {/* Personal Information Section */}
@@ -192,13 +267,71 @@ const AcquisitionModal = ({
                     <span className="text-xl text-[#4E84D4]">{selectedForm.additional_info}</span>
                   </div>
                   
-                  {/* Image placeholder */}
+                  {/* Images with preview and download options */}
                   <div className="w-full h-auto flex flex-col gap-2">
                     <span className="text-2xl">Image/s of the artifact.</span>
-                    <div className="w-full h-100 px-4 border-2 border-gray-400"></div>
+                    <div className="w-full min-h-32 px-4 py-2 border-2 border-gray-400">
+                      {selectedForm.images && (
+                        <div className="flex flex-wrap gap-3 py-3 overflow-x-auto max-h-80 overflow-y-auto">
+                          {(() => {
+                            try {
+                              const imagePaths = JSON.parse(selectedForm.images);
+                              return imagePaths.map((imagePath, index) => (
+                                <div key={index} className="relative flex-shrink-0 group">
+                                  <img
+                                    src={`/${imagePath}`}
+                                    alt={`Artifact image ${index + 1}`}
+                                    className="h-52 w-auto object-contain border border-gray-200 rounded shadow-sm cursor-pointer hover:opacity-90"
+                                    onClick={() => handleOpenPreview(`/${imagePath}`)}
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = '/placeholder-image.png';
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex gap-2">
+                                      {/* Preview button */}
+                                      <button 
+                                        onClick={() => handleOpenPreview(`/${imagePath}`)}
+                                        className="bg-blue-600 text-white p-1.5 rounded-full hover:bg-blue-700"
+                                        title="Preview image"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+                                      
+                                      {/* Download button */}
+                                      <a 
+                                        href={`/${imagePath}`} 
+                                        download
+                                        className="bg-green-600 text-white p-1.5 rounded-full hover:bg-green-700"
+                                        title="Download image"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                      </a>
+                                    </div>
+                                  </div>
+                                </div>
+                              ));
+                            } catch (error) {
+                              console.error("Error parsing images:", error);
+                              return <p className="text-red-500 py-4 text-center">Error loading images</p>;
+                            }
+                          })()}
+                        </div>
+                      )}
+                      {(!selectedForm.images || JSON.parse(selectedForm.images).length === 0) && (
+                        <p className="text-gray-500 py-4 text-center">No images available</p>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Documents section with DocumentView component */}
+                  {/* Documents section */}
                   <div className="w-full h-auto flex flex-col gap-2">
                     <span className="text-2xl">Relevant documentation or research about the artifact.</span>
                     {documentKeys.length > 0 ? (
@@ -210,17 +343,75 @@ const AcquisitionModal = ({
                     )}
                   </div>
 
-                  {/* Related images placeholder */}
+                  {/* Related images with preview and download options */}
                   <div className="w-full h-auto flex flex-col gap-2">
                     <span className="text-2xl">Related image/s about the artifact.</span>
-                    <div className="w-full h-100 px-4 border-2 border-gray-400"></div>
+                    <div className="w-full min-h-32 px-4 py-2 border-2 border-gray-400">
+                      {selectedForm.related_images && (
+                        <div className="flex flex-wrap gap-3 py-3 overflow-x-auto max-h-80 overflow-y-auto">
+                          {(() => {
+                            try {
+                              const imagePaths = JSON.parse(selectedForm.related_images);
+                              return imagePaths.map((imagePath, index) => (
+                                <div key={index} className="relative flex-shrink-0 group">
+                                  <img
+                                    src={`/${imagePath}`}
+                                    alt={`Related image ${index + 1}`}
+                                    className="h-52 w-auto object-contain border border-gray-200 rounded shadow-sm cursor-pointer hover:opacity-90"
+                                    onClick={() => handleOpenPreview(`/${imagePath}`)}
+                                    onError={(e) => {
+                                      e.target.onerror = null;
+                                      e.target.src = '/placeholder-image.png';
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex gap-2">
+                                      {/* Preview button */}
+                                      <button 
+                                        onClick={() => handleOpenPreview(`/${imagePath}`)}
+                                        className="bg-blue-600 text-white p-1.5 rounded-full hover:bg-blue-700"
+                                        title="Preview image"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </button>
+                                      
+                                      {/* Download button */}
+                                      <a 
+                                        href={`/${imagePath}`} 
+                                        download
+                                        className="bg-green-600 text-white p-1.5 rounded-full hover:bg-green-700"
+                                        title="Download image"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                      </a>
+                                    </div>
+                                  </div>
+                                </div>
+                              ));
+                            } catch (error) {
+                              console.error("Error parsing related images:", error);
+                              return <p className="text-red-500 py-4 text-center">Error loading related images</p>;
+                            }
+                          })()}
+                        </div>
+                      )}
+                      {(!selectedForm.related_images || JSON.parse(selectedForm.related_images).length === 0) && (
+                        <p className="text-gray-500 py-4 text-center">No related images available</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Response Section - This changes based on status */}
               {status === 'Pending' ? (
-                /* Pending Status - Show approval options */
+                /* Pending Status - Show approval options with updated email functionality */
                 <div className="w-full h-auto border-t-2 border-gray-300 mt-6 pt-6">
                   <div className="w-full h-auto p-5 flex flex-col gap-4">
                     <span className="text-4xl font-semibold">Respond</span>
@@ -246,16 +437,27 @@ const AcquisitionModal = ({
                       </div>
                     </div>
 
-                    {/* Message Section */}
+                    {/* Updated Message Section with validation */}
                     <div className="w-full h-auto pt-8">
                       <div className="w-full h-auto flex flex-col gap-y-6">
-                        <span className="text-3xl">Leave a message</span>
+                        <span className="text-3xl">Leave a message <span className="text-red-500">*</span></span>
                         <div className="px-12">
                           <textarea
-                            className="w-full h-32 border border-black rounded-md p-6 text-2xl"
+                            ref={messageRef}
+                            className={`w-full h-32 border ${messageError ? 'border-red-500' : 'border-black'} rounded-md p-6`}
                             placeholder="Type your message here..."
                             style={{ fontSize: '1.25rem' }}
+                            value={emailMessage}
+                            onChange={(e) => {
+                              setEmailMessage(e.target.value);
+                              if (e.target.value.trim()) {
+                                setMessageError('');
+                              }
+                            }}
                           />
+                          {messageError && (
+                            <p className="text-red-500 mt-1">{messageError}</p>
+                          )}
                         </div>
                       </div>
                       <div className="w-auto h-auto mt-4">
@@ -266,12 +468,20 @@ const AcquisitionModal = ({
                       </div>
                     </div>
 
+                    {/* Updated Done button that sends email */}
                     <div className="w-full flex justify-end mt-6">
                       <button
-                        onClick={handleCloseModal}
-                        className="bg-[#6F3FFF] rounded-lg text-white px-4 py-2 cursor-pointer hover:bg-[#4c3fff] w-[10em]"
+                        onClick={handleSendEmailAndUpdateStatus}
+                        disabled={sendingEmail || !selectedResponse}
+                        className={`rounded-lg text-white px-4 py-2 w-[10em] ${
+                          sendingEmail || !selectedResponse
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-[#6F3FFF] hover:bg-[#4c3fff] cursor-pointer'
+                        }`}
                       >
-                        <span className="text-xl font-semibold">Done</span>
+                        <span className="text-xl font-semibold">
+                          {sendingEmail ? 'Sending...' : 'Done'}
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -344,7 +554,7 @@ const AcquisitionModal = ({
         </div>
       </div>
 
-      {/* Confirmation Modals - Keep these as they are */}
+      {/* Confirmation Modals */}
       {confirmationModal.open && (
         <div
           className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50"
@@ -383,7 +593,7 @@ const AcquisitionModal = ({
         </div>
       )}
 
-      {/* Approval/Rejection Confirmation Modal */}
+      {/* Approval/Rejection Confirmation Modal - kept for legacy purposes */}
       {isConfirmationOpen && (
         <div
           className="fixed inset-0 bg-opacity-50 backdrop-blur-sm flex justify-center items-center z-50"
@@ -414,8 +624,12 @@ const AcquisitionModal = ({
         </div>
       )}
 
-      {/* Donation Modal */}
-      
+      {/* Image Preview Modal */}
+      <ImagePreview 
+        isOpen={!!previewImage} 
+        onClose={handleClosePreview} 
+        imageSrc={previewImage}
+      />
     </>
   );
 };

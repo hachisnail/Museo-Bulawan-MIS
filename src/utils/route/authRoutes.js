@@ -29,7 +29,8 @@ import{
   getAllForms,
   updateFormStatus,
   updateFormTimestamp,
-  updateTransferStatus
+  updateTransferStatus,
+  sendFormStatusEmail
 } from '../controller/formController.js';
 
 import { logAction, fetchLog } from '../controller/LogService.js';
@@ -104,6 +105,8 @@ router.put('/form/:id/status', updateFormStatus);
 router.put('/form/:id/timestamp', updateFormTimestamp);
 router.put('/form/:id/transfer_status', updateTransferStatus); // New route for updating transfer status
 
+// routes/formRoutes.js
+router.post('/form/:id/send-status-email', sendFormStatusEmail);
 
 
 
