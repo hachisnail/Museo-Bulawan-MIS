@@ -5,6 +5,28 @@ import User from '../models/Users.js';
 import sessionManager from '../services/SessionManager.js';
 import tokenService from '../services/TokenService.js';
 
+// Helper function to extract real client IP address
+const getClientIP = (req) => {
+  // Most reliable method for getting real IP behind reverse proxies like Traefik (used by Coolify)
+  // Check multiple common headers and fallback options
+  const ip = (
+    req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : null) || 
+    req.headers['cf-connecting-ip'] || 
+    req.headers['x-real-ip'] || 
+    req.connection.remoteAddress || 
+    req.socket.remoteAddress ||
+    req.ip;
+  
+  console.log('IP Detection Details:');
+  console.log(`- x-forwarded-for: ${req.headers['x-forwarded-for'] || 'not set'}`);
+  console.log(`- x-real-ip: ${req.headers['x-real-ip'] || 'not set'}`);
+  console.log(`- connection.remoteAddress: ${req.connection?.remoteAddress || 'not available'}`);
+  console.log(`- req.ip: ${req.ip || 'not set'}`);
+  console.log(`- Determined client IP: ${ip}`);
+  
+  return ip;
+};
+
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -22,18 +44,14 @@ export const login = async (req, res) => {
 
     console.log(`User ${credential.id} (${email}) authenticated successfully`);
 
-    // Get the actual client IP address using X-Forwarded-For header which is set by proxies like Traefik (used by Coolify)
-    const clientIp = req.headers['x-forwarded-for'] || 
-                     req.headers['x-real-ip'] || 
-                     req.connection.remoteAddress || 
-                     req.ip;
-
-    console.log(`Client connected from IP: ${clientIp}`);
+    // Get actual client IP using our helper function
+    const clientIP = getClientIP(req);
+    console.log(`Login attempt from IP: ${clientIP}`);
 
     // Create a new session (this will end any existing sessions)
     const session = await sessionManager.createSession({
       credentialId: credential.id,
-      ipAddress: clientIp,
+      ipAddress: clientIP,
       userAgent: req.headers['user-agent']
     });
 
