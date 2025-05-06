@@ -4,41 +4,37 @@ import Credential from '../models/Credential.js';
 import User from '../models/Users.js';
 import sessionManager from '../services/SessionManager.js';
 import tokenService from '../services/TokenService.js';
+import axios from 'axios';
 
-// Helper function specifically designed for Cloudflare Tunnel environments
+// Enhanced client identity detection specifically for Cloudflare Tunnel
 const getClientIP = (req) => {
-  // For Cloudflare Tunnel, cf-connecting-ip is the most reliable header
-  // This works regardless of trust proxy settings in Express
-  
-  console.log('===== CLOUDFLARE TUNNEL IP DETECTION =====');
-  
-  // Priority order for Cloudflare Tunnel environments
+  // Priority order: Cloudflare headers first, then regular IP headers
   const clientIP = 
-    req.headers['cf-connecting-ip'] ||  // Cloudflare Tunnel specific (highest priority)
+    req.headers['cf-connecting-ip'] || 
+    req.headers['true-client-ip'] ||
     (req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(',')[0].trim() : null) ||
-    req.headers['true-client-ip'] ||    // Alternative Cloudflare header
     req.headers['x-real-ip'] || 
     req.connection?.remoteAddress ||
     req.socket?.remoteAddress ||
     req.ip ||
     '0.0.0.0';  // Fallback
   
-  // Log all relevant headers to help debugging
-  console.log(`Cloudflare Client IP (cf-connecting-ip): ${req.headers['cf-connecting-ip'] || 'not set'}`);
-  console.log(`True Client IP (true-client-ip): ${req.headers['true-client-ip'] || 'not set'}`);
-  console.log(`Forwarded IP (x-forwarded-for): ${req.headers['x-forwarded-for'] || 'not set'}`);
-  console.log(`Real IP (x-real-ip): ${req.headers['x-real-ip'] || 'not set'}`);
-  console.log(`Express IP: ${req.ip || 'not set'}`);
-  console.log(`Connection Remote IP: ${req.connection?.remoteAddress || 'not available'}`);
-  console.log(`Socket Remote IP: ${req.socket?.remoteAddress || 'not available'}`);
-  console.log(`Final determined client IP: ${clientIP}`);
-  console.log('======================================');
+  // Debug logging
+  console.log('==== CLIENT IP DETECTION (CLOUDFLARE TUNNEL) ====');
+  console.log(`CF-Connecting-IP: ${req.headers['cf-connecting-ip'] || 'not present'}`);
+  console.log(`True-Client-IP: ${req.headers['true-client-ip'] || 'not present'}`);
+  console.log(`X-Forwarded-For: ${req.headers['x-forwarded-for'] || 'not present'}`);
+  console.log(`X-Real-IP: ${req.headers['x-real-ip'] || 'not present'}`);
+  console.log(`Connection Remote Address: ${req.connection?.remoteAddress || 'not present'}`);
+  console.log(`req.ip: ${req.ip || 'not present'}`);
+  console.log(`Final IP used: ${clientIP}`);
+  console.log('==============================================');
   
   return clientIP;
 };
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, clientIP: providedClientIP } = req.body;
 
   try {
     // Verify credentials
@@ -54,11 +50,15 @@ export const login = async (req, res) => {
 
     console.log(`User ${credential.id} (${email}) authenticated successfully`);
 
-    // Get real client IP from Cloudflare Tunnel
-    const clientIP = getClientIP(req);
+    // Get the client IP using our IP detection function
+    // If the client provided their real IP (from browser-side detection), use that
+    // Otherwise fall back to our server-side detection
+    const detectedIP = getClientIP(req);
+    const clientIP = providedClientIP || detectedIP;
+    
     console.log(`User ${credential.id} logging in from IP: ${clientIP}`);
 
-    // Create a new session with the real client IP
+    // Create a new session (this will end any existing sessions)
     const session = await sessionManager.createSession({
       credentialId: credential.id,
       ipAddress: clientIP,

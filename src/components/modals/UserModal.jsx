@@ -388,7 +388,7 @@ export const UserView = ({ userId, onClose }) => {
     })
   }
   
-  
+  console.log(loginLogs);
 
   const firstInitial = user?.Credential?.first_name?.charAt(0).toUpperCase()
   const lastInitial = user?.Credential?.last_name?.charAt(0).toUpperCase()
