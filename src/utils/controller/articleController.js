@@ -100,7 +100,9 @@ export const getAllArticles = async (req, res) => {
 };
 
 export const getPublicArticles = async (req, res) => {
-  console.log("Hit /api/public-article/:id")
+  // console.log("Hit /api/public-article/:id")
+  const API_URL = import.meta.env.VITE_API_URL;
+
   try {
     const articles = await Article.findAll({
       attributes: ['article_id','images', 'title', 'article_category', 'upload_date'],
@@ -109,7 +111,7 @@ export const getPublicArticles = async (req, res) => {
 
     const formattedArticles = articles.map(article => ({
       ...article.dataValues,
-      images: article.images ? `http://localhost:5000/uploads/${article.images}` : null,
+      images: article.images ? `${API_URL}/uploads/${article.images}` : null,
     }));
 
     return res.json(formattedArticles);
