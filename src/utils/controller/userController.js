@@ -51,12 +51,66 @@ export const displaySpecificUser = async (req, res) => {
     }
   };
 
+  // export const getUserLoginLogs = async (req, res) => {
+  //   const { userId } = req.params;
+  
+  //   try {
+  //     const user = await User.findOne({
+  //       where: { id: userId },
+  //       include: {
+  //         model: Credential,
+  //         include: {
+  //           model: LoginLog,
+  //           order: [['start', 'DESC']],
+  //         },
+  //       },
+  //     });
+  
+  //     if (!user) {
+  //       return res.status(404).json({ message: 'User not found.' });
+  //     }
+  
+  //     res.json({
+  //       userId: user.id,
+  //       name: `${user.Credential.first_name} ${user.Credential.last_name}`,
+  //       logs: user.Credential.LoginLogs,
+  //     });
+  //   } catch (error) {
+  //     console.error(error);
+  //     res.status(500).json({ message: 'Failed to fetch login logs.' });
+  //   }
+  // };
+  
+
   export const getUserLoginLogs = async (req, res) => {
     const { userId } = req.params;
   
     try {
-      const user = await User.findOne({
-        where: { id: userId },
+      // First check if credential exists
+      const credential = await Credential.findByPk(userId);
+      if (!credential) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+  
+      // Check if user exists in User table, create if not
+      let user = await User.findOne({
+        where: { credential_id: userId }
+      });
+  
+      if (!user) {
+        // Create missing user entry
+        user = await User.create({
+          credential_id: userId,
+          status: 'inactive',
+          creation_date: new Date(),
+          modified_date: new Date()
+        });
+        console.log(`Created missing user entry for credential ID ${userId}`);
+      }
+  
+      // Get user with credential and login logs
+      const userWithLogs = await User.findOne({
+        where: { credential_id: userId },
         include: {
           model: Credential,
           include: {
@@ -66,17 +120,17 @@ export const displaySpecificUser = async (req, res) => {
         },
       });
   
-      if (!user) {
+      if (!userWithLogs) {
         return res.status(404).json({ message: 'User not found.' });
       }
   
       res.json({
-        userId: user.id,
-        name: `${user.Credential.first_name} ${user.Credential.last_name}`,
-        logs: user.Credential.LoginLogs,
+        userId: userWithLogs.id,
+        name: `${userWithLogs.Credential.first_name} ${userWithLogs.Credential.last_name}`,
+        logs: userWithLogs.Credential.LoginLogs || [],
       });
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching login logs:', error);
       res.status(500).json({ message: 'Failed to fetch login logs.' });
     }
   };

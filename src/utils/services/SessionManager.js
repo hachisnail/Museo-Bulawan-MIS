@@ -24,20 +24,40 @@ class SessionManager {
    * Updates the user's status
    * @param {number} credentialId - User's credential ID
    * @param {string} status - New status ('active' or 'inactive')
+   * @param {Transaction} transaction - Optional transaction object
    */
-  async updateUserStatus(credentialId, status) {
-    const user = await User.findOne({ 
-      where: { credential_id: credentialId } 
-    });
-    
-    if (user) {
-      await user.update({ 
-        status, 
-        modified_date: new Date()
+  async updateUserStatus(credentialId, status, transaction = null) {
+    try {
+      // First, check if user exists
+      let user = await User.findOne({ 
+        where: { credential_id: credentialId },
+        ...(transaction ? { transaction } : {})
       });
+      
+      // If no user exists, create one with the provided status
+      if (!user) {
+        console.log(`No user found for credential ID ${credentialId}, creating new user entry`);
+        user = await User.create({
+          credential_id: credentialId,
+          status: status,
+          creation_date: new Date(),
+          modified_date: new Date()
+        }, transaction ? { transaction } : {});
+        console.log(`Created new user for credential ID ${credentialId} with status ${status}`);
+      } else {
+        // Update existing user status
+        console.log(`Updating user ${credentialId} status to ${status}`);
+        await user.update({ 
+          status, 
+          modified_date: new Date() 
+        }, transaction ? { transaction } : {});
+      }
+      
+      return user;
+    } catch (error) {
+      console.error(`Error updating user ${credentialId} status:`, error);
+      throw error;
     }
-    
-    return user;
   }
   
   /**
@@ -49,23 +69,33 @@ class SessionManager {
     const transaction = await sequelize.transaction();
     
     try {
-      // Check for existing sessions before ending them
-      const existingSessions = await LoginLog.findAll({
-        where: { credential_id: credentialId, end: null },
+      // First ensure the user exists in the users table
+      let user = await User.findOne({ 
+        where: { credential_id: credentialId },
         transaction
       });
       
-      console.log(`Found ${existingSessions.length} active sessions for user ${credentialId}`);
+      // If no user exists yet with this credential ID, create one
+      if (!user) {
+        console.log(`No user found for credential ID ${credentialId}. Creating new user entry.`);
+        const credential = await Credential.findByPk(credentialId, { transaction });
+        
+        if (!credential) {
+          throw new Error(`Credential with ID ${credentialId} not found`);
+        }
+        
+        user = await User.create({
+          credential_id: credentialId,
+          status: 'inactive', // Initial status is inactive until we activate it below
+          creation_date: new Date(),
+          modified_date: new Date()
+        }, { transaction });
+        
+        console.log(`Created new user for credential ID ${credentialId}`);
+      }
       
       // End any existing sessions for this user
       await this.endAllSessions(credentialId, 'New login from another device', transaction);
-      
-      // Verify sessions were ended
-      const remainingSessions = await LoginLog.findAll({
-        where: { credential_id: credentialId, end: null },
-        transaction
-      });
-      console.log(`After ending sessions, found ${remainingSessions.length} remaining active sessions`);
       
       // Create a new session
       const newSession = await LoginLog.create({
@@ -79,7 +109,7 @@ class SessionManager {
       
       console.log(`Created new session with ID ${newSession.id}`);
       
-      // Update user status
+      // Update user status to active
       await this.updateUserStatus(credentialId, 'active', transaction);
       
       await transaction.commit();
@@ -246,33 +276,6 @@ class SessionManager {
       
       await session.update({ last_activity: new Date() });
       return true;
-    }
-  }
-  
-  /**
-   * Updates user status with transaction support
-   */
-  async updateUserStatus(credentialId, status, transaction = null) {
-    try {
-      const user = await User.findOne({ 
-        where: { credential_id: credentialId },
-        ...(transaction ? { transaction } : {})
-      });
-      
-      if (user) {
-        console.log(`Updating user ${credentialId} status to ${status}`);
-        await user.update({ 
-          status, 
-          modified_date: new Date() 
-        }, transaction ? { transaction } : {});  // Fixed: Don't use spread operator here
-      } else {
-        console.log(`No user found for credential ID ${credentialId}`);
-      }
-      
-      return user;
-    } catch (error) {
-      console.error(`Error updating user ${credentialId} status:`, error);
-      throw error;
     }
   }
 }
