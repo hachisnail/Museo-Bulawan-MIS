@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import AdminNav from '../../components/navbar/AdminNav'
 import CustomDatePicker from '../../components/function/CustomDatePicker'
-import { connectWebSocket, closeWebSocket } from '../../utils/websocket'
+import { connectWebSocket, closeWebSocket } from '../../utils/services/websocket'
 import { AppointmentModal } from '../../components/modals/AppointmentModal'
 import Toast from '../../components/function/Toast';
 

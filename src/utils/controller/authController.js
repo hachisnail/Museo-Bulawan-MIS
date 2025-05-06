@@ -1,24 +1,18 @@
-import jwt from 'jsonwebtoken';
+// authController.js
 import bcrypt from 'bcrypt';
 import Credential from '../models/Credential.js';
-import LoginLog from '../models/LoginLogs.js';
-import User from '../models/Users.js'
-
-const JWT_SECRET = process.env.JWT_SECRET || 'hachsinail';
+import User from '../models/Users.js';
+import sessionManager from '../services/SessionManager.js';
+import tokenService from '../services/TokenService.js';
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // Verify credentials
     const credential = await Credential.findOne({ where: { email } });
     if (!credential) {
       return res.status(400).json({ message: 'Invalid email or password' });
-    }
-
-    const user = await User.findOne({ where: { credential_id: credential.id } });
-
-    if (user && user.status === 'active') {
-      return res.status(403).json({ message: 'Account is already active on another session' });
     }
 
     const isMatch = await bcrypt.compare(password, credential.password);
@@ -26,22 +20,18 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    const existingLog = await LoginLog.findOne({
-      where: { credential_id: credential.id, end: null },
+    console.log(`User ${credential.id} (${email}) authenticated successfully`);
+
+    // Create a new session (this will end any existing sessions)
+    const session = await sessionManager.createSession({
+      credentialId: credential.id,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
     });
 
-    if (!existingLog) {
-      await LoginLog.create({
-        credential_id: credential.id,
-        start: new Date(),
-        end: null,
-      });
-    }
+    console.log(`Created new session ${session.id} for user ${credential.id}`);
 
-    if (user) {
-      await user.update({ status: 'active', modified_date: new Date() });
-    }
-
+    // Generate token with session ID included
     const payload = {
       id: credential.id,
       email: credential.email,
@@ -49,16 +39,13 @@ export const login = async (req, res) => {
       first_name: credential.first_name,
       last_name: credential.last_name,
       position: credential.position,
+      session_id: session.id // Include session ID in token
     };
 
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '4h' });
-
-    res.cookie('fallback_token', token, {
-      httpOnly: true,
-      secure: true, 
-      sameSite: 'Strict',
-      maxAge: 4 * 60 * 60 * 1000 // 4 hours in ms
-    });
+    const token = tokenService.generateToken(payload);
+    
+    // Set auth cookie
+    tokenService.setAuthCookie(res, token);
 
     return res.status(200).json({ token });
   } catch (err) {
@@ -67,9 +54,6 @@ export const login = async (req, res) => {
   }
 };
 
-
-
-// logout controller in backend (logout.js)
 export const logout = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
@@ -78,33 +62,27 @@ export const logout = async (req, res) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    const credential = await Credential.findByPk(decoded.id);
-    if (!credential) {
-      return res.status(400).json({ message: 'User not found' });
+    const decoded = tokenService.verifyToken(token);
+    
+    if (!decoded) {
+      return res.status(401).json({ message: 'Invalid token' });
     }
 
-    const loginLog = await LoginLog.findOne({
-      where: { credential_id: credential.id, end: null },
-      order: [['start', 'DESC']],
-    });
+    console.log(`User ${decoded.id} (${decoded.email}) logging out`);
 
-    if (loginLog) {
-      await loginLog.update({ end: new Date() });
+    // End the session
+    const sessionId = decoded.session_id;
+    if (sessionId) {
+      console.log(`Ending session ${sessionId}`);
+      await sessionManager.endSession(sessionId, decoded.id, 'User logout');
+    } else {
+      // Fallback for tokens without session_id (backward compatibility)
+      console.log(`No session ID in token, ending all sessions for user ${decoded.id}`);
+      await sessionManager.endAllSessions(decoded.id, 'User logout');
     }
 
-    const user = await User.findOne({ where: { credential_id: credential.id } });
-    if (user) {
-      await user.update({ status: 'inactive', modified_date: new Date() });
-    }
-
-    // ✅ Properly clear fallback_token cookie
-    res.clearCookie('fallback_token', {
-      httpOnly: true,
-      sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production', // set to false for local dev
-    });
+    // Clear cookie
+    tokenService.clearAuthCookie(res);
 
     return res.status(200).json({ message: 'User logged out successfully' });
   } catch (err) {
@@ -113,8 +91,6 @@ export const logout = async (req, res) => {
   }
 };
 
-
-
 export const autoLogout = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -122,75 +98,131 @@ export const autoLogout = async (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
-
-  jwt.verify(token, JWT_SECRET, async (err, decoded) => {
-    if (err) {
-      if (err.name === 'TokenExpiredError') {
-        const decodedToken = jwt.decode(token);
-        if (decodedToken && decodedToken.id) {
-          try {
-            const credential = await Credential.findByPk(decodedToken.id);
-            if (credential) {
-              const loginLog = await LoginLog.findOne({
-                where: { credential_id: credential.id, end: null },
-                order: [['start', 'DESC']],
-              });
-              if (loginLog) {
-                await loginLog.update({ end: new Date() });
-              }
-
-              const user = await User.findOne({ where: { credential_id: credential.id } });
-              if (user) {
-                await user.update({ status: 'inactive', modified_date: new Date() });
-              }
-            }
-          } catch {
-            // Optional: log error
-          }
-        }
-
-        // ✅ Clear fallback token cookie
-        res.clearCookie('fallback_token', {
-          httpOnly: true,
-          sameSite: 'Strict',
-          secure: true, // false if you're testing locally without HTTPS
-        });
-
-        return res.status(401).json({ message: 'Session expired, you have been logged out automatically.' });
-      }
-
-      return res.status(401).json({ message: 'Unauthorized' });
+  const decoded = tokenService.verifyToken(token);
+  
+  if (!decoded) {
+    // Token is invalid or expired
+    // Try to decode it anyway to get the user ID
+    const decodedToken = tokenService.decodeToken(token);
+    
+    if (decodedToken && decodedToken.id) {
+      console.log(`Token expired for user ${decodedToken.id}, ending all sessions`);
+      // End all sessions for this user
+      await sessionManager.endAllSessions(
+        decodedToken.id, 
+        'Token expired or invalid'
+      );
     }
 
-    req.user = decoded;
-    next();
-  });
+    tokenService.clearAuthCookie(res);
+    
+    if (decodedToken) {
+      return res.status(401).json({ 
+        message: 'Session expired, you have been logged out automatically.',
+        reason: 'TOKEN_EXPIRED'
+      });
+    } else {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+  }
+  
+  // Token is valid, check if the specific session is still active
+  const isSessionValid = await sessionManager.validateSession(
+    decoded.id,
+    decoded.session_id  // Pass session ID to check that specific session
+  );
+  
+  if (!isSessionValid) {
+    console.log(`Session ${decoded.session_id} for user ${decoded.id} is no longer valid`);
+    tokenService.clearAuthCookie(res);
+    return res.status(401).json({ 
+      message: 'Session has been invalidated',
+      reason: 'SESSION_INVALIDATED'
+    });
+  }
+
+  req.user = decoded;
+  next();
 };
-
-
 
 export const refreshToken = async (req, res) => {
   const token = req.cookies.fallback_token;
-  if (!token) return res.status(401).json({ message: 'No fallback token found' });
+  if (!token) {
+    return res.status(401).json({ message: 'No fallback token found' });
+  }
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    return res.status(200).json({ token });
-  } catch {
+  const decoded = tokenService.verifyToken(token);
+  
+  if (!decoded) {
+    tokenService.clearAuthCookie(res);
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
+  
+  // Verify the specific session is still active
+  const isSessionValid = await sessionManager.validateSession(
+    decoded.id,
+    decoded.session_id
+  );
+  
+  if (!isSessionValid) {
+    tokenService.clearAuthCookie(res);
+    return res.status(401).json({ 
+      message: 'Session has been invalidated',
+      reason: 'SESSION_INVALIDATED'
+    });
+  }
+  
+  return res.status(200).json({ token });
 };
 
-
-export const verifyCookie = (req, res) => {
+export const verifyCookie = async (req, res) => {
   const token = req.cookies.fallback_token;
 
-  if (!token) return res.status(401).json({ message: 'No cookie token found' });
+  if (!token) {
+    return res.status(401).json({ message: 'No cookie token found' });
+  }
 
+  const decoded = tokenService.verifyToken(token);
+  
+  if (!decoded) {
+    tokenService.clearAuthCookie(res);
+    return res.status(401).json({ message: 'Invalid or expired cookie token' });
+  }
+  
+  // Verify the specific session is still active
+  const isSessionValid = await sessionManager.validateSession(
+    decoded.id,
+    decoded.session_id
+  );
+  
+  if (!isSessionValid) {
+    tokenService.clearAuthCookie(res);
+    return res.status(401).json({ 
+      message: 'Session has been invalidated',
+      reason: 'SESSION_INVALIDATED'
+    });
+  }
+
+  return res.status(200).json({ token });
+};
+
+export const sessionStatus = async (req, res) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    res.status(200).json({ token });
+    // Update session activity timestamp
+    if (req.user && req.user.session_id) {
+      await sessionManager.updateActivity(req.user.id, req.user.session_id);
+    }
+    
+    return res.status(200).json({ 
+      isValid: true, 
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role
+      }
+    });
   } catch (err) {
-    res.status(401).json({ message: 'Invalid or expired cookie token' });
+    console.error('Session status error:', err);
+    return res.status(500).json({ message: 'Server error' });
   }
 };

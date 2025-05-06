@@ -1,7 +1,7 @@
 // routes/authRoutes.js
 
 import express from 'express';
-import { login, logout, autoLogout, refreshToken, verifyCookie } from '../controller/authController.js';
+import { login, logout, autoLogout, refreshToken, verifyCookie, sessionStatus } from '../controller/authController.js';
 import { displayUsers, displaySpecificUser, getUserLoginLogs, fetchCredential } from '../controller/userController.js';
 import { 
   createAppointment, 
@@ -51,7 +51,10 @@ import {
 const router = express.Router();
 
 router.post('/login', login);
-router.post('/logout', logout);
+router.post('/logout', autoLogout, logout);
+router.get('/refresh-token', refreshToken);
+router.get('/verify-cookie', verifyCookie);
+router.get('/session-status', autoLogout, sessionStatus);
 
 router.get('/fetchUsers', autoLogout, displayUsers);
 router.get('/fetchUser/:id', autoLogout, displaySpecificUser);

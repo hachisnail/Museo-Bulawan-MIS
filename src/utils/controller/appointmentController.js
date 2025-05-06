@@ -3,7 +3,7 @@
 import Visitor from '../models/Visitors.js';
 import Appointment from '../models/Appointment.js';
 import { Op } from 'sequelize';
-import transporter, { sendEmail } from '../emailTransporter.js';
+import transporter, { sendEmail } from '../services/emailTransporter.js';
 import AppointmentStatus from '../models/AppointmentStatus.js';
 
 /**
@@ -607,7 +607,7 @@ export const sendEmailNotification = async (req, res) => {
     `;
 
     // Use the sendEmail helper function from emailTransporter
-    const { sendEmail } = await import('../emailTransporter.js');
+    const { sendEmail } = await import('../services/emailTransporter.js');
     const emailResult = await sendEmail({
       from: '"Museo Bulawan" <museobulawanmis@gmail.com>',
       to: recipientEmail,

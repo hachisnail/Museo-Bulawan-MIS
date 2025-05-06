@@ -12,7 +12,7 @@ import axios from 'axios'
 import Toast from '../../components/function/Toast'
 import { useEffect } from 'react'
 import { AppointmentModal } from '../../components/modals/AppointmentModal'
-import { connectWebSocket, closeWebSocket } from '../../utils/websocket'
+import { connectWebSocket, closeWebSocket } from '../../utils/services/websocket'
 
 
 // ---------------- UTILITY FUNCTIONS ----------------
