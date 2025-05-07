@@ -1,4 +1,4 @@
-// Updated Article.jsx file with proper column implementation
+// Updated Article.jsx file without the gocapsule extension
 import React, { useState, useEffect } from 'react';
 import AdminNav from '../../components/navbar/AdminNav';
 import axios from 'axios';
@@ -7,8 +7,12 @@ import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
-import { ColumnExtension } from '@gocapsule/column-extension'
 import ArticleModal from '../../components/modals/ArticleModal'; 
+// Import your local TwoColumnBlock extension
+import { TwoColumnBlock } from '../../components/articleComponents/TwoColumnBlock';
+import { ColumnLeft } from '../../components/articleComponents/ColumnLeft'
+import { ColumnRight } from '../../components/articleComponents/ColumnRight'
+
 
 import {
   Bold,
@@ -22,17 +26,17 @@ import {
 
 const ArticleForm = () => {
   // Form state
-  const [title, setTitle] = useState("")
-  const [author, setAuthor] = useState("")
-  const [category, setCategory] = useState("")
-  const [address, setAddress] = useState("")
-  const [selectedDate, setSelectedDate] = useState("")
-  const [thumbnail, setThumbnail] = useState(null)
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [category, setCategory] = useState("");
+  const [address, setAddress] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [thumbnail, setThumbnail] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
-  
+
   // Articles state
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,9 +48,10 @@ const ArticleForm = () => {
   const token = localStorage.getItem('token');
   
   // Define path to your uploads folder - important for displaying images in the modal
-  const BASE_URL = import.meta.env.VITE_API_URL
+  const BASE_URL = import.meta.env.VITE_API_URL;
   const UPLOAD_PATH = `${BASE_URL}/uploads/`;
 
+  // Initialize the editor with your local TwoColumnBlock extension
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -55,14 +60,16 @@ const ArticleForm = () => {
         types: ['heading', 'paragraph'],
         alignments: ['left', 'center', 'right', 'justify'],
       }),
-      ColumnExtension, // Use ColumnExtension (not as function call)
+      ColumnLeft,
+    ColumnRight,
+    TwoColumnBlock,
     ],
     content: "", 
     onUpdate: ({ editor }) => {
-      // You can add this if you want to debug the editor content
       console.log(editor.getHTML());
     },
   });
+
   // Fetch articles on component mount
   useEffect(() => {
     fetchArticles();
@@ -110,7 +117,6 @@ const ArticleForm = () => {
       let response;
       
       if (isEditing) {
-        
         response = await axios.put(
           `${BASE_URL}/api/auth/article/${editingArticleId}`,
           formData,
@@ -192,11 +198,9 @@ const ArticleForm = () => {
     
     // Handle thumbnail preview for editing
     if (article.images) {
-      // If the image exists, we need to construct a URL to it
       const imageUrl = `${UPLOAD_PATH}${article.images}`;
       setPreviewImage(imageUrl);
       setThumbnail(article.images);
-      // Store just the filename as a string (not a File object)      setThumbnail(article.images);
     } else {
       setPreviewImage(null);
       setThumbnail(null);
@@ -217,7 +221,6 @@ const ArticleForm = () => {
 
   // Filter articles based on search term
   const filteredArticles = articles.filter(article => {
-    // Filter by search term
     const searchMatch = !searchTerm || 
       article.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       article.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -402,9 +405,11 @@ const ArticleForm = () => {
                         {article.article_category}
                       </div>
                       <div className='px-4 py-1 border-b-1 border-gray-400'>
-                        <span className={`text-white rounded-md px-4 py-1 ${
-                          article.status === 'posted' ? 'bg-[#4CAF50]' : 'bg-[#5C4624]'
-                        }`}>
+                        <span
+                          className={`text-white rounded-md px-4 py-1 ${
+                            article.status === 'posted' ? 'bg-[#4CAF50]' : 'bg-[#5C4624]'
+                          }`}
+                        >
                           {article.status === 'posted' ? 'Posted' : 'Pending'}
                         </span>
                       </div>
@@ -412,11 +417,11 @@ const ArticleForm = () => {
                   ))
                 ) : (
                   <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
-                          <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
-                            <i className="fas fa-inbox text-5xl mb-4"></i>
-                            <p>No article found</p>
-                            <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
-                          </div>
+                    <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
+                      <i className="fas fa-inbox text-5xl mb-4"></i>
+                      <p>No article found</p>
+                      <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -449,7 +454,7 @@ const ArticleForm = () => {
         />
       </div>
     </>
-  )
-}
+  );
+};
 
-export default ArticleForm
+export default ArticleForm;

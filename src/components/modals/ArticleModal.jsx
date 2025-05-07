@@ -274,7 +274,8 @@ const ArticleModal = ({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    editor?.chain().focus().setColumns(2).run();
+                    editor?.chain().focus().insertTwoColumnBlock().run();
+
                   }}
                   className="p-1 border rounded"
                   title="Insert Two Column Layout"
