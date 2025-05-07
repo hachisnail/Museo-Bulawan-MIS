@@ -133,10 +133,10 @@ const Form = () => {
   const [acquired, setAcquired] = useState('');
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [narrative, setNarrative] = useState('');
-  const [images, setImages] = useState('');
+  const [images, setImages] = useState([]);
+  const [relatedImages, setRelatedImages] = useState([]);
   const [documentFiles, setDocumentFiles] = useState([]);
   const [uploadedDocuments, setUploadedDocuments] = useState([]);
-  const [relatedImages, setRelatedImages] = useState('');
 
   // Lending-specific fields
   const [durationPeriod, setDurationPeriod] = useState('');
@@ -147,6 +147,8 @@ const Form = () => {
   // UI states
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Capitalize first letter of First/Last Name
   const handleFirstNameChange = (e) => {
@@ -156,6 +158,7 @@ const Form = () => {
     }
     setFirstName(value);
   };
+  
   const handleLastNameChange = (e) => {
     let value = e.target.value;
     if (value.length > 0) {
@@ -164,123 +167,129 @@ const Form = () => {
     setLastName(value);
   };
 
+  // Handle image uploads
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    setImages(files);
+  };
+
+  const handleRelatedImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    setRelatedImages(files);
+  };
+
+// Handle document uploads - store files in state, not localStorage
+const handleDocumentUpload = (e) => {
+  const files = Array.from(e.target.files);
+  setDocumentFiles(prev => [...prev, ...files]);
+  
+  // Display info about uploaded files
+  const newDocumentFiles = files.map(file => ({
+    name: file.name,
+    size: file.size,
+    type: file.type
+  }));
+  
+  setUploadedDocuments(prev => [...prev, ...newDocumentFiles]);
+  
+  // Reset the input value to allow selecting the same file again
+  e.target.value = '';
+};
+
+// Remove document from state by index
+const removeDocument = (indexToRemove) => {
+  setUploadedDocuments(prev => prev.filter((_, index) => index !== indexToRemove));
+  setDocumentFiles(prev => prev.filter((_, index) => index !== indexToRemove));
+};
+
+
   // Open the confirmation modal before final submit
   const handleOpenConfirmation = (e) => {
     e.preventDefault();
+    
+    // Validate required fields before showing confirmation
+    if (!firstName || !lastName || !age || !email || !selectedProvince || 
+        !selectedCity || !selectedBarangay || !artifactName || !description || 
+        !acquired || images.length === 0) {
+      setErrorMessage('Please fill in all required fields marked with *');
+      return;
+    }
+    
+    // Additional validation for lending form
+    if (formType === 'lending' && (!durationPeriod || !remarks || !reason || !condition)) {
+      setErrorMessage('Please fill in all required lending fields marked with *');
+      return;
+    }
+    
+    // Clear any previous error messages
+    setErrorMessage('');
     setShowConfirmationModal(true);
   };
 
-  const handleDocumentUpload = (e) => {
-    const files = Array.from(e.target.files);
-    const newDocumentFiles = [];
-    
-    files.forEach(file => {
-      // Check file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Maximum size is 5MB.`);
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = () => {
-        const fileInfo = {
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          data: reader.result, // Base64 encoded data
-          uploadDate: new Date().toISOString()
-        };
-        
-        // Store file data in local storage
-        const fileKey = `document_${Date.now()}_${file.name}`;
-        localStorage.setItem(fileKey, JSON.stringify(fileInfo));
-        
-        const newFile = { key: fileKey, ...fileInfo };
-        newDocumentFiles.push(newFile);
-        
-        if (newDocumentFiles.length === files.length) {
-          setUploadedDocuments(prev => [...prev, ...newDocumentFiles]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-    
-    // Reset the input value to allow selecting the same file again
-    e.target.value = '';
-  };
-  
-  // Remove document from state and local storage
-  const removeDocument = (fileKey) => {
-    localStorage.removeItem(fileKey);
-    setUploadedDocuments(prev => prev.filter(doc => doc.key !== fileKey));
-  };
-
-  // Cleanup URLs when component unmounts
-  useEffect(() => {
-    return () => {
-      documentFiles.forEach(file => {
-        if (file.objectUrl) URL.revokeObjectURL(file.objectUrl);
-      });
-    };
-  }, [documentFiles]);
-
-  // Updated handleSubmit
+  // Submit the form to the server
   const handleSubmit = async () => {
+    setIsSubmitting(true);
     setShowConfirmationModal(false);
-
-    // Extract just the keys and minimal info for server submission
-    const documentKeys = uploadedDocuments.map(doc => ({
-      key: doc.key,
-      name: doc.name,
-      type: doc.type,
-      size: doc.size,
-      uploadDate: doc.uploadDate
-    }));
-
-    // Build request payload
-    const payload = {
-      // Donator info
-      first_name: firstName,
-      last_name: lastName,
-      email,
-      sex,
-      age,
-      phone,
-      organization,
-      province: selectedProvince?.name || '',
-      city_municipality: selectedCity?.name || '',
-      barangay: selectedBarangay?.name || '',
-      street,
-
-      // Form info
-      artifact_name: artifactName,
-      description,
-      acquired,
-      additional_info: additionalInfo,
-      narrative,
-      images,
-      documents: documentKeys, // Send just the keys and minimal info
-      related_images: relatedImages,
-      transfer_status: 'on_progress',
-
-      // If formType is 'lending', include the relevant fields
-      formType,
-      ...(formType === 'lending' && {
-        durationPeriod,
-        remarks,
-        reason,
-        condition
-      })
-    };
-
+  
     try {
+      const formData = new FormData();
+      
+      // Add basic info to formData
+      formData.append('first_name', firstName);
+      formData.append('last_name', lastName);
+      formData.append('email', email);
+      formData.append('sex', sex);
+      formData.append('age', age);
+      formData.append('phone', phone);
+      formData.append('organization', organization);
+      formData.append('province', selectedProvince?.name || '');
+      formData.append('city_municipality', selectedCity?.name || '');
+      formData.append('barangay', selectedBarangay?.name || '');
+      formData.append('street', street);
+  
+      // Add artifact details
+      formData.append('artifact_name', artifactName);
+      formData.append('description', description);
+      formData.append('acquired', acquired);
+      formData.append('additional_info', additionalInfo);
+      formData.append('narrative', narrative);
+      
+      // Append image files
+      images.forEach(image => {
+        formData.append('images', image);
+      });
+      
+      relatedImages.forEach(image => {
+        formData.append('related_images', image);
+      });
+      
+      // Append document files directly to FormData
+      documentFiles.forEach(doc => {
+        formData.append('documents', doc);
+      });
+      
+      // Add form type and specific lending fields if applicable
+      formData.append('formType', formType);
+      if (formType === 'lending') {
+        formData.append('durationPeriod', durationPeriod);
+        formData.append('remarks', remarks);
+        formData.append('reason', reason);
+        formData.append('condition', condition);
+      }
+  
+      // Submit the form
       const response = await axios.post(
         'http://localhost:5000/api/auth/form',
-        payload
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
       );
-
+  
       if (response.status === 201) {
-        // Clear form fields
+        // Reset all form fields
         setFirstName('');
         setLastName('');
         setEmail('');
@@ -292,45 +301,92 @@ const Form = () => {
         setSelectedProvince(null);
         setSelectedCity(null);
         setSelectedBarangay(null);
-
         setArtifactName('');
         setDescription('');
         setAcquired('');
         setAdditionalInfo('');
         setNarrative('');
-        setImages('');
+        setImages([]);
+        setRelatedImages([]);
+        setDocumentFiles([]);
         setUploadedDocuments([]);
-        setRelatedImages('');
-
-        // Reset lending fields
         setDurationPeriod('');
         setRemarks('');
         setReason('');
         setCondition('');
-
+  
         // Show success toast
         setShowSuccessToast(true);
         setTimeout(() => setShowSuccessToast(false), 3000);
-      } else {
-        console.error('Submission error:', response.data?.message || 'Unknown error');
       }
     } catch (error) {
-      console.error('Request failed:', error);
+      console.error('Form submission error:', error);
+      setErrorMessage(error.response?.data?.message || 'An error occurred while submitting the form. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-
   
+
+  // Preview images
+  const renderImagePreviews = (imagesList) => {
+    if (!imagesList || imagesList.length === 0) return null;
+    
+    return (
+      <div className="mt-2 flex flex-wrap gap-2">
+        {Array.from(imagesList).map((file, index) => (
+          <div key={index} className="relative">
+            <img
+              src={URL.createObjectURL(file)}
+              alt={`Preview ${index}`}
+              className="h-20 w-20 object-cover rounded-md"
+            />
+            <button
+              type="button"
+              className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+              onClick={(e) => {
+                e.stopPropagation();
+                const newImages = Array.from(imagesList);
+                newImages.splice(index, 1);
+                imagesList === images ? setImages(newImages) : setRelatedImages(newImages);
+              }}
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Cleanup object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (images.length > 0) {
+        images.forEach(image => {
+          if (image.preview) URL.revokeObjectURL(image.preview);
+        });
+      }
+      if (relatedImages.length > 0) {
+        relatedImages.forEach(image => {
+          if (image.preview) URL.revokeObjectURL(image.preview);
+        });
+      }
+    };
+  }, [images, relatedImages]);
 
   return (
     <>
       <ScrollRestoration />
+      
+      {/* Success Toast */}
       {showSuccessToast && (
-        <div className="fixed bottom-5 right-5 bg-green-600 text-white py-3 px-5 rounded-md shadow-lg">
+        <div className="fixed bottom-5 right-5 bg-green-600 text-white py-3 px-5 rounded-md shadow-lg z-50">
           Form submitted successfully!
         </div>
       )}
 
+      {/* Confirmation Modal */}
       {showConfirmationModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white w-[90%] max-w-md mx-auto p-6 rounded-md shadow-xl">
@@ -342,14 +398,16 @@ const Form = () => {
               <button
                 onClick={() => setShowConfirmationModal(false)}
                 className="px-4 py-2 border-2 border-gray-400 rounded-md hover:bg-gray-100"
+                disabled={isSubmitting}
               >
                 No, Cancel
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400"
+                disabled={isSubmitting}
               >
-                Yes, Submit
+                {isSubmitting ? 'Submitting...' : 'Yes, Submit'}
               </button>
             </div>
           </div>
@@ -388,6 +446,13 @@ const Form = () => {
                 <option value="lending">Lending Form</option>
               </select>
             </div>
+
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                {errorMessage}
+              </div>
+            )}
 
             {/* The Main Form */}
             <form onSubmit={handleOpenConfirmation} className="mt-6 space-y-6">
@@ -714,65 +779,73 @@ const Form = () => {
                   <label className="col-span-5 md:col-span-3 text-xl font-bold">
                     Images of the Artifact <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="file"
-                    multiple
-                    value={images}
-                    onChange={(e) => setImages(e.target.value)}
-                    className="col-span-7 md:col-span-9 px-4 py-2 border-2 border-black rounded-2xl placeholder-gray-500 text-sm"
-                  />
-                </div>
-
-                {/* Documentation Files */}
-                
-            {/* Updated Documentation Files section */}
-            <div className="grid md:grid-cols-12 items-center gap-4 mb-6">
-                        <label className="col-span-5 md:col-span-3 text-xl font-bold">
-                    Relevant Documentation
-                  </label>
-                  <div className="col-span-7 md:col-span-9 flex flex-col gap-2">
+                  <div className="col-span-7 md:col-span-9">
                     <input
                       type="file"
                       multiple
-                      onChange={handleDocumentUpload}
+                      accept="image/*"
+                      onChange={handleImageUpload}
                       className="px-4 py-2 border-2 border-black rounded-2xl text-sm"
                     />
-                    
-                    {uploadedDocuments.length > 0 && (
-                      <div className="mt-2 border p-2 rounded-md">
-                        <p className="font-semibold mb-1">Uploaded Documents:</p>
-                        <ul className="space-y-1">
-                          {uploadedDocuments.map((doc, index) => (
-                            <li key={index} className="flex justify-between items-center">
-                              <span>{doc.name} ({Math.round(doc.size / 1024)} KB)</span>
-                              <button 
-                                onClick={() => removeDocument(doc.key)}
-                                className="text-red-600 hover:text-red-800"
-                                type="button"
-                              >
-                                Remove
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    {renderImagePreviews(images)}
                   </div>
                 </div>
 
+{/* Documentation Files */}
+<div className="grid md:grid-cols-12 items-center gap-4 mb-6">
+  <label className="col-span-5 md:col-span-3 text-xl font-bold">
+    Relevant Documentation
+  </label>
+  <div className="col-span-7 md:col-span-9 flex flex-col gap-2">
+    <input
+      type="file"
+      multiple
+      // Remove the accept="image/*" restriction to allow all file types
+      onChange={handleDocumentUpload}
+      className="px-4 py-2 border-2 border-black rounded-2xl text-sm"
+    />
+    
+    {uploadedDocuments.length > 0 && (
+      <div className="mt-2 border p-2 rounded-md">
+        <p className="font-semibold mb-1">Uploaded Documents:</p>
+        <ul className="space-y-1">
+          {uploadedDocuments.map((doc, index) => (
+            <li key={index} className="flex justify-between items-center">
+              <span>{doc.name} ({Math.round(doc.size / 1024)} KB)</span>
+              <button 
+                onClick={() => removeDocument(index)}
+                className="text-red-600 hover:text-red-800"
+                type="button"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+</div>
+
+
                 {/* Related Images */}
-                <div className="grid md:grid-cols-12 items-center gap-4 mb-6">
-                  <label className="col-span-5 md:col-span-3 text-xl font-bold">
-                    Any Related Images
-                  </label>
+                          
+              <div className="grid md:grid-cols-12 items-center gap-4 mb-6">
+                <label className="col-span-5 md:col-span-3 text-xl font-bold">
+                  Related Images
+                </label>
+                <div className="col-span-7 md:col-span-9">
                   <input
                     type="file"
                     multiple
-                    value={relatedImages}
-                    onChange={(e) => setRelatedImages(e.target.value)}
-                    className="col-span-7 md:col-span-9 px-4 py-2 border-2 border-black rounded-2xl placeholder-gray-500 text-sm"
+                    accept="image/*"
+                    onChange={handleRelatedImageUpload}
+                    className="px-4 py-2 border-2 border-black rounded-2xl text-sm"
                   />
+                  {renderImagePreviews(relatedImages)}
                 </div>
+              </div>
+
 
                 {/* Submit */}
                 <div className="flex justify-end mt-8">
