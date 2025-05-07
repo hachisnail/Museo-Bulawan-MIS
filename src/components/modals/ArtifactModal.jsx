@@ -196,14 +196,15 @@ export const ArtifactAdd = ({ onClose }) => {
     <>
       <div className=" gap-y-2 font-semibold flex flex-col">
         <span className="text-5xl">Artifact Information</span>
-        <div className="text-2xl">
+        <div className="text-2xl flex items-center text-center">
           <span
             onClick={onClose}
             className="cursor-pointer text-gray-700 hover:text-black"
           >
-            Artifact Inventory{' '}
+            Artifact{' '}
           </span>
-          <span>&gt; Add New Artifact</span>
+          <span className='text-2xl font-extrabold text-amber-900'>&nbsp; &gt; &nbsp;</span>
+          <span> Add New Artifact</span>
         </div>
       </div>
 

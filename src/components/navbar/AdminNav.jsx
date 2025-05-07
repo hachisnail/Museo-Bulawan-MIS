@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { jwtDecode } from 'jwt-decode'
 import axios from 'axios'
-import {ConfirmationModal} from '../modals/ConfirmationModal'
+import { ConfirmationModalC} from '../modals/ConfirmationModal'
 import LogoutButton from '../LogoutButton'
 
 
@@ -114,7 +114,7 @@ const AdminNav = () => {
   return (
     <>
       {showConfirmation && (
-        <ConfirmationModal
+        <ConfirmationModalC
           title="Logout?"
           description="You are about to log out. All unsaved modifications will be permanently lost."
           icon="info"

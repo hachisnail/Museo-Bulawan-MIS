@@ -12,7 +12,8 @@ const LandingNav = () => {
   };
 
   return (
-    <nav className='w-screen flex justify-center h-30   bg-transparent '>
+    <>
+    <nav className='w-screen flex justify-center h-30  z-100 bg-transparent '>
         <div className={`w-[140rem] 3xl:w-[180rem] mx-5 md:mx-0 h-30 border-b-2 ${isSpecialRoute? ' border-b-black' : ' border-b-white'}`} >
           <div className='flex justify-between w-auto'>
            
@@ -71,6 +72,7 @@ const LandingNav = () => {
         </div>
         
     </nav>
+    </>
   )
 }
 
