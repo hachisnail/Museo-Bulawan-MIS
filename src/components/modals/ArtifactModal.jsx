@@ -210,7 +210,7 @@ export const ArtifactAdd = ({ onClose }) => {
 
       <form
         onSubmit={handleSubmit}
-        className="w-full h-full flex flex-col xl:flex-row gap-x-10 px-10 overflow-auto"
+        className="w-full h-full justify-center flex flex-col xl:flex-row gap-x-10 px-10 overflow-auto"
       >
         {/* Left Column */}
         <div className="h-auto w-full xl:w-[65rem] flex flex-col gap-y-6">
@@ -730,6 +730,32 @@ export const ArtifactAdd = ({ onClose }) => {
           </div>
         </div>
       </form>
+    </>
+  )
+}
+
+
+export const ArtifactHyperlink = ({ onClose }) => {
+
+
+  return (
+    <>
+    <div className=" gap-y-2 font-semibold flex flex-col">
+        <span className="text-5xl">More Information</span>
+        <div className="text-2xl flex items-center text-center">
+          <span
+            onClick={onClose}
+            className="cursor-pointer text-gray-700 hover:text-black"
+          >
+            Artifact{' '}
+          </span>
+          <span className='text-2xl font-extrabold text-amber-900'>&nbsp; &gt; &nbsp;</span>
+          <span> Hyperlinks </span>
+        </div>
+      </div>
+    <div className='w-full h-full flex flex-col xl:flex-row gap-x-10 px-10 overflow-auto'>
+
+    </div>
     </>
   )
 }
