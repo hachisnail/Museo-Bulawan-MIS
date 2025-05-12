@@ -1,14 +1,14 @@
+// src/pages/Content.jsx
 import React, { useEffect, useState } from 'react';
 import { Link, ScrollRestoration } from 'react-router-dom';
 import axios from 'axios';
-
 import LandingNav from '../../components/navbar/LandingNav';
 import backgroundImage from '../../../src/assets/Fernando-Amorsolo-Women-Bathing-and-Washing Clothes-7463.png';
 
 // Example municipality list
 const municipalities = [
   "Basud", "Capalonga", "Daet", "Jose Panganiban", "Labo",
-  "Mercedes", "Paracale", "San Lorenzo Ruiz", "San Vicente", 
+  "Mercedes", "Paracale", "San Lorenzo Ruiz", "San Vicente",
   "Santa Elena", "Talisay", "Vinzons"
 ];
 
@@ -28,7 +28,6 @@ const Content = () => {
     fetchArticles();
   }, []);
 
-  // Fetch articles (similar to admin logic, but in a “landing” style)
   const fetchArticles = async () => {
     try {
       setLoading(true);
@@ -42,7 +41,6 @@ const Content = () => {
     }
   };
 
-  // Filter logic for demonstration: checks title, author, category, address
   const filteredArticles = articles.filter((article) => {
     const matchesKeyword = !keyword ||
       article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
@@ -57,7 +55,7 @@ const Content = () => {
     return matchesKeyword && matchesCategory && matchesMunicipality;
   });
 
-  // Encode function for building a safe string
+  // Encode (ID :: Title) into base64
   const encoded = (id, name) => {
     const encodedString = `${id}::${name}`;
     return btoa(encodedString);
@@ -66,11 +64,10 @@ const Content = () => {
   return (
     <>
       <ScrollRestoration />
+
       <div className="bg-[#1C1B19] flex flex-col gap-y-4 w-screen pt-7 h-fit min-h-fit">
-        {/* Top Nav */}
         <LandingNav />
 
-        {/* Background + Search UI */}
         <div
           className="w-screen h-[40rem] bg-cover bg-center bg-no-repeat relative"
           style={{ backgroundImage: `url(${backgroundImage})` }}
@@ -101,7 +98,6 @@ const Content = () => {
                   <option value="Contents">Contents</option>
                   <option value="Workshop">Workshop</option>
                   <option value="Seminar">Seminar</option>
-                  {/* more if needed */}
                 </select>
                 <div className="pointer-events-none absolute right-2">
                   <svg
@@ -110,11 +106,11 @@ const Content = () => {
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth="2" 
-                      d="M19 9l-7 7-7-7" 
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 9l-7 7-7-7"
                     />
                   </svg>
                 </div>
@@ -163,7 +159,7 @@ const Content = () => {
         </div>
       </div>
 
-      {/* Articles Grid Section  */}
+      {/* Articles Grid */}
       <div className="bg-[#1C1B19] min-h-screen py-15">
         <div className="w-full px-4 mx-auto flex justify-around">
           {loading && (
@@ -179,9 +175,8 @@ const Content = () => {
           {!loading && !error && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 gap-x-20">
               {filteredArticles.map((article, index) => {
-                // Construct an image URL if only filename is stored
                 const imageSrc = article.images
-                  ? article.images // It's already a full URL
+                  ? article.images
                   : "https://fakeimg.pl/300x300?text=image?";
 
                 const displayDate = article.upload_date
@@ -194,25 +189,17 @@ const Content = () => {
                     to={`/article/${encoded(article.article_id, article.title)}`}
                     className="flex flex-col items-center text-center hover:opacity-90 transition duration-300"
                   >
-                    {/* Thumbnail */}
-                    
                     <img
                       src={imageSrc}
                       alt={`Article ${article.article_id}`}
                       className="w-[300px] h-auto"
                     />
-
-                    {/* Category */}
                     <p className="text-[#F05454] text-base uppercase mt-2">
                       {article.article_category || 'No Category'}
                     </p>
-
-                    {/* Title */}
                     <h2 className="text-white text-2xl font-bold mt-1">
                       {article.title || 'Untitled'}
                     </h2>
-
-                    {/* Date */}
                     <p className="text-gray-300 text-base mt-1">
                       {displayDate}
                     </p>

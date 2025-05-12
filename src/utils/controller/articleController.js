@@ -1,3 +1,5 @@
+// controllers/articleController.js
+
 import Article from '../models/Article.js';
 import Credential from '../models/Credential.js';
 import multer from 'multer';
@@ -27,7 +29,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 export { upload };
 
-// Controller to handle multiple content images
+// Controller to handle uploading multiple article images (not the main thumbnail)
 export const uploadContentImages = async (req, res) => {
   try {
     // req.files is an array of files
@@ -42,7 +44,7 @@ export const uploadContentImages = async (req, res) => {
   }
 };
 
-// Controller to handle article creation
+// Controller to create an article
 export const createArticle = async (req, res) => {
   try {
     const {
@@ -53,7 +55,8 @@ export const createArticle = async (req, res) => {
       author,
       address,
       selectedDate,
-      content_images // We'll receive this as a JSON array from the frontend
+      // Previously called "content_images"; now changed to "editImages"
+      editImages
     } = req.body;
 
     console.log('📝 Incoming article POST request');
@@ -70,15 +73,13 @@ export const createArticle = async (req, res) => {
       return res.status(400).json({ message: 'All fields are required.' });
     }
 
-    // If you're storing content_images as TEXT, convert array -> JSON string
-    let contentImagesString = null;
-    if (content_images) {
-      // If the frontend sent a stringified JSON array, parse it
-      // or if it’s already an array, just stringify it
-      if (typeof content_images === 'string') {
-        contentImagesString = content_images;
+    // Convert editImages (if provided) to a string for storage
+    let editImagesString = null;
+    if (editImages) {
+      if (typeof editImages === 'string') {
+        editImagesString = editImages;
       } else {
-        contentImagesString = JSON.stringify(content_images);
+        editImagesString = JSON.stringify(editImages);
       }
     }
 
@@ -91,11 +92,11 @@ export const createArticle = async (req, res) => {
       address,
       upload_date: selectedDate,
       images: thumbnail,
-      content_images: contentImagesString,
+      // Store in the model’s field: editImages
+      editImages: editImagesString
     });
 
     console.log('✅ Article successfully created:', newArticle);
-
     return res.status(201).json({
       message: 'Article created successfully',
       article: newArticle
@@ -106,7 +107,7 @@ export const createArticle = async (req, res) => {
   }
 };
 
-// Retrieve all articles
+// Retrieve ALL articles (admin or private usage)
 export const getAllArticles = async (req, res) => {
   try {
     const articles = await Article.findAll({
@@ -114,22 +115,23 @@ export const getAllArticles = async (req, res) => {
     });
     return res.json(articles);
   } catch (error) {
-    console.error('Error fetching appointments:', error);
-    return res.status(500).json({ message: 'Server error retrieving appointments.' });
+    console.error('Error fetching articles:', error);
+    return res.status(500).json({ message: 'Server error retrieving articles.' });
   }
 };
 
-// Retrieve public articles (lightweight)
+// Retrieve public articles (lightweight list for landing page)
 export const getPublicArticles = async (req, res) => {
-  const API_URL = process.env.VITE_API_URL;
+  const API_URL = process.env.VITE_API_URL || '';
 
   try {
     const articles = await Article.findAll({
-      attributes: ['article_id','images', 'title', 'article_category', 'upload_date'],
-      order: [['created_at', 'DESC']],
+      attributes: ['article_id', 'images', 'title', 'article_category', 'upload_date'],
+      order: [['created_at', 'DESC']]
     });
 
-    const formattedArticles = articles.map(article => ({
+    // Convert stored image filenames to absolute URLs
+    const formattedArticles = articles.map((article) => ({
       ...article.dataValues,
       images: article.images ? `${API_URL}/uploads/${article.images}` : null,
     }));
@@ -141,15 +143,15 @@ export const getPublicArticles = async (req, res) => {
   }
 };
 
-// Display a specific article
+// Retrieve a specific public article
 export const getPublicArticle = async (req, res) => {
   try {
     const { id } = req.params;
-
     if (!id) {
       return res.status(400).json({ message: 'Article ID is required.' });
     }
 
+    // Pull the "editImages" field instead of "content_images"
     const article = await Article.findOne({
       where: { article_id: id },
       attributes: [
@@ -158,7 +160,7 @@ export const getPublicArticle = async (req, res) => {
         'user_id',
         'upload_date',
         'images',
-        'content_images', // Include content_images so the public endpoint can return them
+        'editImages', // The correct column from your model
         'article_category',
         'description',
         'author',
@@ -178,12 +180,10 @@ export const getPublicArticle = async (req, res) => {
   }
 };
 
-
-
-// Controller: update an existing Article
+// Update an existing article
 export const updateArticle = async (req, res) => {
   try {
-    const { id } = req.params; // e.g., /article/11 => id=11
+    const { id } = req.params;
     const {
       title,
       article_category,
@@ -192,26 +192,25 @@ export const updateArticle = async (req, res) => {
       author,
       address,
       selectedDate,
-      content_images
+      // Previously "content_images"; now "editImages"
+      editImages
     } = req.body;
 
-    // If a new thumbnail file was uploaded
     let thumbnail = null;
     if (req.file) {
       thumbnail = req.file.filename;
     }
 
-    // Convert content_images to JSON if needed
-    let contentImagesString = null;
-    if (content_images) {
-      if (typeof content_images === 'string') {
-        contentImagesString = content_images;
+    // Make sure to store images in editImages
+    let editImagesString = null;
+    if (editImages) {
+      if (typeof editImages === 'string') {
+        editImagesString = editImages;
       } else {
-        contentImagesString = JSON.stringify(content_images);
+        editImagesString = JSON.stringify(editImages);
       }
     }
 
-    // Use Sequelize to update the article
     const [updatedCount] = await Article.update(
       {
         title,
@@ -221,22 +220,21 @@ export const updateArticle = async (req, res) => {
         author,
         address,
         upload_date: selectedDate,
-        // Only update images if a new thumbnail was actually uploaded:
-        images: thumbnail ? thumbnail : undefined,
-        content_images: contentImagesString
+        images: thumbnail || undefined,
+        // Persist the new images in the column editImages
+        editImages: editImagesString,
+        updated_at: new Date()
       },
-      {
-        where: { article_id: id },
-      }
+      { where: { article_id: id } }
     );
 
     if (updatedCount === 0) {
       return res.status(404).json({
-        message: `Article ID ${id} not found or no changes made.`,
+        message: `Article ID ${id} not found or no changes made.`
       });
     }
 
-    // Optionally fetch the updated article
+    // Return the updated record if needed
     const updatedArticle = await Article.findOne({ where: { article_id: id } });
     return res.status(200).json({
       message: 'Article updated successfully',
