@@ -126,7 +126,7 @@ const Calendar = () => {
   const calendarDays = generateCalendarDays();
 
   return (
-    <div className="w-full mx-auto px-4 py-8 flex flex-col gap-y-5">
+    <div className="w-full mx-auto md:px-4 py-8 flex flex-col gap-y-5">
       {/* Month Header */}
       <span className='text-8xl font-hina'>{monthNames[currentMonth]}</span>
       
@@ -155,7 +155,7 @@ const Calendar = () => {
                 key={index}
                 onClick={() => handleDateClick(date)}
                 className={`
-                  h-28 border border-gray-200 p-2 cursor-pointer transition
+                 h-23 xl:h-28 border border-gray-200 p-2 cursor-pointer transition
                   ${!date.isCurrentMonth ? 'text-gray-400' : ''}
                   ${isTodayDate ? 'bg-[#e0c67d]' : ''}
                   ${hasEvents && !isSpecialEvent && !isTodayDate ? 'bg-yellow-100' : ''}

@@ -28,7 +28,7 @@ const Home = () => {
 
       <div
        ref={home}
-        className="bg-cover bg-center bg-no-repeat  min-h-[79rem] h-screen w-screen pt-7"
+        className="bg-cover bg-center bg-no-repeat  min-h-[79rem] h-auto xl:h-screen w-screen pt-7"
         style={{ backgroundImage: `url(${bgImage1})` }}
       >
         <div className="min-h-[10%] w-screen">
@@ -115,11 +115,11 @@ const Home = () => {
 
           <div className="w-full pt-35 h-fit flex flex-col">
             <div className="w-fit h-fit flex flex-col ml-8">
-              <span className="text-5xl w-full font-bold text-[#DAB765]  drop-shadow-[3px_3px_0px_black] ">
+              <span className="text-4xl xl:text-5xl w-full font-bold text-[#DAB765]  drop-shadow-[3px_3px_0px_black] ">
                 WELCOME TO
               </span>
 
-              <span className="text-9xl font-bold text-white drop-shadow-[3px_3px_0px_black] -mt-3">
+              <span className="text-8xl xl:text-9xl font-bold text-white drop-shadow-[3px_3px_0px_black] -mt-3">
                 MUSEO
                 <br />
                 BULAWAN
@@ -222,7 +222,7 @@ const Home = () => {
               </span>
             </div>
             <div className="h-[65em] w-full flex flex-col xl:flex-row gap-10 items-center justify-end ">
-              <div className="xl:w-1/2 w-full h-[22em] flex flex-col pt-14 gap-3 px-4 xl:h-auto">
+              <div className="xl:w-1/2 w-full h-[22em] flex flex-col pt-14 xl:gap-y-5 xl:gap-x-3 px-4 xl:h-auto">
                 <span className="text-3xl font-hina">
                   <span className="text-4xl font-semibold xl:text-6xl">
                     Museo Bulawan
@@ -268,13 +268,13 @@ const Home = () => {
       
       </div>
 
-      <div ref={calendar} className="w-screen h-screen min-h-[79rem] flex flex-col xl:flex-row border-t-1 border-gray-400 overflow-hidden ">
-          <div className='w-full xl:max-w-[90rem] xl:min-w-[90rem] xl:h-full h-[60rem] bg-[#FFF6E1] border-r-1 border-b-1 flex justify-center flex-col px-20 items-center border-gray-400'>
+      <div ref={calendar} className="w-screen h-auto xl:h-screen min-h-[79rem] flex flex-col xl:flex-row border-t-1 border-gray-400 overflow-hidden ">
+          <div className='w-full xl:max-w-[90rem] xl:min-w-[90rem] xl:h-full h-[60rem] bg-[#FFF6E1] border-r-1 border-b-1 flex justify-center flex-col px-5 md:px-20 items-center border-gray-400'>
               <CalendarComponent/>
           </div>
           <div className='w-full h-full flex flex-col items-center justify-between gap-y-5'>
             <div className='w-fit min-h-[10rem] flex items-end'>
-                <div className='w-1 h-full flex flex-col'>
+                <div className='hidden sm:flex w-1 h-full  flex-col'>
                   <div className='relative right-[90rem] top-[7rem] w-[90rem] h-9 flex flex-col items-end justify-between overflow-hidden'>
                     <div className='w-full h-3 bg-black'></div>
                     <div className='w-[70rem] h-3 bg-black'></div>
@@ -286,11 +286,11 @@ const Home = () => {
                 </span>
             </div>
             <div className='w-[55rem] h-full flex flex-col justify-start gap-y-5'>
-              <div className='w-[55rem] h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage1})` }}
+              <div className='w-[33rem] mx-auto h-[20rem] md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage1})` }}
       >
 
               </div>
-              <div className='w-[55rem] h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage3})` }}
+              <div className='w-[33rem] h-[20rem] mx-auto md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage3})` }}
       >
 
               </div>
@@ -313,7 +313,7 @@ const Home = () => {
 
       </div>
 
-      <div ref={events} className="w-screen h-screen min-h-[89rem] xl:min-h-[79rem]">
+      <div ref={events} className="w-screen h-auto xl:h-screen min-h-[89rem] xl:min-h-[79rem]">
         <div className="w-full h-full py-24 px-4 bg-black xl:px-12 xl:py-26">
           <div className="w-full h-full flex flex-col">
             <div className="w-full max-h-[3em]  flex text-2xl justify-between pr-9">
@@ -511,16 +511,16 @@ const Home = () => {
        
       </div>
 
-      <div  ref={support} className="w-screen h-screen min-h-[79rem]">
+      <div  ref={support} className="w-screen h-fit xl:h-screen min-h-[79rem]">
         <div className="w-full h-full py-12  ">
           <div className="w-full h-full xl:px-120 px-12">
             <div className="w-full h-full flex flex-col">
               <div className="w-full h-1/2 py-3 px-20 flex flex-col gap-6 xl:flex-row ">
                 <div
-                  className="w-full h-1/2 xl:h-full bg-no-repeat bg-cover bg-center p-5"
+                  className="w-full min-h-[20rem] xl:h-full bg-no-repeat bg-cover bg-center p-5"
                   style={{ backgroundImage: `url(${bgImage3})` }}
                 >
-                  <div className="w-full h-full  outline-2 outline-white"></div>
+                  <div className="w-full min-h-[20rem] xl:h-full  outline-2 outline-white"></div>
                 </div>
                 <div className="w-full h-1/2 xl:h-full xl:flex xl:items-end">
                   <div className="w-full h-full xl:h-fit gap-y-5 flex flex-col gap-2 items-center justify-center xl:flex xl:justify-start xl:items-start">
@@ -552,20 +552,20 @@ const Home = () => {
 
               <div className="w-full h-1/2 py-3 px-20 flex flex-col gap-6 xl:flex-row">
                 <div
-                  className="w-full h-1/2 xl:h-full xl:order-2 bg-no-repeat bg-cover bg-center p-5"
+                  className="w-full min-h-[20rem] xl:h-full xl:order-2 bg-no-repeat bg-cover bg-center p-5"
                   style={{ backgroundImage: `url(${img2})` }}
                 >
-                  <div className="w-full h-full  outline-2 outline-white"></div>
+                  <div className="w-full min-h-[20rem] xl:h-full  outline-2 outline-white"></div>
                 </div>
 
-                <div className="w-full h-1/2 xl:h-full xl:order-1 ">
+                <div className="w-full h-fit xl:h-full xl:order-1 ">
                   <div className="w-full h-full xl:h-fit gap-y-5 flex flex-col gap-2 items-center justify-center xl:flex xl:justify-start xl:items-end">
                     <div className="w-full min-h-[6em] flex items-center justify-center xl:h-[10em] xl:justify-end">
                       <span className="text-5xl font-bold xl:text-6xl text-center">
                         YOUR SUPPORT MATTERS
                       </span>
                     </div>
-                    <div className="w-full min-h-[9em] flex items-center justify-center xl:h-[10em]">
+                    <div className="w-full min-h-[9em]  flex items-center justify-center xl:h-[10em]">
                       <span className="text-2xl xl:text-4xl leading-snug xl:text-end">
                         Help us preserve and celebrate our heritage! Contribute
                         to Museo Bulawan by donating or lending artifacts to
