@@ -38,6 +38,10 @@ const Article = sequelize.define('Article', {
     type: DataTypes.TEXT,
     allowNull: false,
   },
+  editImages: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
   author: {
     type: DataTypes.STRING,
     allowNull: true,

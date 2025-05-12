@@ -5,20 +5,17 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
-// Get the directory of the current module using import.meta.url
+// Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Ensure the 'uploads' directory exists
 const uploadDir = path.resolve(__dirname, '..', 'assets', 'uploads');
-
-
-// Create 'uploads' directory if it doesn't exist
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Multer configuration
+// Multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -27,9 +24,23 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
-
 const upload = multer({ storage: storage });
 export { upload };
+
+// Controller to handle multiple content images
+export const uploadContentImages = async (req, res) => {
+  try {
+    // req.files is an array of files
+    const images = req.files.map((file) => file.filename);
+    return res.status(200).json({
+      message: 'Content images uploaded successfully',
+      images,
+    });
+  } catch (error) {
+    console.error('Error uploading content images:', error.message);
+    return res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
 
 // Controller to handle article creation
 export const createArticle = async (req, res) => {
@@ -41,12 +52,13 @@ export const createArticle = async (req, res) => {
       user_id,
       author,
       address,
-      selectedDate
+      selectedDate,
+      content_images // We'll receive this as a JSON array from the frontend
     } = req.body;
 
     console.log('📝 Incoming article POST request');
     console.log('Request Body:', req.body);
-    console.log("File received (thumbnail):", req.file);
+    console.log('File received (thumbnail):', req.file);
 
     let thumbnail = null;
     if (req.file) {
@@ -58,10 +70,17 @@ export const createArticle = async (req, res) => {
       return res.status(400).json({ message: 'All fields are required.' });
     }
 
-    // const userExists = await Credential.findById(user_id);
-    // if (!userExists) {
-    //   return res.status(404).json({ message: 'Author not found.' });
-    // }
+    // If you're storing content_images as TEXT, convert array -> JSON string
+    let contentImagesString = null;
+    if (content_images) {
+      // If the frontend sent a stringified JSON array, parse it
+      // or if it’s already an array, just stringify it
+      if (typeof content_images === 'string') {
+        contentImagesString = content_images;
+      } else {
+        contentImagesString = JSON.stringify(content_images);
+      }
+    }
 
     const newArticle = await Article.create({
       title,
@@ -72,6 +91,7 @@ export const createArticle = async (req, res) => {
       address,
       upload_date: selectedDate,
       images: thumbnail,
+      content_images: contentImagesString,
     });
 
     console.log('✅ Article successfully created:', newArticle);
@@ -86,7 +106,7 @@ export const createArticle = async (req, res) => {
   }
 };
 
-
+// Retrieve all articles
 export const getAllArticles = async (req, res) => {
   try {
     const articles = await Article.findAll({
@@ -99,9 +119,9 @@ export const getAllArticles = async (req, res) => {
   }
 };
 
+// Retrieve public articles (lightweight)
 export const getPublicArticles = async (req, res) => {
-  //  console.log("Hit /api/public-article/:id")
-   const API_URL = process.env.VITE_API_URL;
+  const API_URL = process.env.VITE_API_URL;
 
   try {
     const articles = await Article.findAll({
@@ -121,33 +141,33 @@ export const getPublicArticles = async (req, res) => {
   }
 };
 
-//display specific article
+// Display a specific article
 export const getPublicArticle = async (req, res) => {
   try {
-    const { id } = req.params;  
+    const { id } = req.params;
 
     if (!id) {
-      return res.status(400).json({ message: 'Article ID is required.' }); // Handle case where no ID is provided
+      return res.status(400).json({ message: 'Article ID is required.' });
     }
 
-    // Fetch the specific article by article_id
     const article = await Article.findOne({
       where: { article_id: id },
       attributes: [
-        'article_id',         // article_id (Primary Key, auto_increment)
-        'title',              // title (Article title)
-        'user_id',            // user_id (User who posted the article)
-        'upload_date',        // upload_date (When the article was uploaded)
-        'images',             // images (Article images, stored as text)
-        'article_category',   // article_category (Category of the article)
-        'description',        // description (Full description of the article)
-        'author',             // author (Author of the article)
-        'address',            // address (Address linked to the article, optional)
-        'status',             // status (Article status, e.g., 'pending' or 'posted')
-        'upload_period_start',// upload_period_start (Start of the article visibility period)
-        'upload_period_end',  // upload_period_end (End of the article visibility period)
-        'created_at',         // created_at (Timestamp of when the article was created)
-        'updated_at'          // updated_at (Timestamp of when the article was last updated)
+        'article_id',
+        'title',
+        'user_id',
+        'upload_date',
+        'images',
+        'content_images', // Include content_images so the public endpoint can return them
+        'article_category',
+        'description',
+        'author',
+        'address',
+        'status',
+        'upload_period_start',
+        'upload_period_end',
+        'created_at',
+        'updated_at'
       ]
     });
 
@@ -158,3 +178,75 @@ export const getPublicArticle = async (req, res) => {
   }
 };
 
+
+
+// Controller: update an existing Article
+export const updateArticle = async (req, res) => {
+  try {
+    const { id } = req.params; // e.g., /article/11 => id=11
+    const {
+      title,
+      article_category,
+      description,
+      user_id,
+      author,
+      address,
+      selectedDate,
+      content_images
+    } = req.body;
+
+    // If a new thumbnail file was uploaded
+    let thumbnail = null;
+    if (req.file) {
+      thumbnail = req.file.filename;
+    }
+
+    // Convert content_images to JSON if needed
+    let contentImagesString = null;
+    if (content_images) {
+      if (typeof content_images === 'string') {
+        contentImagesString = content_images;
+      } else {
+        contentImagesString = JSON.stringify(content_images);
+      }
+    }
+
+    // Use Sequelize to update the article
+    const [updatedCount] = await Article.update(
+      {
+        title,
+        article_category,
+        description,
+        user_id,
+        author,
+        address,
+        upload_date: selectedDate,
+        // Only update images if a new thumbnail was actually uploaded:
+        images: thumbnail ? thumbnail : undefined,
+        content_images: contentImagesString
+      },
+      {
+        where: { article_id: id },
+      }
+    );
+
+    if (updatedCount === 0) {
+      return res.status(404).json({
+        message: `Article ID ${id} not found or no changes made.`,
+      });
+    }
+
+    // Optionally fetch the updated article
+    const updatedArticle = await Article.findOne({ where: { article_id: id } });
+    return res.status(200).json({
+      message: 'Article updated successfully',
+      article: updatedArticle
+    });
+  } catch (error) {
+    console.error('Error updating article:', error);
+    return res.status(500).json({
+      message: 'Server error updating article',
+      error: error.message
+    });
+  }
+};

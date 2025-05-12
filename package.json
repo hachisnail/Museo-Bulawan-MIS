@@ -14,6 +14,7 @@
     "@gocapsule/column-extension": "^1.0.0-beta-3",
     "@tailwindcss/vite": "^4.0.17",
     "@tiptap-extend/columns": "^2.1.6",
+    "@tiptap/extension-image": "^2.12.0",
     "@tiptap/extension-text-align": "^2.11.7",
     "@tiptap/extension-underline": "^2.11.7",
     "@tiptap/pm": "^2.11.7",
