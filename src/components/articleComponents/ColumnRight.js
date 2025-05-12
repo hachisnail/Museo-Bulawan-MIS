@@ -1,4 +1,4 @@
-// ColumnRight.js
+// columnRight.js
 import { Node } from '@tiptap/core'
 
 export const ColumnRight = Node.create({
@@ -7,9 +7,7 @@ export const ColumnRight = Node.create({
   defining: true,
 
   parseHTML() {
-    return [
-      { tag: 'div[data-type="column-right"]' },
-    ]
+    return [{ tag: 'div[data-type="column-right"]' }]
   },
 
   renderHTML() {

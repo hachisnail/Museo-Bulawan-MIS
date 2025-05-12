@@ -1,5 +1,5 @@
-// Updated ArticleModal.jsx with column text functionality
-import React from 'react';
+// Updated ArticleModal.jsx with image upload button
+import React, { useRef } from 'react';
 import Button from '@/components/ui/button';
 import { EditorContent } from '@tiptap/react';
 import {
@@ -10,7 +10,8 @@ import {
   AlignCenter,
   AlignRight,
   AlignJustify,
-  Columns as ColumnsIcon
+  Columns as ColumnsIcon,
+  Image as ImageIcon
 } from 'lucide-react';
 
 const ArticleModal = ({
@@ -22,8 +23,8 @@ const ArticleModal = ({
   category,
   address,
   selectedDate,
-  thumbnail,       // either a filename (string) or a File object
-  previewImage,    // preview URL if user uploaded a new file
+  thumbnail,       
+  previewImage,    
   Categories,
   
   onSubmit,
@@ -35,6 +36,22 @@ const ArticleModal = ({
   setSelectedDate,
   resetForm,
 }) => {
+  const imageInputRef = useRef(null);
+  
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (editor) {
+          // Insert image at current cursor position
+          editor.chain().focus().setImage({ src: e.target.result, alt: file.name }).run();
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (!showModal) {
     return null;
   }
@@ -268,20 +285,45 @@ const ArticleModal = ({
                 
                 <div className="border-l h-6 mx-2" />
                 
-                {/* Two Column Layout Button (using the new ColumnExtension) */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    editor?.chain().focus().insertTwoColumnBlock().run();
-
-                  }}
-                  className="p-1 border rounded"
-                  title="Insert Two Column Layout"
-                >
-                  <ColumnsIcon size={16} />
-                </button>
+                {/* Special formatting options */}
+                <div className="flex gap-1">
+                  {/* Two Column Layout Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      editor?.chain().focus().insertTwoColumnBlock().run();
+                    }}
+                    className="p-1 border rounded"
+                    title="Insert Two Column Layout"
+                  >
+                    <ColumnsIcon size={16} />
+                  </button>
+                  
+                  {/* Image Upload Button - NEW */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      imageInputRef.current?.click(); // Trigger hidden file input
+                    }}
+                    className="p-1 border rounded"
+                    title="Insert Image"
+                  >
+                    <ImageIcon size={16} />
+                  </button>
+                  
+                  {/* Hidden file input for image upload */}
+                  <input
+                    type="file"
+                    ref={imageInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                </div>
               </div>
               
               {/* Editor content area with .prose so headings show up immediately */}

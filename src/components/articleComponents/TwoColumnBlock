@@ -1,25 +1,23 @@
-// TwoColumnBlock.js
 import { Node } from '@tiptap/core'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import TwoColumnComponent from './TwoColumnComponent'
 
-// (Optional) Import them if Tiptap doesn’t already know them:
+// Import the column nodes
 import { ColumnLeft } from './ColumnLeft'
 import { ColumnRight } from './ColumnRight'
 
 export const TwoColumnBlock = Node.create({
   name: 'twoColumnBlock',
   group: 'block',
-
-  // Force exactly these two sub-nodes in order:
-  content: 'columnLeft columnRight',
-
+  content: 'columnLeft columnRight', // Order matters: left first, then right
   defining: true,
   isolating: true,
 
   parseHTML() {
     return [
-      { tag: 'div[data-type="two-column-block"]' },
+      {
+        tag: 'div[data-type="two-column-block"]',
+      },
     ]
   },
 
@@ -39,28 +37,30 @@ export const TwoColumnBlock = Node.create({
     return {
       insertTwoColumnBlock:
         () =>
-        ({ chain }) => {
-          return chain()
-            .insertContent({
-              type: this.name,
-              content: [
-                {
-                  type: 'columnLeft',
-                  content: [
-                    // At least one empty paragraph in the left column
-                    { type: 'paragraph' },
-                  ],
-                },
-                {
-                  type: 'columnRight',
-                  content: [
-                    // At least one empty paragraph in the right column
-                    { type: 'paragraph' },
-                  ],
-                },
-              ],
-            })
-            .run()
+        ({ commands }) => {
+          return commands.insertContent({
+            type: 'twoColumnBlock',
+            content: [
+              {
+                type: 'columnLeft',
+                content: [
+                  {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: 'Left side' }],
+                  },
+                ],
+              },
+              {
+                type: 'columnRight',
+                content: [
+                  {
+                    type: 'paragraph',
+                    content: [{ type: 'text', text: 'Right side' }],
+                  },
+                ],
+              },
+            ],
+          })
         },
     }
   },

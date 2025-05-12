@@ -1,19 +1,15 @@
-// TwoColumnComponent.jsx
 import React from 'react'
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react'
 
-const TwoColumnComponent = () => {
+const TwoColumnComponent = (props) => {
   return (
-    <NodeViewWrapper className="two-column-wrapper">
-      {/* You can style `.two-column-grid` with your two-column layout: grid/flex/etc. */}
+    <NodeViewWrapper className="two-column-block">
       <div className="two-column-grid">
-        {/* Left column -> child #0 */}
         <div data-type="column-left" className="column column-left">
-          <NodeViewContent nodeKey="0" className="content-left" />
+          <NodeViewContent {...props} nodeKey="0" />
         </div>
-        {/* Right column -> child #1 */}
         <div data-type="column-right" className="column column-right">
-          <NodeViewContent nodeKey="1" className="content-right" />
+          <NodeViewContent {...props} nodeKey="1" />
         </div>
       </div>
     </NodeViewWrapper>
