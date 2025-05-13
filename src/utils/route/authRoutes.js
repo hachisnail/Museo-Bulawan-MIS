@@ -1,6 +1,16 @@
 import express from 'express';
-import { login, logout, autoLogout, refreshToken, verifyCookie, sessionStatus } from '../controller/authController.js';
-import { displayUsers, displaySpecificUser, getUserLoginLogs, fetchCredential } from '../controller/userController.js';
+import { login,
+  logout, 
+  autoLogout, 
+  refreshToken, 
+  verifyCookie, 
+  sessionStatus 
+} from '../controller/authController.js';
+import { displayUsers, 
+  displaySpecificUser, 
+  getUserLoginLogs, 
+  fetchCredential 
+} from '../controller/userController.js';
 import {
   createAppointment,
   getAllAppointments,
@@ -50,6 +60,22 @@ import {
   deleteSchedule,
   updateScheduleStatus
 } from '../controller/scheduleController.js';
+
+import { 
+  createArtifact,
+  getAllArtifacts,
+  getDeletedArtifacts,
+  getArtifactById,
+  softDeleteArtifact,
+  restoreArtifact,
+  hardDeleteArtifact,
+  updateArtifact,
+  batchSoftDelete,
+  batchRestore,
+  batchHardDelete,
+  removeArtifactFile
+} from '../controller/artifactController.js';
+
 
 const router = express.Router();
 
@@ -102,6 +128,21 @@ router.put('/form/:id/status', updateFormStatus);
 router.put('/form/:id/timestamp', updateFormTimestamp);
 router.put('/form/:id/transfer_status', updateTransferStatus);
 router.post('/form/:id/send-status-email', sendFormStatusEmail);
+
+// Artifact routes
+router.post('/artifact', autoLogout, createArtifact, logAction('create', 'Artifact'));
+router.get('/artifact', autoLogout, getAllArtifacts);
+router.get('/artifact/deleted', autoLogout, getDeletedArtifacts);
+router.get('/artifact/:id', autoLogout, getArtifactById);
+router.put('/artifact/:id', autoLogout, updateArtifact, logAction('update', 'Artifact'));
+router.delete('/artifact/:id', autoLogout, softDeleteArtifact, logAction('delete', 'Artifact'));
+router.post('/artifact/:id/restore', autoLogout, restoreArtifact, logAction('restore', 'Artifact'));
+router.delete('/artifact/:id/permanent', autoLogout, hardDeleteArtifact, logAction('permanent-delete', 'Artifact'));
+router.post('/artifact/:id/remove-file', autoLogout, removeArtifactFile, logAction('update', 'ArtifactFile'));
+router.post('/artifact/batch-delete', autoLogout, batchSoftDelete, logAction('batch-delete', 'Artifact'));
+router.post('/artifact/batch-restore', autoLogout, batchRestore, logAction('batch-restore', 'Artifact'));
+router.post('/artifact/batch-hard-delete', autoLogout, batchHardDelete, logAction('batch-permanent-delete', 'Artifact'));
+
 
 // Articles
 router.get('/articles', autoLogout, getAllArticles);

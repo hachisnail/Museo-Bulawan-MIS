@@ -460,7 +460,7 @@ const Artifact = () => {
                         <span>{safeGet(artifact, 'artifact_type', 'Unknown Type').replace(/\b\w/g, (char) => char.toUpperCase())}</span>
                       </div>
                       <div className="px-4 py-4 border-b border-gray-400 col-span-1">
-                        <span className={`text-white ${getStatusBadgeClass(artifact.display_status)} border border-black rounded-md px-4 py-1`}>
+                        <span className={`text-white ${getStatusBadgeClass(artifact.display_status)}  rounded-md px-4 py-1`}>
                           {safeGet(artifact, 'display_status', 'Unknown').replace(/\b\w/g, (char) => char.toUpperCase())}
                         </span>
                       </div>
