@@ -1,6 +1,11 @@
 import React, { useState } from 'react'
+import axios from 'axios';
+
+
+const API_URL = import.meta.env.VITE_API_URL
 
 export const ArtifactView = () => {
+  
   return (
     <>
       <div className="w-screen h-screen fixed  backdrop-blur-xs  z-50 flex flex-col gap-y-4 items-center justify-center select-none">
@@ -185,12 +190,66 @@ export const ArtifactAdd = ({ onClose }) => {
     if (fileInput) fileInput.value = ''
   }
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log({ ...formData, related_files: files })
-    // Add your submission logic here
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const formDataToSend = new FormData();
+
+    // Add flat fields
+    const flatFields = [
+      'artifact_creator',
+      'artifact_type',
+      'creation_date',
+      'upload_date',
+      'accession_type',
+      'artifact_condition',
+      'modified_date',
+      'donation_date',
+      'display_status'
+    ];
+
+    flatFields.forEach(field => {
+      if (formData[field]) {
+        formDataToSend.append(field, formData[field]);
+      }
+    });
+
+    // Add complex objects as JSON
+    formDataToSend.append('lending_duration', JSON.stringify(formData.lending_duration));
+    formDataToSend.append('description', JSON.stringify(formData.description));
+
+    // Append picture files
+    pictureFiles.forEach((file) => {
+      formDataToSend.append('pictures', file);
+    });
+
+    // Append document files
+    documentFiles.forEach((file) => {
+      formDataToSend.append('documents', file);
+    });
+  const token = localStorage.getItem('token');
+    
+    const response = await axios.post(`${API_URL}/api/auth/artifact`, formDataToSend, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    console.log('Artifact created successfully:', response.data);
+    alert('Artifact created successfully!');
+    onClose(); // Close modal or reset form
+
+  } catch (error) {
+    console.error('Error creating artifact:', error);
+    const errorMsg = error?.response?.data?.message || error.message;
+    alert(`Error creating artifact: ${errorMsg}`);
   }
+};
+
+
 
   return (
     <>

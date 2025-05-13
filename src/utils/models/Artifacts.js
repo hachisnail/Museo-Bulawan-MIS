@@ -1,5 +1,5 @@
 import { DataTypes } from 'sequelize';
-import sequelize from './database'; // assuming database.js initializes Sequelize
+import { sequelize } from '../database.js';
 
 
 const Artifact = sequelize.define('Artifact', {
@@ -71,10 +71,19 @@ const Artifact = sequelize.define('Artifact', {
       key: 'id',
     },
   },
+
+  //  New field for soft delete
+  deleted_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: null,
+  }
+
 }, {
   tableName: 'artifacts',
   timestamps: false,
 });
+
 
 // Artifact Description model
 const ArtifactDescription = sequelize.define('ArtifactDescription', {

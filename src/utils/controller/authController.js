@@ -6,9 +6,7 @@ import sessionManager from '../services/SessionManager.js';
 import tokenService from '../services/TokenService.js';
 import axios from 'axios';
 
-// Enhanced client identity detection specifically for Cloudflare Tunnel
 const getClientIP = (req) => {
-  // Priority order: Cloudflare headers first, then regular IP headers
   const clientIP = 
     req.headers['cf-connecting-ip'] || 
     req.headers['true-client-ip'] ||
@@ -17,18 +15,18 @@ const getClientIP = (req) => {
     req.connection?.remoteAddress ||
     req.socket?.remoteAddress ||
     req.ip ||
-    '0.0.0.0';  // Fallback
+    '0.0.0.0'; 
   
   // Debug logging
-  console.log('==== CLIENT IP DETECTION (CLOUDFLARE TUNNEL) ====');
-  console.log(`CF-Connecting-IP: ${req.headers['cf-connecting-ip'] || 'not present'}`);
-  console.log(`True-Client-IP: ${req.headers['true-client-ip'] || 'not present'}`);
-  console.log(`X-Forwarded-For: ${req.headers['x-forwarded-for'] || 'not present'}`);
-  console.log(`X-Real-IP: ${req.headers['x-real-ip'] || 'not present'}`);
-  console.log(`Connection Remote Address: ${req.connection?.remoteAddress || 'not present'}`);
-  console.log(`req.ip: ${req.ip || 'not present'}`);
-  console.log(`Final IP used: ${clientIP}`);
-  console.log('==============================================');
+  // console.log('==== CLIENT IP DETECTION (CLOUDFLARE TUNNEL) ====');
+  // console.log(`CF-Connecting-IP: ${req.headers['cf-connecting-ip'] || 'not present'}`);
+  // console.log(`True-Client-IP: ${req.headers['true-client-ip'] || 'not present'}`);
+  // console.log(`X-Forwarded-For: ${req.headers['x-forwarded-for'] || 'not present'}`);
+  // console.log(`X-Real-IP: ${req.headers['x-real-ip'] || 'not present'}`);
+  // console.log(`Connection Remote Address: ${req.connection?.remoteAddress || 'not present'}`);
+  // console.log(`req.ip: ${req.ip || 'not present'}`);
+  // console.log(`Final IP used: ${clientIP}`);
+  // console.log('==============================================');
   
   return clientIP;
 };
