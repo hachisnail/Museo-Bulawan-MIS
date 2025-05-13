@@ -1,4 +1,4 @@
-// Updated ArticleModal.jsx with image upload button
+// Updated ArticleModal.jsx
 import React, { useRef } from 'react';
 import Button from '@/components/ui/button';
 import { EditorContent } from '@tiptap/react';
@@ -13,6 +13,7 @@ import {
   Columns as ColumnsIcon,
   Image as ImageIcon
 } from 'lucide-react';
+import axios from 'axios';
 
 const ArticleModal = ({
   showModal,
@@ -23,10 +24,9 @@ const ArticleModal = ({
   category,
   address,
   selectedDate,
-  thumbnail,       
-  previewImage,    
+  thumbnail,
+  previewImage,
   Categories,
-  
   onSubmit,
   handleThumbnailChange,
   setTitle,
@@ -35,20 +35,51 @@ const ArticleModal = ({
   setAddress,
   setSelectedDate,
   resetForm,
+
+  // NEW: Additional states for content images
+  contentImages,
+  setContentImages
 }) => {
   const imageInputRef = useRef(null);
   
-  const handleImageUpload = (e) => {
+  const BASE_URL = import.meta.env.VITE_API_URL;
+  const token = localStorage.getItem('token');
+
+  // NEW: Upload file to the server, insert returned image into Tiptap
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (editor) {
-          // Insert image at current cursor position
-          editor.chain().focus().setImage({ src: e.target.result, alt: file.name }).run();
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append('contentImages', file);
+
+      const response = await axios.post(
+        `${BASE_URL}/api/auth/article/content-images`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`,
+          }
         }
-      };
-      reader.readAsDataURL(file);
+      );
+
+      if (response.data && response.data.images && response.data.images.length > 0) {
+        const uploadedFilename = response.data.images[0];
+        const fullImageUrl = `${BASE_URL}/uploads/${uploadedFilename}`;
+
+        // Insert <img> into Tiptap
+        if (editor) {
+          editor.chain().focus().setImage({ src: fullImageUrl, alt: file.name }).run();
+        }
+
+        // Also store the filename in our contentImages array if needed
+        setContentImages((prev) => [...prev, uploadedFilename]);
+      }
+    } catch (err) {
+      console.error('Error uploading content image:', err);
+      alert('Failed to upload image');
     }
   };
 
@@ -137,7 +168,7 @@ const ArticleModal = ({
                 />
               </div>
               
-              {/* Thumbnail (file name only) */}
+              {/* Thumbnail */}
               <div>
                 <label>Thumbnail</label>
                 <input
@@ -146,7 +177,6 @@ const ArticleModal = ({
                   name="thumbnail"
                   onChange={handleThumbnailChange}
                 />
-                {/* Show current filename if editing */}
                 {isEditing && thumbnail && typeof thumbnail === 'string' && (
                   <div className="mt-1 text-sm text-gray-600">
                     Current image: {thumbnail}
@@ -227,7 +257,7 @@ const ArticleModal = ({
                 
                 <div className="border-l h-6 mx-2" />
                 
-                {/* Alignment buttons */}
+                {/* Alignment */}
                 <div className="flex gap-1">
                   <button
                     type="button"
@@ -287,7 +317,7 @@ const ArticleModal = ({
                 
                 {/* Special formatting options */}
                 <div className="flex gap-1">
-                  {/* Two Column Layout Button */}
+                  {/* Two Column Layout */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -301,7 +331,7 @@ const ArticleModal = ({
                     <ColumnsIcon size={16} />
                   </button>
                   
-                  {/* Image Upload Button - NEW */}
+                  {/* Image Upload Button */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -315,7 +345,7 @@ const ArticleModal = ({
                     <ImageIcon size={16} />
                   </button>
                   
-                  {/* Hidden file input for image upload */}
+                  {/* Hidden file input for content images */}
                   <input
                     type="file"
                     ref={imageInputRef}
@@ -326,7 +356,7 @@ const ArticleModal = ({
                 </div>
               </div>
               
-              {/* Editor content area with .prose so headings show up immediately */}
+              {/* Editor content area */}
               <div
                 className="border rounded p-4 min-h-[150px] prose"
                 onClick={(e) => e.stopPropagation()}
@@ -393,7 +423,7 @@ const ArticleModal = ({
           </div>
           
           <div className="border border-gray-200 p-4 rounded min-h-[300px]">
-            {/* If user is uploading a new thumbnail, show preview on the right side */}
+            {/* Thumbnail preview */}
             {previewImage && (
               <div className="flex justify-center mb-4">
                 <img
@@ -416,6 +446,8 @@ const ArticleModal = ({
                 </p>
               )}
             </div>
+
+            
           </div>
         </div>
       </div>

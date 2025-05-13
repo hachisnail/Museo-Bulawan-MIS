@@ -1,4 +1,3 @@
-// Updated Article.jsx file without the gocapsule extension
 import React, { useState, useEffect } from 'react';
 import AdminNav from '../../components/navbar/AdminNav';
 import axios from 'axios';
@@ -8,21 +7,10 @@ import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import ArticleModal from '../../components/modals/ArticleModal'; 
-// Import your local TwoColumnBlock extension
 import { TwoColumnBlock } from '../../components/articleComponents/TwoColumnBlock';
-import { ColumnLeft } from '../../components/articleComponents/ColumnLeft'
-import { ColumnRight } from '../../components/articleComponents/ColumnRight'
-
-
-import {
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignJustify,
-} from 'lucide-react';
+import { ColumnLeft } from '../../components/articleComponents/ColumnLeft';
+import { ColumnRight } from '../../components/articleComponents/ColumnRight';
+import Image from '@tiptap/extension-image';
 
 const ArticleForm = () => {
   // Form state
@@ -37,6 +25,9 @@ const ArticleForm = () => {
   const [editingArticleId, setEditingArticleId] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
 
+  // Track images used in article body (Tiptap)
+  const [contentImages, setContentImages] = useState([]);
+
   // Articles state
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,35 +38,35 @@ const ArticleForm = () => {
   const Categories = ['Education', 'Exhibit', 'Contents', 'Other'];
   const token = localStorage.getItem('token');
   
-  // Define path to your uploads folder - important for displaying images in the modal
   const BASE_URL = import.meta.env.VITE_API_URL;
   const UPLOAD_PATH = `${BASE_URL}/uploads/`;
 
-  // Initialize the editor with your local TwoColumnBlock extension
+  // Set up Tiptap editor
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Underline, // Add Underline extension
+      Underline,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
         alignments: ['left', 'center', 'right', 'justify'],
       }),
       ColumnLeft,
-    ColumnRight,
-    TwoColumnBlock,
+      ColumnRight,
+      TwoColumnBlock,
+      Image,
     ],
     content: "", 
     onUpdate: ({ editor }) => {
-      console.log(editor.getHTML());
+      // You can track or log editor content changes here if needed
+      // console.log(editor.getHTML());
     },
   });
 
-  // Fetch articles on component mount
+  // Fetch articles on mount
   useEffect(() => {
     fetchArticles();
   }, []);
 
-  // Fetch articles from the server
   const fetchArticles = async () => {
     try {
       setLoading(true);
@@ -85,7 +76,6 @@ const ArticleForm = () => {
         },
         withCredentials: true,
       });
-      
       setArticles(response.data);
       setLoading(false);
     } catch (err) {
@@ -95,7 +85,7 @@ const ArticleForm = () => {
     }
   };
 
-  // Handle form submission for new or edited articles
+  // Create or edit article
   const handleSubmit = async (e) => {
     e.preventDefault();
   
@@ -103,20 +93,21 @@ const ArticleForm = () => {
     formData.append("title", title);
     formData.append("article_category", category);
     formData.append("description", editor?.getHTML() || "");
-    formData.append("user_id", 1);
+    formData.append("user_id", 1); 
     formData.append("author", author);
     formData.append("address", address);
     formData.append("selectedDate", selectedDate);
-  
-    // Only append thumbnail if it's a File object (not a string from existing image)
+    formData.append("content_images", JSON.stringify(contentImages));
+
+    // Add thumbnail if it's a File
     if (thumbnail && thumbnail instanceof File) {
       formData.append("thumbnail", thumbnail);
     }
   
     try {
       let response;
-      
       if (isEditing) {
+        // Update existing article
         response = await axios.put(
           `${BASE_URL}/api/auth/article/${editingArticleId}`,
           formData,
@@ -145,18 +136,13 @@ const ArticleForm = () => {
         console.log("Article created successfully!", response.data);
       }
       
-      // Reset form and state
       resetForm();
-      
-      // Refresh articles list
       fetchArticles();
-    } catch (error) {
-      console.error(`Error ${isEditing ? 'updating' : 'creating'} article:`, error.response?.data || error.message);
+    } catch (err) {
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} article:`, err.response?.data || err.message);
     }
   };
-  
 
-  // Reset form fields and editing state
   const resetForm = () => {
     setTitle("");
     setAuthor("");
@@ -165,24 +151,23 @@ const ArticleForm = () => {
     setSelectedDate("");
     setThumbnail(null);
     setPreviewImage(null);
+    setContentImages([]);
     editor?.commands.setContent("");
     setShowModal(false);
     setIsEditing(false);
     setEditingArticleId(null);
   };
 
-  // Handle row click to edit article
+  // Handle clicking on a table row to edit an article
   const handleRowClick = (article) => {
     setIsEditing(true);
     setEditingArticleId(article.article_id);
     
-    // Set form values from article data
     setTitle(article.title || "");
     setAuthor(article.author || "");
     setCategory(article.article_category || "");
     setAddress(article.address || "");
     
-    // Format date for the input field (YYYY-MM-DD)
     if (article.upload_date) {
       const date = new Date(article.upload_date);
       const formattedDate = date.toISOString().split('T')[0];
@@ -190,13 +175,12 @@ const ArticleForm = () => {
     } else {
       setSelectedDate("");
     }
-    
-    // Set content in the editor
+
     if (editor && article.description) {
       editor.commands.setContent(article.description);
     }
-    
-    // Handle thumbnail preview for editing
+
+    // Thumbnail
     if (article.images) {
       const imageUrl = `${UPLOAD_PATH}${article.images}`;
       setPreviewImage(imageUrl);
@@ -205,12 +189,27 @@ const ArticleForm = () => {
       setPreviewImage(null);
       setThumbnail(null);
     }
-    
-    // Show the modal with populated data
+
+    // Parse stored content images if available
+    if (article.content_images) {
+      try {
+        const parsedImages = JSON.parse(article.content_images);
+        if (Array.isArray(parsedImages)) {
+          setContentImages(parsedImages);
+        } else {
+          setContentImages([]);
+        }
+      } catch {
+        setContentImages([]);
+      }
+    } else {
+      setContentImages([]);
+    }
+
     setShowModal(true);
   };
 
-  // Handle file input change
+  // Handle uploading new thumbnail
   const handleThumbnailChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -219,34 +218,38 @@ const ArticleForm = () => {
     }
   };
 
-  // Filter articles based on search term
   const filteredArticles = articles.filter(article => {
-    const searchMatch = !searchTerm || 
-      article.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.author?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.article_category?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return searchMatch;
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      (article.title?.toLowerCase().includes(term)) ||
+      (article.author?.toLowerCase().includes(term)) ||
+      (article.article_category?.toLowerCase().includes(term))
+    );
   });
 
-  // Calculate counts
   const postedCount = articles.filter(article => article.status === 'posted').length;
   const pendingCount = articles.filter(article => article.status === 'pending').length;
   const totalCount = articles.length;
   
   return (
     <>
-      <div className='w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]'>
-        <div className='bg-[#1C1B19] w-auto min-h-full h-full min-w-[6rem] sm:min-w-auto'>
+      <div className='w-screen min-h-[79.8rem] bg-[#F0F0F0] select-none flex pt-[7rem]'>
+        {/* Left Nav */}
+        <div className='bg-[#1C1B19] w-auto min-h-full'>
           <AdminNav />
         </div>
-        <div className='w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
+
+        {/* Main content */}
+        <div className='w-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
           <span className='text-5xl font-semibold'>Article Management</span>
-          <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
+          <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-x-5 '>
+            
+            {/* Left Side: Stats, Add Button */}
             <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
-              {/* info bar */}
-              <div className='w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex justify-start py-2 gap-x-2'>
-                <button className='px-4 h-full border-1 border-black  text-white bg-black rounded-lg cursor-pointer'>
+              {/* Info bar */}
+              <div className='w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex py-2 gap-x-2'>
+                <button className='px-4 h-full border-1 border-black text-white bg-black rounded-lg'>
                   <span className='text-2xl font-semibold'>Articles</span>
                 </button>
               </div>
@@ -260,9 +263,8 @@ const ArticleForm = () => {
                 </div>
 
                 <div className='w-full h-auto flex flex-col gap-y-7'>
-                  {/* Date */}
                   <span className='text-2xl font-semibold text-[#727272]'>
-                    {new Date().toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}
+                    {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </span>
                   <div className='w-full h-fit flex justify-between items-center'>
                     <span className='text-2xl font-semibold'>Posted</span>
@@ -294,10 +296,11 @@ const ArticleForm = () => {
               </div>
             </div>
 
-            <div className='w-full h-full flex flex-col gap-y-7 overflow-x-scroll overflow-y-scroll'>
-              {/* table */}
-              <div className='min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2'>
-                {/* Date Filter */}
+            {/* Right Side: Table */}
+            <div className='w-full h-full flex flex-col gap-y-7 overflow-x-auto overflow-y-auto'>
+              {/* Filters */}
+              <div className='min-w-[94rem] py-2 flex items-center gap-x-2'>
+                {/* Date filter */}
                 <div className='flex-shrink-0'>
                   <CustomDatePicker
                     selected={filterDate}
@@ -305,16 +308,16 @@ const ArticleForm = () => {
                     popperPlacement="bottom-start"
                     popperClassName="z-50"
                     customInput={
-                      <button className='px-3 h-16 rounded-lg border-1 border-gray-500 cursor-pointer'>
+                      <button className='px-3 h-16 rounded-lg border-1 border-gray-500'>
                         <i className="text-gray-500 fa-regular fa-calendar text-4xl"></i>
                       </button>
                     }
                   />
                 </div>
 
-                {/* Search Box */}
+                {/* Search box */}
                 <div className="relative h-full min-w-[20rem]">
-                  <i className="text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"></i>
+                  <i className="text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
                   <input
                     type="text"
                     placeholder="Search Articles"
@@ -324,11 +327,9 @@ const ArticleForm = () => {
                   />
                 </div>
 
-                {/* Filter by Category */}
+                {/* Filter by category */}
                 <div className="relative h-full min-w-48">
-                  <select 
-                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
+                  <select className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Categories</option>
                     {Categories.map((cat, index) => (
                       <option key={index} value={cat}>{cat}</option>
@@ -337,7 +338,7 @@ const ArticleForm = () => {
                   <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
                 </div>
 
-                {/* Filter by Status */}
+                {/* Filter by status */}
                 <div className="relative h-full min-w-48">
                   <select className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">All Status</option>
@@ -348,27 +349,17 @@ const ArticleForm = () => {
                 </div>
               </div>
 
-              {/* Article Table Header */}
-              <div className='min-w-[94rem] w-full  font-semibold h-fit grid grid-cols-5 justify-between'>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Date
-                </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Title
-                </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Author
-                </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Category
-                </div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>
-                  Status
-                </div>
+              {/* Table header */}
+              <div className='min-w-[94rem] grid grid-cols-5 font-semibold'>
+                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Date</div>
+                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Title</div>
+                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Author</div>
+                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Category</div>
+                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Status</div>
               </div>
 
-              {/* Article Table Data */}
-              <div className='w-full min-w-[94rem] h-full flex flex-col border-t-1 border-t-gray-400'>
+              {/* Table rows */}
+              <div className='w-full min-w-[94rem] flex flex-col border-t-1 border-t-gray-400'>
                 {loading ? (
                   <div className="col-span-5 py-8 text-center text-2xl text-gray-500">
                     Loading articles...
@@ -389,22 +380,24 @@ const ArticleForm = () => {
                   filteredArticles.map((article) => (
                     <div
                       key={article.article_id}
-                      className='min-w-[94rem] text-xl h-fit font-semibold grid grid-cols-5 hover:bg-gray-300 cursor-pointer'
+                      className='min-w-[94rem] text-xl grid grid-cols-5 border-b-1 border-gray-400 hover:bg-gray-300 cursor-pointer'
                       onClick={() => handleRowClick(article)}
                     >
-                      <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400'>
-                        {article.upload_date ? new Date(article.upload_date).toLocaleDateString() : new Date(article.created_at).toLocaleDateString()}
+                      <div className='px-4 pt-1 pb-3'>
+                        {article.upload_date
+                          ? new Date(article.upload_date).toLocaleDateString()
+                          : new Date(article.created_at).toLocaleDateString()}
                       </div>
-                      <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400 truncate'>
+                      <div className='px-4 pt-1 pb-3 truncate'>
                         {article.title}
                       </div>
-                      <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400'>
+                      <div className='px-4 pt-1 pb-3'>
                         {article.author || 'Unknown'}
                       </div>
-                      <div className='px-4 pt-1 pb-3 border-b-1 border-gray-400'>
+                      <div className='px-4 pt-1 pb-3'>
                         {article.article_category}
                       </div>
-                      <div className='px-4 py-1 border-b-1 border-gray-400'>
+                      <div className='px-4 py-1'>
                         <span
                           className={`text-white rounded-md px-4 py-1 ${
                             article.status === 'posted' ? 'bg-[#4CAF50]' : 'bg-[#5C4624]'
@@ -416,11 +409,13 @@ const ArticleForm = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
-                    <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
+                  <div className="min-w-[94rem] py-16 flex justify-center items-center">
+                    <div className="text-2xl text-gray-500 flex flex-col items-center">
                       <i className="fas fa-inbox text-5xl mb-4"></i>
                       <p>No article found</p>
-                      <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
+                      <p className="text-lg mt-2">
+                        Try adjusting your filters or search criteria
+                      </p>
                     </div>
                   </div>
                 )}
@@ -429,7 +424,7 @@ const ArticleForm = () => {
           </div>
         </div>
 
-        {/* Add/Edit Article Modal */}
+        {/* Modal for adding/editing articles */}
         <ArticleModal
           showModal={showModal}
           onClose={resetForm}
@@ -451,6 +446,8 @@ const ArticleForm = () => {
           Categories={Categories}
           onSubmit={handleSubmit}
           resetForm={resetForm}
+          contentImages={contentImages}
+          setContentImages={setContentImages}
         />
       </div>
     </>

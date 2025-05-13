@@ -1,3 +1,5 @@
+// controllers/articleController.js
+
 import Article from '../models/Article.js';
 import Credential from '../models/Credential.js';
 import multer from 'multer';
@@ -5,20 +7,17 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 
-// Get the directory of the current module using import.meta.url
+// Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Ensure the 'uploads' directory exists
 const uploadDir = path.resolve(__dirname, '..', 'assets', 'uploads');
-
-
-// Create 'uploads' directory if it doesn't exist
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Multer configuration
+// Multer setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
@@ -27,11 +26,25 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
-
 const upload = multer({ storage: storage });
 export { upload };
 
-// Controller to handle article creation
+// Controller to handle uploading multiple article images (not the main thumbnail)
+export const uploadContentImages = async (req, res) => {
+  try {
+    // req.files is an array of files
+    const images = req.files.map((file) => file.filename);
+    return res.status(200).json({
+      message: 'Content images uploaded successfully',
+      images,
+    });
+  } catch (error) {
+    console.error('Error uploading content images:', error.message);
+    return res.status(500).json({ message: 'Server Error', error: error.message });
+  }
+};
+
+// Controller to create an article
 export const createArticle = async (req, res) => {
   try {
     const {
@@ -41,12 +54,14 @@ export const createArticle = async (req, res) => {
       user_id,
       author,
       address,
-      selectedDate
+      selectedDate,
+      // Previously called "content_images"; now changed to "editImages"
+      editImages
     } = req.body;
 
     console.log('📝 Incoming article POST request');
     console.log('Request Body:', req.body);
-    console.log("File received (thumbnail):", req.file);
+    console.log('File received (thumbnail):', req.file);
 
     let thumbnail = null;
     if (req.file) {
@@ -58,10 +73,15 @@ export const createArticle = async (req, res) => {
       return res.status(400).json({ message: 'All fields are required.' });
     }
 
-    // const userExists = await Credential.findById(user_id);
-    // if (!userExists) {
-    //   return res.status(404).json({ message: 'Author not found.' });
-    // }
+    // Convert editImages (if provided) to a string for storage
+    let editImagesString = null;
+    if (editImages) {
+      if (typeof editImages === 'string') {
+        editImagesString = editImages;
+      } else {
+        editImagesString = JSON.stringify(editImages);
+      }
+    }
 
     const newArticle = await Article.create({
       title,
@@ -72,10 +92,11 @@ export const createArticle = async (req, res) => {
       address,
       upload_date: selectedDate,
       images: thumbnail,
+      // Store in the model’s field: editImages
+      editImages: editImagesString
     });
 
     console.log('✅ Article successfully created:', newArticle);
-
     return res.status(201).json({
       message: 'Article created successfully',
       article: newArticle
@@ -86,7 +107,7 @@ export const createArticle = async (req, res) => {
   }
 };
 
-
+// Retrieve ALL articles (admin or private usage)
 export const getAllArticles = async (req, res) => {
   try {
     const articles = await Article.findAll({
@@ -94,22 +115,23 @@ export const getAllArticles = async (req, res) => {
     });
     return res.json(articles);
   } catch (error) {
-    console.error('Error fetching appointments:', error);
-    return res.status(500).json({ message: 'Server error retrieving appointments.' });
+    console.error('Error fetching articles:', error);
+    return res.status(500).json({ message: 'Server error retrieving articles.' });
   }
 };
 
+// Retrieve public articles (lightweight list for landing page)
 export const getPublicArticles = async (req, res) => {
-  //  console.log("Hit /api/public-article/:id")
-   const API_URL = process.env.VITE_API_URL;
+  const API_URL = process.env.VITE_API_URL || '';
 
   try {
     const articles = await Article.findAll({
-      attributes: ['article_id','images', 'title', 'article_category', 'upload_date'],
-      order: [['created_at', 'DESC']],
+      attributes: ['article_id', 'images', 'title', 'article_category', 'upload_date'],
+      order: [['created_at', 'DESC']]
     });
 
-    const formattedArticles = articles.map(article => ({
+    // Convert stored image filenames to absolute URLs
+    const formattedArticles = articles.map((article) => ({
       ...article.dataValues,
       images: article.images ? `${API_URL}/uploads/${article.images}` : null,
     }));
@@ -121,33 +143,33 @@ export const getPublicArticles = async (req, res) => {
   }
 };
 
-//display specific article
+// Retrieve a specific public article
 export const getPublicArticle = async (req, res) => {
   try {
-    const { id } = req.params;  
-
+    const { id } = req.params;
     if (!id) {
-      return res.status(400).json({ message: 'Article ID is required.' }); // Handle case where no ID is provided
+      return res.status(400).json({ message: 'Article ID is required.' });
     }
 
-    // Fetch the specific article by article_id
+    // Pull the "editImages" field instead of "content_images"
     const article = await Article.findOne({
       where: { article_id: id },
       attributes: [
-        'article_id',         // article_id (Primary Key, auto_increment)
-        'title',              // title (Article title)
-        'user_id',            // user_id (User who posted the article)
-        'upload_date',        // upload_date (When the article was uploaded)
-        'images',             // images (Article images, stored as text)
-        'article_category',   // article_category (Category of the article)
-        'description',        // description (Full description of the article)
-        'author',             // author (Author of the article)
-        'address',            // address (Address linked to the article, optional)
-        'status',             // status (Article status, e.g., 'pending' or 'posted')
-        'upload_period_start',// upload_period_start (Start of the article visibility period)
-        'upload_period_end',  // upload_period_end (End of the article visibility period)
-        'created_at',         // created_at (Timestamp of when the article was created)
-        'updated_at'          // updated_at (Timestamp of when the article was last updated)
+        'article_id',
+        'title',
+        'user_id',
+        'upload_date',
+        'images',
+        'editImages', // The correct column from your model
+        'article_category',
+        'description',
+        'author',
+        'address',
+        'status',
+        'upload_period_start',
+        'upload_period_end',
+        'created_at',
+        'updated_at'
       ]
     });
 
@@ -158,3 +180,71 @@ export const getPublicArticle = async (req, res) => {
   }
 };
 
+// Update an existing article
+export const updateArticle = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      article_category,
+      description,
+      user_id,
+      author,
+      address,
+      selectedDate,
+      // Previously "content_images"; now "editImages"
+      editImages
+    } = req.body;
+
+    let thumbnail = null;
+    if (req.file) {
+      thumbnail = req.file.filename;
+    }
+
+    // Make sure to store images in editImages
+    let editImagesString = null;
+    if (editImages) {
+      if (typeof editImages === 'string') {
+        editImagesString = editImages;
+      } else {
+        editImagesString = JSON.stringify(editImages);
+      }
+    }
+
+    const [updatedCount] = await Article.update(
+      {
+        title,
+        article_category,
+        description,
+        user_id,
+        author,
+        address,
+        upload_date: selectedDate,
+        images: thumbnail || undefined,
+        // Persist the new images in the column editImages
+        editImages: editImagesString,
+        updated_at: new Date()
+      },
+      { where: { article_id: id } }
+    );
+
+    if (updatedCount === 0) {
+      return res.status(404).json({
+        message: `Article ID ${id} not found or no changes made.`
+      });
+    }
+
+    // Return the updated record if needed
+    const updatedArticle = await Article.findOne({ where: { article_id: id } });
+    return res.status(200).json({
+      message: 'Article updated successfully',
+      article: updatedArticle
+    });
+  } catch (error) {
+    console.error('Error updating article:', error);
+    return res.status(500).json({
+      message: 'Server error updating article',
+      error: error.message
+    });
+  }
+};
