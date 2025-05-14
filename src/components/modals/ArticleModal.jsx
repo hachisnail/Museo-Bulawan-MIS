@@ -1,5 +1,5 @@
 // Updated ArticleModal.jsx
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Button from '@/components/ui/button';
 import { EditorContent } from '@tiptap/react';
 import {
@@ -11,7 +11,9 @@ import {
   AlignRight,
   AlignJustify,
   Columns as ColumnsIcon,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Type as TypeIcon,
+  X as XIcon
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -39,8 +41,29 @@ const ArticleModal = ({
   setContentImages
 }) => {
   const imageInputRef = useRef(null);
+  const thumbnailInputRef = useRef(null);
   const BASE_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem('token');
+  
+  // State to track if thumbnail should be removed
+  const [removeThumbnail, setRemoveThumbnail] = useState(false);
+  // State to track if a thumbnail is selected
+  const [hasThumbnail, setHasThumbnail] = useState(!!thumbnail || !!previewImage);
+
+  // Update hasThumbnail when thumbnail or previewImage changes
+  useEffect(() => {
+    setHasThumbnail(!!thumbnail || !!previewImage);
+  }, [thumbnail, previewImage]);
+
+  // Available font sizes for the dropdown
+  const fontSizes = [
+    { label: 'Small', value: '12px' },
+    { label: 'Normal', value: '16px' },
+    { label: 'Medium', value: '20px' },
+    { label: 'Large', value: '24px' },
+    { label: 'XL', value: '28px' },
+    { label: '2XL', value: '32px' }
+  ];
 
   // For uploading inline images from the editor
   const handleImageUpload = async (e) => {
@@ -80,6 +103,49 @@ const ArticleModal = ({
     }
   };
 
+  // Apply selected font size to the editor
+  const handleFontSizeChange = (e) => {
+    const fontSize = e.target.value;
+    editor?.chain().focus().setFontSize(fontSize).run();
+  };
+  
+  // Handle removing the thumbnail
+  const handleRemoveThumbnail = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Reset file input
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = '';
+    }
+    
+    // Set state to indicate thumbnail should be removed
+    setRemoveThumbnail(true);
+    setHasThumbnail(false);
+  };
+  
+  // Custom thumbnail change handler that wraps the original handler
+  const handleCustomThumbnailChange = (e) => {
+    // If we previously removed a thumbnail, reset that flag
+    if (removeThumbnail) {
+      setRemoveThumbnail(false);
+    }
+    
+    // Call the original handler
+    handleThumbnailChange(e);
+    
+    // Update hasThumbnail based on if a file was selected
+    setHasThumbnail(!!e.target.files && e.target.files.length > 0);
+  };
+
+  // Modified form submission to include thumbnail removal state
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    
+    // Add removeThumbnail to the form submission data
+    onSubmit(e, removeThumbnail);
+  };
+
   if (!showModal) {
     return null;
   }
@@ -100,7 +166,7 @@ const ArticleModal = ({
             {isEditing ? 'Edit Article' : 'Add New Article'}
           </h2>
           
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={handleFormSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               {/* Title */}
               <div>
@@ -165,16 +231,32 @@ const ArticleModal = ({
                 />
               </div>
               
-              {/* Thumbnail */}
+              {/* Thumbnail with Remove Button */}
               <div>
                 <label>Thumbnail</label>
-                <input
-                  className="w-full border px-2 py-1 rounded"
-                  type="file"
-                  name="thumbnail"
-                  onChange={handleThumbnailChange}
-                />
-                {isEditing && thumbnail && typeof thumbnail === 'string' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={thumbnailInputRef}
+                    className="w-full border px-2 py-1 rounded"
+                    type="file"
+                    name="thumbnail"
+                    onChange={handleCustomThumbnailChange}
+                  />
+                  {hasThumbnail && !removeThumbnail ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveThumbnail}
+                      className="p-1 border rounded bg-red-50 hover:bg-red-100 text-red-600"
+                      title="Remove thumbnail"
+                    >
+                      <XIcon size={16} />
+                    </button>
+                  ) : null}
+                </div>
+                
+                
+                
+                {isEditing && thumbnail && typeof thumbnail === 'string' && !removeThumbnail && (
                   <div className="mt-1 text-sm text-gray-600">
                     Current image: {thumbnail}
                   </div>
@@ -206,6 +288,24 @@ const ArticleModal = ({
                       H{level}
                     </button>
                   ))}
+                </div>
+                
+                <div className="border-l h-6 mx-2" />
+                
+                {/* Font Size Selector */}
+                <div className="flex items-center gap-1">
+                  <TypeIcon size={16} className="text-gray-600" />
+                  <select
+                    onChange={handleFontSizeChange}
+                    className="px-1 py-1 border rounded text-sm"
+                    defaultValue="16px"
+                  >
+                    {fontSizes.map((size) => (
+                      <option key={size.value} value={size.value}>
+                        {size.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div className="border-l h-6 mx-2" />
@@ -414,7 +514,7 @@ const ArticleModal = ({
           </div>
           
           <div className="border border-gray-200 p-4 rounded min-h-[300px]">
-            {previewImage && (
+            {previewImage && !removeThumbnail ? (
               <div className="flex justify-center mb-4">
                 <img
                   src={previewImage}
@@ -422,7 +522,7 @@ const ArticleModal = ({
                   className="max-h-64 object-contain"
                 />
               </div>
-            )}
+            ) : null}
             
             <div className="prose max-w-none">
               {editor?.getHTML() ? (
