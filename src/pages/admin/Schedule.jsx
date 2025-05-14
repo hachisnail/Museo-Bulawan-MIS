@@ -1155,14 +1155,14 @@ const Schedule = () => {
           <AdminNav />
         </div>
 
-        <div className="w-full bg-[#F0F0F0] min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-auto">
+        <div className="w-full bg-[#F0F0F0] h-full  flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-auto">
           <span className="text-5xl font-semibold text-black">Schedule</span>
-          <div className="w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 justify-between sm:px-12 gap-x-10">
+          <div className="w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 justify-between sm:px-12 gap-x-10 overflow-hidden">
 
             {/* LEFT SECTION - Calendar & Today's Scheduled Tours */}
-            <div className="sm:[w-31rem] h-full flex flex-col gap-y-6 items-center justify-around">
+            <div className="sm:[w-31rem] h-fit flex flex-col gap-y-6 items-center justify-around">
               {/* Calendar */}
-              <div className="min-w-[31rem] max-w-[31rem] min-h-[28rem] flex flex-col gap-y-4">
+              <div className="min-w-[31rem] max-w-[31rem] min-h-[27rem] flex flex-col gap-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-2xl font-semibold">{monthLabel}</span>
                 </div>
@@ -1215,7 +1215,7 @@ const Schedule = () => {
               </div>
 
               {/* Today's Scheduled Tours */}
-              <div className="min-w-[31rem] max-w-[31rem] flex flex-col min-h-[30rem] bg-white rounded-xl shadow-xl p-5">
+              <div className="min-w-[31rem] max-w-[31rem] flex flex-col h-[25rem] bg-white rounded-xl shadow-xl p-5">
                 <span className="text-2xl font-semibold mb-4">Today's Scheduled Tours</span>
                 <div className="w-full border-t border-gray-200 pt-4 space-y-3 max-h-120 overflow-y-auto">
                   {todayTours.length === 0 && (
@@ -1227,16 +1227,16 @@ const Schedule = () => {
                     <div
                       key={tour.id || idx}
                       className={`
-          ${idx % 2 === 0 ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'}
-          p-3 rounded-lg flex items-center justify-between
-        `}
+                        ${idx % 2 === 0 ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'}
+                        p-3 rounded-lg flex items-center justify-between
+                      `}
                     >
                       <div className="flex items-center flex-grow">
                         <div
                           className={`
-              ${idx % 2 === 0 ? 'bg-gray-800 text-white' : 'bg-gray-300 text-gray-800'}
-              px-3 py-1.5 rounded mr-3 text-sm
-            `}
+                            ${idx % 2 === 0 ? 'bg-gray-800 text-white' : 'bg-gray-300 text-gray-800'}
+                            px-3 py-1.5 rounded mr-3 text-sm
+                          `}
                         >
                           {formatTimeTo12H(tour.startTime)}-{formatTimeTo12H(tour.endTime)}
                         </div>
@@ -1298,7 +1298,7 @@ const Schedule = () => {
               </div>
               <div className="w-full h-full bg-white p-5 rounded-xl shadow-xl">
                 <DayScheduler
-                  appointments={backendEvents}  // Use backendEvents here
+                  appointments={backendEvents}  
                   selectedDate={selectedDate}
                   onSelectAppointment={setSelectedAppointment}
                   selectedAppointment={selectedAppointment}

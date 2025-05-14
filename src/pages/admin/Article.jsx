@@ -114,7 +114,6 @@ const ArticleForm = () => {
           {
             headers: {
               "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
             },
             withCredentials: true,
           }
@@ -128,7 +127,6 @@ const ArticleForm = () => {
           {
             headers: {
               "Content-Type": "multipart/form-data",
-              Authorization: `Bearer ${token}`,
             },
             withCredentials: true,
           }

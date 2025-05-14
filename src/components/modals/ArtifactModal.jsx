@@ -4,83 +4,67 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL
 
-export const ArtifactView = () => {
+export const ArtifactView = ({onClose}) => {
   
   return (
     <>
-      <div className="w-screen h-screen fixed  backdrop-blur-xs  z-50 flex flex-col gap-y-4 items-center justify-center select-none">
-        <div className="w-[60rem] xl:w-[120rem] min-h-15 bg-white shadow-2xl rounded-xl flex justify-end items-center px-5">
-          <i class="fa-solid fa-xmark text-3xl cursor-pointer"></i>
+      <div className=" gap-y-2 font-semibold flex flex-col">
+        <span className="text-5xl">Artifact Title</span>
+        <div className="text-2xl flex items-center text-center">
+          <span
+            onClick={onClose}
+            className="cursor-pointer text-gray-700 hover:text-black"
+          >
+            Artifact{' '}
+          </span>
+          <span className='text-2xl font-extrabold text-amber-900'>&nbsp; &gt; &nbsp;</span>
+          <span> View </span>
         </div>
-        <div className="w-[60rem] xl:w-[120rem] h-[60rem] min-h-[60rem] flex flex-col gap-y-4 overflow-y-scroll">
-          <div className="w-full h-fit flex flex-col bg-white shadow-2xl rounded-xl">
-            <div className="w-full min-h-15 flex justify-end items-center px-4">
-              <i class="fas fa-edit text-black text-3xl cursor-pointer"></i>
-            </div>
-            <div className="w-[50rem] xl:w-[110rem] flex flex-col gap-y-10 min-h-[52rem] mx-auto pt-10">
-              <span className="text-5xl font-semibold">
-                Perlas ng Silanganan
-              </span>{' '}
-              {/* title of the artifact*/}
-              <div className="w-full h-fit flex xl:flex-row flex-col xl:justify-between  gap-y-10">
-                <div className="w-[50rem] h-[40rem] flex justify-between">
-                  {/* picture container */}
-                  <div className="flex flex-col justify-between">
-                    <div className="w-[9rem] h-[9rem] border-1"></div>
-                    <div className="w-[9rem] h-[9rem] border-1"></div>
-                    <div className="w-[9rem] h-[9rem] border-1"></div>
-                    <div className="w-[9rem] h-[9rem] border-1"></div>
-                  </div>
-                  <div className="w-[40rem] h-[40rem] border-1"></div>
-                </div>
+      </div>
 
-                <div className="w-[57rem] h-[40rem] flex flex-col gap-y-5">
-                  {/* artifact metadata */}
-                  <span className="text-3xl font-semibold w-fit">
-                    Date of Creation:
-                  </span>
-                  <span className="text-3xl font-semibold w-fit">
-                    Origin/Provenance:
-                  </span>
-                  <span className="text-3xl font-semibold w-fit">
-                    Current Location:
-                  </span>
-                  <span className="text-3xl font-semibold w-fit">
-                    Culture or Civilization:
-                  </span>
-                  <span className="text-3xl font-semibold w-fit">
-                    Period/Era:
-                  </span>
-                  <span className="text-3xl font-semibold w-fit">
-                    Discovery Details:
-                  </span>
-                  <span className="text-3xl font-semibold w-fit">
-                    Excavation Site:
-                  </span>
-                  <span className="text-3xl font-semibold w-fit">
-                    Collection/Accession Number:
-                  </span>
-                  <span className="text-3xl font-semibold w-fit">
-                    Acquisition History:
-                  </span>
-                </div>
+      <div className="w-full h-full justify-center flex flex-col xl:flex-row gap-x-10 px-10 overflow-auto">
+        <div className='mx-auto w-[120rem] h-full flex '>
+          <div className='w-[47rem] h-full flex flex-col items-center'>
+            {/* picture container */}
+            <div className='w-[47rem] h-[47rem] flex items-center justify-center'>
+
+              <div className='w-[42rem] min-h-[42rem] bg-gray-900 rounded-md'>
+                {/* current picture */}
+
               </div>
             </div>
-          </div>
 
-          <div className="w-full h-auto flex xl:flex-row flex-col gap-x-4 gap-y-4 pb-20">
-            <div className="min-w-[40rem] min-h-[90rem] flex flex-col gap-y-4">
-              <div className="w-full min-h-[30rem] bg-white rounded-xl shadow-2xl"></div>
-              <div className="w-full h-full bg-white rounded-xl shadow-2xl"></div>
+            <div className='w-full h-full flex justify-center items-center gap-x-5'>
+              {/* preview container */}
+              <div className="w-[13rem] h-[13rem] bg-gray-900 rounded-md">
+
+              </div>
+              <div className="w-[13rem] h-[13rem] bg-gray-900 rounded-md">
+
+              </div>
+              <div className="w-[13rem] h-[13rem] bg-gray-900 rounded-md">
+
+              </div>
+
             </div>
 
-            <div className="w-full h-[90rem] bg-white rounded-xl shadow-2xl"></div>
+          </div>
+          <div className='w-[31rem] h-full rounded-md bg-yellow-900'>
+            {/* metadata */}
+          </div>
+          <div className='w-[42rem] h-full flex justify-center'>
+            <div className='w-[40rem] h-full bg-blue-600 rounded-md'>
+              {/* other info */}
+            </div>
           </div>
         </div>
+        
       </div>
     </>
   )
 }
+
+
 
 export const ArtifactAdd = ({ onClose }) => {
   // State for form fields
@@ -254,7 +238,7 @@ const handleSubmit = async (e) => {
   return (
     <>
       <div className=" gap-y-2 font-semibold flex flex-col">
-        <span className="text-5xl">Artifact Information</span>
+        <span className="text-5xl">Add New Artifact</span>
         <div className="text-2xl flex items-center text-center">
           <span
             onClick={onClose}
@@ -263,7 +247,7 @@ const handleSubmit = async (e) => {
             Artifact{' '}
           </span>
           <span className='text-2xl font-extrabold text-amber-900'>&nbsp; &gt; &nbsp;</span>
-          <span> Add New Artifact</span>
+          <span> Insert </span>
         </div>
       </div>
 
