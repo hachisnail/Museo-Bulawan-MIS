@@ -144,9 +144,10 @@ export const AppointmentModal = ({
           `${API_URL}/api/auth/send-email-notification`,
           emailData,
           {
+             withCredentials: true ,
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
+              
             },
           }
         );

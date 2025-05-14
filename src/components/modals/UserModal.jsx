@@ -96,9 +96,8 @@ export const InviteModal = ({ onClose, onInvite }) => {
         `${API_URL}/api/auth/invitations`,
         formData,
         {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+                    withCredentials: true,
+
         }
       );
       
@@ -310,7 +309,8 @@ export const UserView = ({ userId, onClose }) => {
   const fetchLogs = () => {
     axios
       .get(`${API_URL}/api/auth/login-logs/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+                  withCredentials: true,
+
       })
       .then((res) => {
         const logs = res.data.logs
@@ -327,7 +327,8 @@ export const UserView = ({ userId, onClose }) => {
   const fetchUsers = () => {
     axios
       .get(`${API_URL}/api/auth/fetchUser/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+                  withCredentials: true,
+
       })
       .then((res) => {
         const fetchedUser = res.data

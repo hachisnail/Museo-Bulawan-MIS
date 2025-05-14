@@ -10,12 +10,7 @@ export const connectWebSocket = (onDataChange, onRefresh) => {
     return;
   }
 
-  const token = localStorage.getItem('token');
-  if (!token) {
-    // console.error('No token found, unable to connect to WebSocket');
-    return;
-  }
-
+  // Close any existing socket connection
   if (socketRef) {
     socketRef.close();
   }
@@ -25,16 +20,12 @@ export const connectWebSocket = (onDataChange, onRefresh) => {
   const hostname = window.location.hostname;
   const port = isSecure ? '' : ':5000';
   
-  const wsUrl = `${protocol}://${hostname}${port}/?token=${token}`;
+  // Connect to WebSocket without explicitly providing the token
+  // The cookie will be sent automatically by the browser
+  const wsUrl = `${protocol}://${hostname}${port}/`;
   
   console.log("Connecting to WebSocket:", wsUrl);
   const socket = new WebSocket(wsUrl);
-  
-  // const socket = new WebSocket(
-  //   `${protocol}://${hostname}${port ? `:${port}` : ''}/?token=${token}`
-  // );
-
-
 
   socket.onopen = () => {
     console.log('WebSocket connected successfully');

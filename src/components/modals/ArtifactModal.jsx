@@ -216,8 +216,8 @@ const handleSubmit = async (e) => {
   const token = localStorage.getItem('token');
     
     const response = await axios.post(`${API_URL}/api/auth/artifact`, formDataToSend, {
+          withCredentials: true,
       headers: {
-        Authorization: `Bearer ${token}`,
         'Content-Type': 'multipart/form-data',
       },
     });

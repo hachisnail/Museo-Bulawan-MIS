@@ -58,9 +58,10 @@ const ArticleModal = ({
         `${BASE_URL}/api/auth/article/content-images`,
         formData,
         {
+          withCredentials: true,
           headers: {
             'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
+           
           }
         }
       );

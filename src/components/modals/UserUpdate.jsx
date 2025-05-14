@@ -16,7 +16,8 @@ const UserUpdate = ({ userId, onClose }) => {
     const API_URL = import.meta.env.VITE_API_URL;
     axios
       .get(`${API_URL}/api/auth/fetchUser/${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
+               withCredentials: true,
+
       }, {
         headers: {
           Authorization: `Bearer ${token}`,

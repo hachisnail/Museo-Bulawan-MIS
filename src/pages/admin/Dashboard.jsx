@@ -85,13 +85,13 @@ const Dashboard = () => {
   // Fetch all dashboard data in one function
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      // const token = localStorage.getItem('token');
       const API_URL = import.meta.env.VITE_API_URL;
 
-      if (!token) {
-        console.error('No authentication token found');
-        return;
-      }
+      // if (!token) {
+      //   console.error('No authentication token found');
+      //   return;
+      // }
 
       // Get current date information for filtering
       const currentDate = new Date();

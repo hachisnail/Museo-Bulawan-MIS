@@ -94,11 +94,27 @@ const broadcastDataChange = (changeData) => {
 };
 
 wss.on('connection', (ws, req) => {
-  const token = new URL(req.url, `wss://${req.headers.host}`).searchParams.get('token');
+  // Get the cookies from the request headers
+  const cookies = req.headers.cookie;
+  if (!cookies) {
+    ws.close(1008, 'Unauthorized: No cookies provided');
+    return;
+  }
   
+  // Parse cookies to find auth_token
+  const cookieArray = cookies.split(';').map(cookie => cookie.trim());
+  const authCookie = cookieArray.find(cookie => cookie.startsWith('auth_token='));
+  
+  if (!authCookie) {
+    ws.close(1008, 'Unauthorized: No auth cookie found');
+    return;
+  }
+  
+  // Extract token value from cookie
+  const token = authCookie.split('=')[1];
   
   if (!token) {
-    ws.close(1008, 'Unauthorized: No token provided');
+    ws.close(1008, 'Unauthorized: Invalid auth cookie');
     return;
   }
 
