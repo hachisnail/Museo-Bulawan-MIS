@@ -35,17 +35,14 @@ const ArticleModal = ({
   setAddress,
   setSelectedDate,
   resetForm,
-
-  // NEW: Additional states for content images
   contentImages,
   setContentImages
 }) => {
   const imageInputRef = useRef(null);
-  
   const BASE_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem('token');
 
-  // NEW: Upload file to the server, insert returned image into Tiptap
+  // For uploading inline images from the editor
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -61,7 +58,6 @@ const ArticleModal = ({
           withCredentials: true,
           headers: {
             'Content-Type': 'multipart/form-data',
-           
           }
         }
       );
@@ -75,7 +71,7 @@ const ArticleModal = ({
           editor.chain().focus().setImage({ src: fullImageUrl, alt: file.name }).run();
         }
 
-        // Also store the filename in our contentImages array if needed
+        // Optional: store the filename if needed
         setContentImages((prev) => [...prev, uploadedFilename]);
       }
     } catch (err) {
@@ -91,8 +87,8 @@ const ArticleModal = ({
   return (
     <div className="fixed inset-0 z-50 backdrop-blur-sm bg-opacity-50 flex items-center justify-center">
       <div className="flex w-[85rem] gap-4">
-        {/* Left Side - Article Editor Form */}
-        <div className="bg-white w-[40rem] p-6 rounded-lg shadow-xl relative">
+        {/* LEFT SIDE - Editor + Form */}
+        <div className="bg-white w-[40rem] p-6 rounded-lg shadow-xl relative max-h-[90vh] overflow-auto">
           <button
             onClick={resetForm}
             className="absolute top-3 right-3 text-2xl text-gray-600 hover:text-black"
@@ -190,8 +186,9 @@ const ArticleModal = ({
             <div className="space-y-2">
               <label className="font-bold">Body</label>
               
+              {/* Toolbar */}
               <div className="flex flex-wrap items-center gap-2 p-2 bg-[#d6c2ad] rounded border border-blue-400">
-                {/* Heading buttons (H1–H5) */}
+                {/* Headings */}
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((level) => (
                     <button
@@ -316,9 +313,8 @@ const ArticleModal = ({
                 
                 <div className="border-l h-6 mx-2" />
                 
-                {/* Special formatting options */}
+                {/* Two Column / Insert Image */}
                 <div className="flex gap-1">
-                  {/* Two Column Layout */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -338,15 +334,13 @@ const ArticleModal = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      imageInputRef.current?.click(); // Trigger hidden file input
+                      imageInputRef.current?.click();
                     }}
                     className="p-1 border rounded"
                     title="Insert Image"
                   >
                     <ImageIcon size={16} />
                   </button>
-                  
-                  {/* Hidden file input for content images */}
                   <input
                     type="file"
                     ref={imageInputRef}
@@ -357,9 +351,9 @@ const ArticleModal = ({
                 </div>
               </div>
               
-              {/* Editor content area */}
+              {/* Editor area - scroll internally */}
               <div
-                className="border rounded p-4 min-h-[150px] prose"
+                className="border rounded p-4 min-h-[150px] max-h-[50vh] overflow-auto prose"
                 onClick={(e) => e.stopPropagation()}
               >
                 <EditorContent editor={editor} />
@@ -367,8 +361,8 @@ const ArticleModal = ({
             </div>
             
             <div className="flex justify-between">
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 onClick={resetForm}
                 className="bg-gray-500 hover:bg-gray-600"
               >
@@ -381,19 +375,19 @@ const ArticleModal = ({
           </form>
         </div>
         
-        {/* Right Side - Article Preview */}
+        {/* RIGHT SIDE - Article Preview */}
         <div className="bg-white w-[40rem] p-6 rounded-lg shadow-xl overflow-y-auto max-h-[90vh]">
           <h3 className="text-2xl font-bold mb-4">Article Preview</h3>
           <div className="border border-gray-200 p-4 mb-4 rounded">
             <h1 className="text-center text-3xl font-bold">
-              {title || "Title of the News or Event"}
+              {title || 'Title of the News or Event'}
             </h1>
           </div>
           
           <div className="flex w-full justify-center mb-6">
             <div className="flex w-full items-center justify-center text-center text-base">
               <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
-                <h4 className='text-lg font-medium'>Date</h4>
+                <h4 className="text-lg font-medium">Date</h4>
                 <p className="text-sm">
                   {selectedDate
                     ? new Date(selectedDate).toLocaleDateString('en-US', {
@@ -401,30 +395,25 @@ const ArticleModal = ({
                         day: 'numeric',
                         year: 'numeric',
                       })
-                    : "month dd, yyyy"}
+                    : 'month dd, yyyy'}
                 </p>
               </span>
               <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
-                <h4 className='text-lg font-medium'>Author</h4>
-                <p className="text-sm">
-                  {author || "Name of the Author"}
-                </p>
+                <h4 className="text-lg font-medium">Author</h4>
+                <p className="text-sm">{author || 'Name of the Author'}</p>
               </span>
               <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
-                <h4 className='text-lg font-medium'>Address</h4>
-                <p className="text-sm">
-                  {address || "Location of the event or news"}
-                </p>
+                <h4 className="text-lg font-medium">Address</h4>
+                <p className="text-sm">{address || 'Location'}</p>
               </span>
               <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
-                <h4 className='text-lg font-medium'>Category</h4>
-                <p className="text-sm">{category || "[placeholder]"}</p>
+                <h4 className="text-lg font-medium">Category</h4>
+                <p className="text-sm">{category || '[placeholder]'}</p>
               </span>
             </div>
           </div>
           
           <div className="border border-gray-200 p-4 rounded min-h-[300px]">
-            {/* Thumbnail preview */}
             {previewImage && (
               <div className="flex justify-center mb-4">
                 <img
@@ -447,8 +436,6 @@ const ArticleModal = ({
                 </p>
               )}
             </div>
-
-            
           </div>
         </div>
       </div>

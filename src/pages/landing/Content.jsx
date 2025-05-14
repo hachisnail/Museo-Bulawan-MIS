@@ -4,6 +4,7 @@ import { Link, ScrollRestoration } from 'react-router-dom';
 import axios from 'axios';
 import LandingNav from '../../components/navbar/LandingNav';
 import backgroundImage from '../../../src/assets/Fernando-Amorsolo-Women-Bathing-and-Washing Clothes-7463.png';
+import { FaImage } from 'react-icons/fa'; 
 
 // Example municipality list
 const municipalities = [
@@ -59,6 +60,11 @@ const Content = () => {
   const encoded = (id, name) => {
     const encodedString = `${id}::${name}`;
     return btoa(encodedString);
+  };
+
+  // Check if image exists and is valid
+  const isValidImage = (url) => {
+    return url && url !== "" && url !== "undefined" && url !== "null";
   };
 
   return (
@@ -175,10 +181,7 @@ const Content = () => {
           {!loading && !error && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 gap-x-20">
               {filteredArticles.map((article, index) => {
-                const imageSrc = article.images
-                  ? article.images
-                  : "https://fakeimg.pl/300x300?text=image?";
-
+                const hasValidImage = isValidImage(article.images);
                 const displayDate = article.upload_date
                   ? new Date(article.upload_date).toLocaleDateString()
                   : "No Date";
@@ -189,11 +192,25 @@ const Content = () => {
                     to={`/article/${encoded(article.article_id, article.title)}`}
                     className="flex flex-col items-center text-center hover:opacity-90 transition duration-300"
                   >
-                    <img
-                      src={imageSrc}
-                      alt={`Article ${article.article_id}`}
-                      className="w-[300px] h-auto"
-                    />
+                    <div className="w-full aspect-square overflow-hidden bg-gray-700 flex items-center justify-center">
+                      {hasValidImage ? (
+                        <img
+                          src={article.images}
+                          alt={`Article ${article.article_id}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentNode.classList.add('flex', 'items-center', 'justify-center');
+                            e.target.parentNode.innerHTML = '<div class="flex flex-col items-center justify-center"><FaImage class="text-gray-300 text-5xl" /><p class="text-gray-300 mt-2">No Image</p></div>';
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center">
+                          <FaImage className="text-gray-300 text-5xl" />
+                          <p className="text-gray-300 mt-2">No Image</p>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-[#F05454] text-base uppercase mt-2">
                       {article.article_category || 'No Category'}
                     </p>
