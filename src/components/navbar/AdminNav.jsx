@@ -1,84 +1,80 @@
-import React from 'react'
-import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
-import { jwtDecode } from 'jwt-decode'
-import axios from 'axios'
-import { ConfirmationModalC} from '../modals/ConfirmationModal'
-import LogoutButton from '../LogoutButton'
-
+import React, { useState, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { ConfirmationModalC } from '../modals/ConfirmationModal';
 
 import dashboard_ico from '../../../src/assets/dashboard_icon.png';
-import donation_ico from '../../../src/assets/donation.png'
-import artifact_ico from '../../../src/assets/artifact.png'
-import appointment_ico from '../../../src/assets/appointment.png'
-import article_ico from '../../../src/assets/article.png'
-import logs_ico from '../../../src/assets/list.png'
-import user_ico from '../../../src/assets/User.png'
-import logout_ico from'../../../src/assets/logout.png'
-import schedule_ico from '../../../src/assets/schedule.png'
-
+import donation_ico from '../../../src/assets/donation.png';
+import artifact_ico from '../../../src/assets/artifact.png';
+import appointment_ico from '../../../src/assets/appointment.png';
+import article_ico from '../../../src/assets/article.png';
+import logs_ico from '../../../src/assets/list.png';
+import user_ico from '../../../src/assets/User.png';
+import logout_ico from '../../../src/assets/logout.png';
+import schedule_ico from '../../../src/assets/schedule.png';
 
 const AdminNav = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const linkClasses =
-    'w-fit sm:w-full h-fit py-4 flex flex-row justify-start bg-[#1C1B19] items-center gap-3 rounded-2xl p-2 h-[60px] cursor-pointer'
-  const activeClasses = 'bg-white text-black'
-  const [showConfirmation, setConfirmation] = useState(false)
+    'w-fit sm:w-full h-fit py-4 flex flex-row justify-start bg-[#1C1B19] items-center gap-3 rounded-2xl p-2 h-[60px] cursor-pointer';
+  const activeClasses = 'bg-white text-black';
+  const [showConfirmation, setConfirmation] = useState(false);
+
+  // State for user profile
+  const [userProfile, setUserProfile] = useState(null);
+
+  // Fetch user profile from localStorage
+  useEffect(() => {
+    const fetchUserProfile = () => {
+      const encodedProfile = localStorage.getItem('userProfile');
+      if (encodedProfile) {
+        try {
+          // Decode the profile using atob
+          const decodedProfile = JSON.parse(atob(encodedProfile));
+          setUserProfile(decodedProfile);
+        } catch (error) {
+          console.error('Failed to decode user profile:', error);
+          localStorage.removeItem('userProfile'); // Clear corrupted data
+          navigate('/login', { state: { sessionMessage: 'Session expired. Please log in again.' } });
+        }
+      } else {
+        navigate('/login', { state: { sessionMessage: 'Session expired. Please log in again.' } });
+      }
+    };
+
+    fetchUserProfile();
+  }, [navigate]);
 
   const handleConfirmation = (result) => {
-    setConfirmation(false)
-    console.log('User confirmed?', result)
-    if (result == true) {
-      handleLogout()
+    setConfirmation(false);
+    if (result === true) {
+      handleLogout();
     }
-  }
+  };
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Logging out user');
-      
       const API_URL = import.meta.env.VITE_API_URL;
-      
-      await axios.post(
-        `${API_URL}/api/auth/logout`, 
-        {}, 
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true 
-        }
-      );
-      
-      console.log('Logout successful');
-      localStorage.removeItem('token');
+      await axios.post(`${API_URL}/api/auth/logout`, {}, { withCredentials: true });
+      localStorage.removeItem('userProfile'); // Clear user profile on logout
       navigate('/login');
     } catch (err) {
       console.error('Logout error:', err);
-      // Still remove token and redirect even if server request fails
-      localStorage.removeItem('token');
       navigate('/login');
     }
   };
-  const token = localStorage.getItem('token')
-  let role = 'unknown',
-    first_name = 'unknown',
-    last_name = 'unknown',
-    position = 'unknown'
 
-  if (token) {
-    try {
-      const decodedToken = jwtDecode(token)
-      role = decodedToken.role || 'unknown'
-      first_name = decodedToken.first_name || 'unknown'
-      last_name = decodedToken.last_name || 'unknown'
-      position = decodedToken.position || 'unknown'
-    } catch (error) {
-      console.error('Error decoding token:', error)
-    }
+  if (!userProfile) {
+    return (
+      <div className="bg-[#1C1B19] min-h-full flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
   }
 
-  const firstInitial = first_name.charAt(0).toUpperCase()
-  const lastInitial = last_name.charAt(0).toUpperCase()
+  const { first_name, last_name, position, role } = userProfile;
+  const firstInitial = first_name.charAt(0).toUpperCase();
+  const lastInitial = last_name.charAt(0).toUpperCase();
 
   const colorMap = {
     A: '#FF6666',
@@ -107,9 +103,10 @@ const AdminNav = () => {
     X: '#9966FF',
     Y: '#FF0000',
     Z: '#33CCCC',
-  }
+  };
 
-  const bgColor = colorMap[firstInitial] || '#FFFFFF'
+  const bgColor = colorMap[firstInitial] || '#FFFFFF';
+
 
   return (
     <>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate, ScrollRestoration, useLocation } from 'react-router-dom';
-import { jwtDecode } from 'jwt-decode';
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +25,6 @@ const Login = () => {
         console.error('Error detecting client IP:', error);
       }
     };
-    //test
     detectClientIP();
   }, []);
 
@@ -40,103 +38,108 @@ const Login = () => {
     }
   }, [location]);
 
+  // Check if user already has an active session
   useEffect(() => {
-    const token = localStorage.getItem('token');
-
-    if (token) {
+    console.log('Checking for existing session');
+    
+    // Try to refresh token first (if user has a valid refresh token)
+    const tryRefreshToken = async () => {
       try {
-        const decoded = jwtDecode(token);
-        const isExpired = decoded.exp < Date.now() / 1000;
+        console.log('Trying to refresh token');
+        const refreshResponse = await axios.post(
+          `${API_URL}/api/auth/refresh-token`, 
+          {}, 
+          { withCredentials: true }
+        );
         
-        if (!isExpired) {
-          console.log('Token found and not expired, verifying session');
-          // Token looks valid, but let's verify the session is still active
-          axios.get(`${API_URL}/api/auth/session-status`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            },
-            withCredentials: true
-          })
-          .then(() => {
-            // Session is still valid, redirect to dashboard
-            console.log('Session verified, redirecting to dashboard');
-            navigate('/admin/dashboard');
-          })
-          .catch(err => {
-            // Session might be invalidated
-            console.error('Session verification failed:', err);
-            if (err.response?.status === 401) {
-              localStorage.removeItem('token');
-              if (err.response.data?.reason === 'SESSION_INVALIDATED') {
-                setError('Your session was ended because you logged in from another device');
-              } else {
-                setError('Your session has expired. Please log in again.');
-              }
-            }
-          });
-          return;
-        } else {
-          // Token is expired
-          console.log('Token found but expired');
-          localStorage.removeItem('token');
-        }
-      } catch (e) {
-        console.warn('Invalid token in localStorage');
-        localStorage.removeItem('token');
-      }
-    }
-
-    console.log('Checking for fallback cookie token');
-    const checkCookieToken = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/auth/verify-cookie`, {
-          withCredentials: true 
-        });
-
-        if (res.status === 200 && res.data.token) {
-          console.log('Valid cookie token found');
-          localStorage.setItem('token', res.data.token);
+        if (refreshResponse.status === 200) {
+          console.log('Token refreshed successfully');
+          // For backward compatibility
+          if (refreshResponse.data.token) {
+            localStorage.setItem('token', refreshResponse.data.token);
+          }
           navigate('/admin/dashboard');
+          return true;
         }
-      } catch (e) {
-        // Cookie not valid, that's okay
-        console.log('No valid cookie token found');
+      } catch (err) {
+        console.log('No valid refresh token or refresh failed');
+        return false;
       }
     };
-
-    checkCookieToken();
+    
+    // If refresh fails or user doesn't have a refresh token, check session
+    const checkSession = async () => {
+      try {
+        console.log('Checking session status');
+        const response = await axios.get(
+          `${API_URL}/api/auth/session-status`,
+          { withCredentials: true }
+        );
+        
+        if (response.status === 200) {
+          console.log('Valid session found');
+          navigate('/admin/dashboard');
+        }
+      } catch (err) {
+        if (err.response?.status === 401) {
+          if (err.response.data?.reason === 'SESSION_INVALIDATED') {
+            setError('Your session was ended because you logged in from another device');
+          } else if (err.response.data?.reason === 'TOKEN_EXPIRED') {
+            // This should be handled by refresh token, but just in case
+            setError('Your session has expired. Please log in again.');
+          }
+          // Clear any localStorage token for backward compatibility
+          localStorage.removeItem('token');
+        }
+      }
+    };
+    
+    // Try refresh first, if it fails check session
+    tryRefreshToken().then(refreshed => {
+      if (!refreshed) {
+        checkSession();
+      }
+    });
   }, [navigate, API_URL]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
+  e.preventDefault();
+  setIsLoading(true);
+  setError('');
 
-    try {
-      console.log('Attempting login');
-      // Include the detected real client IP in the login request
-      const response = await axios.post(
-        `${API_URL}/api/auth/login`,
-        { 
-          email, 
-          password,
-          clientIP // Include the real client IP if detected
-        },
-        { withCredentials: true } // Needed for cookie
-      );
+  try {
+    console.log('Attempting login');
+    const response = await axios.post(
+      `${API_URL}/api/auth/login`,
+      { email, password, clientIP },
+      { withCredentials: true }
+    );
 
-      if (response.status === 200) {
-        console.log('Login successful');
-        localStorage.setItem('token', response.data.token);
-        navigate('/admin/dashboard');
+    if (response.status === 200) {
+      console.log('Login successful');
+
+      // Fetch the encoded user profile
+      const profileResponse = await axios.get(`${API_URL}/api/auth/profile`, {
+        withCredentials: true,
+      });
+
+      if (profileResponse.status === 200) {
+        const encodedProfile = profileResponse.data.profile;
+
+        // Store the encoded profile in localStorage
+        localStorage.setItem('userProfile', encodedProfile);
       }
-    } catch (err) {
-      console.error('Login failed:', err);
-      setError(err.response?.data?.message || 'Login failed');
-    } finally {
-      setIsLoading(false);
+
+      navigate('/admin/dashboard');
     }
-  };
+  } catch (err) {
+    console.error('Login failed:', err);
+    setError(err.response?.data?.message || 'Login failed');
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="w-auto z mx-auto flex flex-col items-center justify-center pt-7 h-screen min-h-screen bg-[#1C1B19] overflow-hidden">

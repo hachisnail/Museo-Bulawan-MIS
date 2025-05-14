@@ -36,7 +36,7 @@ The Museo Bulawan Management Information System is a system developed to comply 
    ```
 5. Run the backend server:
    ```sh
-   node src/utils/server
+   node --env-file=.env src/utils/server.js
    ```
 
 ## Contribution Guidelines

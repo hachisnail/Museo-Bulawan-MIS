@@ -278,6 +278,64 @@ class SessionManager {
       return true;
     }
   }
+  // Add these methods to your SessionManager class
+
+/**
+ * Increment token version to invalidate all existing refresh tokens
+ * @param {number} credentialId - User's credential ID
+ * @param {number} sessionId - Session ID
+ * @returns {number} - New token version
+ */
+async incrementTokenVersion(credentialId, sessionId) {
+  try {
+    const session = await LoginLog.findOne({
+      where: { 
+        id: sessionId,
+        credential_id: credentialId, 
+        end: null 
+      }
+    });
+    
+    if (!session) return null;
+    
+    // Set up default tokenVersion if it doesn't exist
+    const currentVersion = session.tokenVersion || 0;
+    const newVersion = currentVersion + 1;
+    
+    await session.update({ 
+      tokenVersion: newVersion,
+      last_activity: new Date()
+    });
+    
+    return newVersion;
+  } catch (error) {
+    console.error('Error incrementing token version:', error);
+    return null;
+  }
+}
+
+/**
+ * Get current token version
+ * @param {number} credentialId - User's credential ID
+ * @param {number} sessionId - Session ID
+ * @returns {number|null} - Current token version or null
+ */
+async getTokenVersion(credentialId, sessionId) {
+  try {
+    const session = await LoginLog.findOne({
+      where: { 
+        id: sessionId,
+        credential_id: credentialId
+      }
+    });
+    
+    return session ? (session.tokenVersion || 0) : null;
+  } catch (error) {
+    console.error('Error getting token version:', error);
+    return null;
+  }
+}
+
 }
 
 export default new SessionManager();

@@ -1,45 +1,17 @@
-// frontend/src/services/sessionMonitor.js
 import axios from 'axios';
-import { jwtDecode } from 'jwt-decode';
 
 class SessionMonitor {
   constructor(options = {}) {
     this.interval = options.interval || 30000; // 30 seconds
     this.checkEndpoint = options.checkEndpoint || '/api/auth/session-status';
+    this.refreshEndpoint = options.refreshEndpoint || '/api/auth/refresh-token';
     this.onSessionInvalid = options.onSessionInvalid || (() => {});
     this.onError = options.onError || console.error;
     this.intervalId = null;
-    this.token = null;
+    this.isRefreshing = false;
   }
   
   start() {
-    this.token = localStorage.getItem('token');
-    if (!this.token) {
-      console.log('No token found, not starting session monitor');
-      return;
-    }
-    
-    // Check token validity locally first
-    try {
-      const decoded = jwtDecode(this.token);
-      if (decoded.exp < Date.now() / 1000) {
-        // Token already expired locally
-        console.log('Token already expired locally');
-        this.onSessionInvalid({
-          reason: 'TOKEN_EXPIRED',
-          message: 'Your session has expired. Please log in again.'
-        });
-        return;
-      }
-    } catch (e) {
-      console.error('Invalid token format:', e);
-      this.onSessionInvalid({
-        reason: 'INVALID_TOKEN',
-        message: 'Invalid session token. Please log in again.'
-      });
-      return;
-    }
-    
     console.log('Starting session monitor');
     this.checkSession(); // Initial check
     this.intervalId = setInterval(() => this.checkSession(), this.interval);
@@ -55,28 +27,54 @@ class SessionMonitor {
     return this;
   }
   
+  async refreshAuthToken() {
+    if (this.isRefreshing) return;
+    
+    this.isRefreshing = true;
+    try {
+      console.log('Refreshing auth token');
+      const response = await axios.post(this.refreshEndpoint, {}, { withCredentials: true });
+      
+      if (response.status === 200 && response.data.token) {
+        // For backward compatibility, store token in localStorage
+        localStorage.setItem('token', response.data.token);
+        console.log('Token refreshed successfully');
+        return true;
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+      return false;
+    } finally {
+      this.isRefreshing = false;
+    }
+  }
+  
   async checkSession() {
     try {
-      // Refresh token from localStorage in case it changed
-      this.token = localStorage.getItem('token');
-      if (!this.token) {
-        console.log('No token found during check, stopping monitor');
-        this.stop();
-        return;
-      }
-      
       console.log('Checking session status');
-      await axios.get(this.checkEndpoint, {
-        headers: {
-          Authorization: `Bearer ${this.token}`
-        },
-        withCredentials: true
+      
+      await axios.get(this.checkEndpoint, { 
+        withCredentials: true 
       });
       
       // Session is valid
       console.log('Session confirmed valid');
     } catch (error) {
-      if (error.response && error.response.status === 401) {
+      // If access token expired, try to refresh it
+      if (error.response && error.response.status === 401 && error.response.data.reason === 'TOKEN_EXPIRED') {
+        console.log('Access token expired, attempting refresh');
+        const refreshed = await this.refreshAuthToken();
+        
+        if (!refreshed) {
+          // If refresh failed, stop monitoring and trigger callback
+          this.stop();
+          this.onSessionInvalid({
+            reason: 'REFRESH_FAILED',
+            message: 'Your session has expired and could not be refreshed.'
+          });
+        }
+      } else if (error.response && error.response.status === 401) {
+        // Other auth errors like SESSION_INVALIDATED
         console.log('Session invalid:', error.response.data);
         this.stop();
         this.onSessionInvalid(error.response.data);

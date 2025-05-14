@@ -122,11 +122,7 @@ const Appointment = () => {
     try {
       const response = await axios.get(
         `${API_URL}/api/auth/attendance/${appointmentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
@@ -141,11 +137,7 @@ const Appointment = () => {
     try {
       const response = await axios.get(
         `${API_URL}/api/auth/visitor-record/${visitorId}/${appointmentId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { withCredentials: true }
       );
       return response.data;
     } catch (error) {
@@ -288,11 +280,8 @@ const Appointment = () => {
         }
       }
 
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(url, 
+        { withCredentials: true });
       setVisitorRecords(response.data);
     } catch (error) {
       console.error('Error fetching visitor records:', error);
@@ -320,9 +309,9 @@ const Appointment = () => {
         }
       }
 
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await axios.get(url, 
+        { withCredentials: true }
+      );
       setAppointments(response.data);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -348,11 +337,9 @@ const Appointment = () => {
         }
       }
 
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(url, 
+        { withCredentials: true }
+      );
       setAttendanceData(response.data);
     } catch (error) {
       console.error('Error fetching attendance data:', error);
@@ -373,11 +360,9 @@ const Appointment = () => {
         }
       }
 
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(url, 
+        { withCredentials: true }
+      );
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -400,11 +385,7 @@ const Appointment = () => {
       await axios.patch(
         `${API_URL}/api/auth/appointment/${appointmentId}/status`,
         requestData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { withCredentials: true }
       );
       showToast(`Message sent to ${modalData?.email || 'visitor'}`, 'success');
       console.log(`Appointment ${appointmentId} updated to: ${newStatus}`);

@@ -177,9 +177,7 @@ const Appointment = () => {
         // Fetch ALL appointments instead of trying to filter by date on the server
         const appointmentResponse = await axios.get(
           `${API_URL}/api/auth/appointment`,
-          {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          }
+          { withCredentials: true }
         );
 
         // Filter appointments for the selected date
@@ -213,9 +211,7 @@ const Appointment = () => {
         // Use query parameter for schedules API (this is correct)
         const scheduleResponse = await axios.get(
           `${API_URL}/api/auth/schedules?date=${formattedDate}`,
-          {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          }
+          { withCredentials: true }
         );
 
         // Process schedules for each time slot
