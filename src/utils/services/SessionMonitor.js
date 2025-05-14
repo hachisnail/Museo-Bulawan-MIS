@@ -37,7 +37,7 @@ class SessionMonitor {
       
       if (response.status === 200 && response.data.token) {
         // For backward compatibility, store token in localStorage
-        localStorage.setItem('token', response.data.token);
+        // localStorage.setItem('token', response.data.token);
         console.log('Token refreshed successfully');
         return true;
       }

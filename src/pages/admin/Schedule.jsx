@@ -499,12 +499,7 @@ const Schedule = () => {
   const fetchEvents = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showToast("Not authenticated. Please log in.", 'error');
-        setIsLoading(false);
-        return;
-      }
+      
 
       // Format date for API
       const formattedDate = dateString;
@@ -514,11 +509,7 @@ const Schedule = () => {
       console.log("Fetching schedules from:", `${API_URL}/api/auth/schedules?date=${formattedDate}`);
       const schedulesResponse = await axios.get(
         `${API_URL}/api/auth/schedules?date=${formattedDate}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        { withCredentials: true }
       );
       console.log("Raw schedules data:", schedulesResponse.data);
 
@@ -546,11 +537,7 @@ const Schedule = () => {
       try {
         appointmentsResponse = await axios.get(
           `${API_URL}/api/auth/appointment`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
+          { withCredentials: true }
         );
         console.log("Raw appointments data count:", appointmentsResponse.data.length);
       } catch (appointmentError) {
@@ -650,11 +637,7 @@ const Schedule = () => {
 
   const fetchTodayTours = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showToast("Not authenticated. Please log in.", 'error');
-        return;
-      }
+      
 
       // Format date for API
       const formattedDate = dateString;
@@ -663,17 +646,13 @@ const Schedule = () => {
       // Get all schedules for today (including completed ones)
       const schedulesResponse = await axios.get(
         `${API_URL}/api/auth/schedules?date=${formattedDate}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { withCredentials: true }
       );
 
       // Get all appointments
       const appointmentsResponse = await axios.get(
         `${API_URL}/api/auth/appointment`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { withCredentials: true }
       );
 
       console.log("Today's schedules:", schedulesResponse.data.length);
@@ -793,17 +772,13 @@ const Schedule = () => {
       // Get all schedules
       const schedulesResponse = await axios.get(
         `${API_URL}/api/auth/schedules`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { withCredentials: true }
       );
 
       // Get all appointments
       const appointmentsResponse = await axios.get(
         `${API_URL}/api/auth/appointment`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { withCredentials: true }
       );
 
       console.log("All schedules:", schedulesResponse.data.length);
@@ -919,9 +894,7 @@ const Schedule = () => {
         // Get the full appointment data
         const response = await axios.get(
           `${API_URL}/api/auth/attendance/${appointmentId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          { withCredentials: true }
         );
 
         // Set up the data for the AppointmentModal
@@ -963,9 +936,7 @@ const Schedule = () => {
       const response = await axios.patch(
         `${API_URL}/api/auth/schedules/${scheduleId}/status`,
         { status: 'COMPLETED' },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { withCredentials: true }
       );
 
       showToast('Schedule marked as completed', 'success');
@@ -1032,13 +1003,12 @@ const Schedule = () => {
         `${API_URL}/api/auth/schedules`,
         scheduleData,
         {
+          withCredentials: true,
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          }
+          },
         }
       );
-
       console.log('Schedule created successfully:', response.data);
 
       // Show success notification
@@ -1571,9 +1541,7 @@ const Schedule = () => {
                   status,
                   present_count: presentCount
                 },
-                {
-                  headers: { Authorization: `Bearer ${token}` }
-                }
+                { withCredentials: true }
               );
               showToast(`Appointment status updated to ${status}`, 'success');
               fetchEvents(); // Refresh events

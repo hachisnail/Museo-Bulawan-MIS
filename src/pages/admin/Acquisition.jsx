@@ -175,11 +175,8 @@ const Acquisition = () => {
         }
       }
 
-      const response = await axios.get(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(url, 
+        { withCredentials: true });
       
       // Ensure response data is an array
       if (Array.isArray(response.data)) {

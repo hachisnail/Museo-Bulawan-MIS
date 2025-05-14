@@ -232,7 +232,7 @@ const ArticleForm = () => {
   
   return (
     <>
-      <div className='w-screen min-h-[79.8rem] bg-[#F0F0F0] select-none flex pt-[7rem]'>
+      <div className='w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]'>
         {/* Left Nav */}
         <div className='bg-[#1C1B19] w-auto min-h-full'>
           <AdminNav />

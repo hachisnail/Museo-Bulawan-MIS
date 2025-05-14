@@ -17,11 +17,8 @@ const Log = () => {
 
   const fetchLogs = () => {
     axios
-      .get(`${API_URL}/api/auth/fetchLogs`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      .get(`${API_URL}/api/auth/fetchLogs`, 
+        { withCredentials: true })
       .then((response) => {
         setLogs(response.data);
       })
@@ -35,11 +32,8 @@ const Log = () => {
   
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/auth/appointment`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.get(`${API_URL}/api/auth/appointment`, 
+        { withCredentials: true });
       setAppointments(response.data);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -48,11 +42,8 @@ const Log = () => {
   
   const fetchUsers = () => {
     axios
-      .get(`${API_URL}/api/auth/fetchCredential`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      .get(`${API_URL}/api/auth/fetchCredential`, 
+        { withCredentials: true })
       .then((response) => {
         setUsers(response.data);
       })
@@ -110,7 +101,7 @@ const Log = () => {
           <span className=' text-5xl font-semibold text-white'>Logging</span>
           <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
            
-            <div className=' w-full h-full flex flex-col gap-y-7 overflow-x-scroll overflow-y-scroll'>
+            <div className=' w-full h-[60rem] flex flex-col gap-y-7 overflow-x-scroll overflow-y-scroll'>
               {/* table */}
               <div className='min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2'>
                 {/* toolbar */}

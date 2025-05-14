@@ -55,9 +55,9 @@ const Login = () => {
         if (refreshResponse.status === 200) {
           console.log('Token refreshed successfully');
           // For backward compatibility
-          if (refreshResponse.data.token) {
-            localStorage.setItem('token', refreshResponse.data.token);
-          }
+          // if (refreshResponse.data.token) {
+          //   localStorage.setItem('token', refreshResponse.data.token);
+          // }
           navigate('/admin/dashboard');
           return true;
         }

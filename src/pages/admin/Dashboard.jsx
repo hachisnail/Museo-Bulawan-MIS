@@ -110,10 +110,10 @@ const Dashboard = () => {
         monthStatsResponse,
         appointmentsResponse
       ] = await Promise.all([
-        axios.get(`${API_URL}/api/auth/appointment/stats`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/api/auth/appointment/stats?date=${todayFormatted}`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/api/auth/appointment/stats?date=${monthFormatted}`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/api/auth/appointment`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API_URL}/api/auth/appointment/stats`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/auth/appointment/stats?date=${todayFormatted}`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/auth/appointment/stats?date=${monthFormatted}`, { withCredentials: true }),
+        axios.get(`${API_URL}/api/auth/appointment`, { withCredentials: true })
       ]);
 
       // Process all appointments for various statistics

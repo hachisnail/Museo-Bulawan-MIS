@@ -53,11 +53,8 @@ const User = () => {
 
   const fetchUsers = () => {
     axios
-      .get(`${API_URL}/api/auth/fetchUsers`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      .get(`${API_URL}/api/auth/fetchUsers`, 
+        { withCredentials: true })
       .then((response) => {
         setUsers(response.data)
       })
@@ -73,11 +70,8 @@ const User = () => {
   const fetchPendingInvitations = () => {
     setInviteError(null)
     axios
-      .get(`${API_URL}/api/auth/invitations`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      .get(`${API_URL}/api/auth/invitations`, 
+        { withCredentials: true })
       .then((response) => {
         setPendingInvitations(response.data || [])
       })
@@ -100,11 +94,7 @@ const User = () => {
       await axios.post(
         `${API_URL}/api/auth/invitations/${id}/resend`,
         {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        { withCredentials: true }
       )
       fetchPendingInvitations()
     } catch (error) {
@@ -123,11 +113,8 @@ const User = () => {
   const handleRevokeInvite = async (id) => {
     setProcessingAction(id)
     try {
-      await axios.delete(`${API_URL}/api/auth/invitations/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      await axios.delete(`${API_URL}/api/auth/invitations/${id}`, 
+        { withCredentials: true })
 
       setPendingInvitations(pendingInvitations.filter((inv) => inv.id !== id))
     } catch (error) {
