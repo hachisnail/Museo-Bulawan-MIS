@@ -67,16 +67,20 @@ const Artifact = sequelize.define('Artifact', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'artifact_description', // referencing the ArtifactDescription table
+      model: 'artifact_description', 
       key: 'id',
     },
   },
 
-  //  New field for soft delete
   deleted_at: {
     type: DataTypes.DATE,
     allowNull: true,
     defaultValue: null,
+  },
+
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true, 
   }
 
 }, {

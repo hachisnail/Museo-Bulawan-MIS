@@ -224,6 +224,8 @@ const Artifact = () => {
     return path.split('.').reduce((o, key) => (o && o[key] !== undefined && o[key] !== null ? o[key] : null), obj) || defaultValue;
   };
 
+  console.log(artifacts);
+
   return (
     <>
       {/* {isViewArtifactOpen && viewingArtifact && (
@@ -235,7 +237,7 @@ const Artifact = () => {
           <AdminNav />
         </div>
 
-        <div className='w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
+        <div className='w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll '>
         
           {isViewArtifactOpen && viewingArtifact ? (<ArtifactView artifact={viewingArtifact} onClose={closeArtifactView} />) : (<>
 
@@ -248,7 +250,7 @@ const Artifact = () => {
                 <span className=' text-5xl font-semibold'>Inventory</span>
                 <span className='text-2xl font-semibold'>Artifact</span>
               </div>
-              <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
+              <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 border-t-1 pt-5'>
                 <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
                   {/* info bar */}
                   <div className='w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex  py-2 gap-x-2'>
