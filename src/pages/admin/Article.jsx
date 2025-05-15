@@ -11,6 +11,7 @@ import { TwoColumnBlock } from '../../components/articleComponents/TwoColumnBloc
 import { ColumnLeft } from '../../components/articleComponents/ColumnLeft';
 import { ColumnRight } from '../../components/articleComponents/ColumnRight';
 import Image from '@tiptap/extension-image';
+import TextStyle from '@tiptap/extension-text-style';
 
 const ArticleForm = () => {
   // Form state
@@ -43,7 +44,7 @@ const ArticleForm = () => {
   const UPLOAD_PATH = `${BASE_URL}/uploads/`;
 
   // Tiptap Editor
-  const editor = useEditor({
+    const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
@@ -51,6 +52,7 @@ const ArticleForm = () => {
         types: ['heading', 'paragraph'],
         alignments: ['left', 'center', 'right', 'justify'],
       }),
+      TextStyle,
       ColumnLeft,
       ColumnRight,
       TwoColumnBlock,
