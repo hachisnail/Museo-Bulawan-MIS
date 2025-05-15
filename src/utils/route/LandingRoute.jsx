@@ -11,7 +11,7 @@ import PrivateRoute from './PrivateRoute';
 import AdminLayout from '../../components/layout/AdminLayout';
 import AdminRoutes from './AdminRoutes';
 import Article from '../../pages/landing/Article';
-
+import RefreshProvider from '../../components/RefreshProvider';
 const LandingRoute = createBrowserRouter ([
 
     {path: '/', element: <LandingLayout />, 
@@ -31,9 +31,11 @@ const LandingRoute = createBrowserRouter ([
      },
      {
         path: '/admin/', element: (
-            <PrivateRoute>
-              <AdminLayout />
-             </PrivateRoute>
+            <RefreshProvider>
+                <PrivateRoute>
+                <AdminLayout />
+                </PrivateRoute>
+             </RefreshProvider>
           ),
           children: AdminRoutes
      }

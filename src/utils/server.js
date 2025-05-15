@@ -190,6 +190,18 @@ app.get('*', (req, res) => {
 
 console.log("Serving static files from:", path.join(__dirname, '../dist'));
 
+const authCache = new Map();
+app.locals.userCache = authCache;
+
+// Add a cleanup function to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of authCache.entries()) {
+    if (entry.timestamp + 300000 < now) { // 5 minutes timeout
+      authCache.delete(key);
+    }
+  }
+}, 60000); // Clean expired entries every minute
 
 const startServer = async () => {
   try {

@@ -218,6 +218,7 @@ export const auth = async (req, res, next) => {
 export const refreshToken = async (req, res) => {
   // Get refresh token from cookie
   const token = req.cookies.refresh_token;
+  const isSilentRefresh = req.headers['x-silent-refresh'] === 'true';
   
   if (!token) {
     return res.status(401).json({ message: 'No refresh token found' });
@@ -261,7 +262,20 @@ export const refreshToken = async (req, res) => {
     }
     
     // Get the user data to include in the new token
-    const user = await Credential.findByPk(decoded.id);
+    // Use a user cache if available to speed up the process
+    let user = req.app.locals.userCache?.get(decoded.id);
+    if (!user) {
+      user = await Credential.findByPk(decoded.id);
+      // Cache user for 5 minutes to speed up future refreshes
+      if (user && !req.app.locals.userCache) {
+        req.app.locals.userCache = new Map();
+      }
+      if (user) {
+        req.app.locals.userCache.set(decoded.id, user);
+        setTimeout(() => req.app.locals.userCache.delete(decoded.id), 300000);
+      }
+    }
+    
     if (!user) {
       tokenService.clearAllAuthCookies(res);
       return res.status(401).json({ message: 'User not found' });
@@ -292,9 +306,14 @@ export const refreshToken = async (req, res) => {
     tokenService.setAccessCookie(res, newAccessToken);
     tokenService.setRefreshCookie(res, newRefreshToken);
     
+    // Calculate token expiration time
+    const decoded_access = tokenService.decodeToken(newAccessToken);
+    const expiresAt = decoded_access.exp * 1000; // Convert to milliseconds
+    
     // Return the new access token for backward compatibility
     return res.status(200).json({
       token: newAccessToken,
+      expiresAt, // Include expiration time
       user: {
         id: user.id,
         email: user.email,
@@ -302,11 +321,12 @@ export const refreshToken = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Token refresh error:', err);
     tokenService.clearAllAuthCookies(res);
     return res.status(500).json({ message: 'Server error during token refresh' });
   }
 };
+
+
 
 export const verifyCookie = async (req, res) => {
   // Try the new auth_token cookie first, then fallback to old cookie
@@ -348,8 +368,12 @@ export const sessionStatus = async (req, res) => {
       await sessionManager.updateActivity(req.user.id, req.user.session_id);
     }
     
+    // Calculate and include token expiration time
+    const expiresAt = req.user.exp * 1000; // Convert to milliseconds
+    
     return res.status(200).json({ 
-      isValid: true, 
+      isValid: true,
+      expiresAt, // Add expiration time to help client
       user: {
         id: req.user.id,
         email: req.user.email,
@@ -357,7 +381,6 @@ export const sessionStatus = async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Session status error:', err);
     return res.status(500).json({ message: 'Server error' });
   }
 };
