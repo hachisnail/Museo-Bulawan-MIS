@@ -1,5 +1,5 @@
 // Updated ArticleModal.jsx
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Button from '@/components/ui/button';
 import { EditorContent } from '@tiptap/react';
 import {
@@ -11,7 +11,9 @@ import {
   AlignRight,
   AlignJustify,
   Columns as ColumnsIcon,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Type as TypeIcon,
+  X as XIcon
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -35,17 +37,35 @@ const ArticleModal = ({
   setAddress,
   setSelectedDate,
   resetForm,
-
-  // NEW: Additional states for content images
   contentImages,
   setContentImages
 }) => {
   const imageInputRef = useRef(null);
-  
+  const thumbnailInputRef = useRef(null);
   const BASE_URL = import.meta.env.VITE_API_URL;
   const token = localStorage.getItem('token');
+  
+  // State to track if thumbnail should be removed
+  const [removeThumbnail, setRemoveThumbnail] = useState(false);
+  // State to track if a thumbnail is selected
+  const [hasThumbnail, setHasThumbnail] = useState(!!thumbnail || !!previewImage);
 
-  // NEW: Upload file to the server, insert returned image into Tiptap
+  // Update hasThumbnail when thumbnail or previewImage changes
+  useEffect(() => {
+    setHasThumbnail(!!thumbnail || !!previewImage);
+  }, [thumbnail, previewImage]);
+
+  // Available font sizes for the dropdown
+  const fontSizes = [
+    { label: 'Small', value: '12px' },
+    { label: 'Normal', value: '16px' },
+    { label: 'Medium', value: '20px' },
+    { label: 'Large', value: '24px' },
+    { label: 'XL', value: '28px' },
+    { label: '2XL', value: '32px' }
+  ];
+
+  // For uploading inline images from the editor
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -61,7 +81,6 @@ const ArticleModal = ({
           withCredentials: true,
           headers: {
             'Content-Type': 'multipart/form-data',
-           
           }
         }
       );
@@ -75,13 +94,56 @@ const ArticleModal = ({
           editor.chain().focus().setImage({ src: fullImageUrl, alt: file.name }).run();
         }
 
-        // Also store the filename in our contentImages array if needed
+        // Optional: store the filename if needed
         setContentImages((prev) => [...prev, uploadedFilename]);
       }
     } catch (err) {
       console.error('Error uploading content image:', err);
       alert('Failed to upload image');
     }
+  };
+
+  // Apply selected font size to the editor
+  const handleFontSizeChange = (e) => {
+    const fontSize = e.target.value;
+    editor?.chain().focus().setFontSize(fontSize).run();
+  };
+  
+  // Handle removing the thumbnail
+  const handleRemoveThumbnail = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Reset file input
+    if (thumbnailInputRef.current) {
+      thumbnailInputRef.current.value = '';
+    }
+    
+    // Set state to indicate thumbnail should be removed
+    setRemoveThumbnail(true);
+    setHasThumbnail(false);
+  };
+  
+  // Custom thumbnail change handler that wraps the original handler
+  const handleCustomThumbnailChange = (e) => {
+    // If we previously removed a thumbnail, reset that flag
+    if (removeThumbnail) {
+      setRemoveThumbnail(false);
+    }
+    
+    // Call the original handler
+    handleThumbnailChange(e);
+    
+    // Update hasThumbnail based on if a file was selected
+    setHasThumbnail(!!e.target.files && e.target.files.length > 0);
+  };
+
+  // Modified form submission to include thumbnail removal state
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    
+    // Add removeThumbnail to the form submission data
+    onSubmit(e, removeThumbnail);
   };
 
   if (!showModal) {
@@ -91,8 +153,8 @@ const ArticleModal = ({
   return (
     <div className="fixed inset-0 z-50 backdrop-blur-sm bg-opacity-50 flex items-center justify-center">
       <div className="flex w-[85rem] gap-4">
-        {/* Left Side - Article Editor Form */}
-        <div className="bg-white w-[40rem] p-6 rounded-lg shadow-xl relative">
+        {/* LEFT SIDE - Editor + Form */}
+        <div className="bg-white w-[40rem] p-6 rounded-lg shadow-xl relative max-h-[90vh] overflow-auto">
           <button
             onClick={resetForm}
             className="absolute top-3 right-3 text-2xl text-gray-600 hover:text-black"
@@ -104,7 +166,7 @@ const ArticleModal = ({
             {isEditing ? 'Edit Article' : 'Add New Article'}
           </h2>
           
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={handleFormSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               {/* Title */}
               <div>
@@ -169,16 +231,32 @@ const ArticleModal = ({
                 />
               </div>
               
-              {/* Thumbnail */}
+              {/* Thumbnail with Remove Button */}
               <div>
                 <label>Thumbnail</label>
-                <input
-                  className="w-full border px-2 py-1 rounded"
-                  type="file"
-                  name="thumbnail"
-                  onChange={handleThumbnailChange}
-                />
-                {isEditing && thumbnail && typeof thumbnail === 'string' && (
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={thumbnailInputRef}
+                    className="w-full border px-2 py-1 rounded"
+                    type="file"
+                    name="thumbnail"
+                    onChange={handleCustomThumbnailChange}
+                  />
+                  {hasThumbnail && !removeThumbnail ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveThumbnail}
+                      className="p-1 border rounded bg-red-50 hover:bg-red-100 text-red-600"
+                      title="Remove thumbnail"
+                    >
+                      <XIcon size={16} />
+                    </button>
+                  ) : null}
+                </div>
+                
+                
+                
+                {isEditing && thumbnail && typeof thumbnail === 'string' && !removeThumbnail && (
                   <div className="mt-1 text-sm text-gray-600">
                     Current image: {thumbnail}
                   </div>
@@ -190,8 +268,9 @@ const ArticleModal = ({
             <div className="space-y-2">
               <label className="font-bold">Body</label>
               
+              {/* Toolbar */}
               <div className="flex flex-wrap items-center gap-2 p-2 bg-[#d6c2ad] rounded border border-blue-400">
-                {/* Heading buttons (H1–H5) */}
+                {/* Headings */}
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((level) => (
                     <button
@@ -209,6 +288,24 @@ const ArticleModal = ({
                       H{level}
                     </button>
                   ))}
+                </div>
+                
+                <div className="border-l h-6 mx-2" />
+                
+                {/* Font Size Selector */}
+                <div className="flex items-center gap-1">
+                  <TypeIcon size={16} className="text-gray-600" />
+                  <select
+                    onChange={handleFontSizeChange}
+                    className="px-1 py-1 border rounded text-sm"
+                    defaultValue="16px"
+                  >
+                    {fontSizes.map((size) => (
+                      <option key={size.value} value={size.value}>
+                        {size.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div className="border-l h-6 mx-2" />
@@ -316,9 +413,8 @@ const ArticleModal = ({
                 
                 <div className="border-l h-6 mx-2" />
                 
-                {/* Special formatting options */}
+                {/* Two Column / Insert Image */}
                 <div className="flex gap-1">
-                  {/* Two Column Layout */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -338,15 +434,13 @@ const ArticleModal = ({
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      imageInputRef.current?.click(); // Trigger hidden file input
+                      imageInputRef.current?.click();
                     }}
                     className="p-1 border rounded"
                     title="Insert Image"
                   >
                     <ImageIcon size={16} />
                   </button>
-                  
-                  {/* Hidden file input for content images */}
                   <input
                     type="file"
                     ref={imageInputRef}
@@ -357,9 +451,9 @@ const ArticleModal = ({
                 </div>
               </div>
               
-              {/* Editor content area */}
+              {/* Editor area - scroll internally */}
               <div
-                className="border rounded p-4 min-h-[150px] prose"
+                className="border rounded p-4 min-h-[150px] max-h-[50vh] overflow-auto prose"
                 onClick={(e) => e.stopPropagation()}
               >
                 <EditorContent editor={editor} />
@@ -367,8 +461,8 @@ const ArticleModal = ({
             </div>
             
             <div className="flex justify-between">
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 onClick={resetForm}
                 className="bg-gray-500 hover:bg-gray-600"
               >
@@ -381,19 +475,19 @@ const ArticleModal = ({
           </form>
         </div>
         
-        {/* Right Side - Article Preview */}
+        {/* RIGHT SIDE - Article Preview */}
         <div className="bg-white w-[40rem] p-6 rounded-lg shadow-xl overflow-y-auto max-h-[90vh]">
           <h3 className="text-2xl font-bold mb-4">Article Preview</h3>
           <div className="border border-gray-200 p-4 mb-4 rounded">
             <h1 className="text-center text-3xl font-bold">
-              {title || "Title of the News or Event"}
+              {title || 'Title of the News or Event'}
             </h1>
           </div>
           
           <div className="flex w-full justify-center mb-6">
             <div className="flex w-full items-center justify-center text-center text-base">
               <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
-                <h4 className='text-lg font-medium'>Date</h4>
+                <h4 className="text-lg font-medium">Date</h4>
                 <p className="text-sm">
                   {selectedDate
                     ? new Date(selectedDate).toLocaleDateString('en-US', {
@@ -401,31 +495,26 @@ const ArticleModal = ({
                         day: 'numeric',
                         year: 'numeric',
                       })
-                    : "month dd, yyyy"}
+                    : 'month dd, yyyy'}
                 </p>
               </span>
               <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
-                <h4 className='text-lg font-medium'>Author</h4>
-                <p className="text-sm">
-                  {author || "Name of the Author"}
-                </p>
+                <h4 className="text-lg font-medium">Author</h4>
+                <p className="text-sm">{author || 'Name of the Author'}</p>
               </span>
               <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
-                <h4 className='text-lg font-medium'>Address</h4>
-                <p className="text-sm">
-                  {address || "Location of the event or news"}
-                </p>
+                <h4 className="text-lg font-medium">Address</h4>
+                <p className="text-sm">{address || 'Location'}</p>
               </span>
               <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
-                <h4 className='text-lg font-medium'>Category</h4>
-                <p className="text-sm">{category || "[placeholder]"}</p>
+                <h4 className="text-lg font-medium">Category</h4>
+                <p className="text-sm">{category || '[placeholder]'}</p>
               </span>
             </div>
           </div>
           
           <div className="border border-gray-200 p-4 rounded min-h-[300px]">
-            {/* Thumbnail preview */}
-            {previewImage && (
+            {previewImage && !removeThumbnail ? (
               <div className="flex justify-center mb-4">
                 <img
                   src={previewImage}
@@ -433,7 +522,7 @@ const ArticleModal = ({
                   className="max-h-64 object-contain"
                 />
               </div>
-            )}
+            ) : null}
             
             <div className="prose max-w-none">
               {editor?.getHTML() ? (
@@ -447,8 +536,6 @@ const ArticleModal = ({
                 </p>
               )}
             </div>
-
-            
           </div>
         </div>
       </div>

@@ -6,7 +6,7 @@ import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
-import ArticleModal from '../../components/modals/ArticleModal'; 
+import ArticleModal from '../../components/modals/ArticleModal';
 import { TwoColumnBlock } from '../../components/articleComponents/TwoColumnBlock';
 import { ColumnLeft } from '../../components/articleComponents/ColumnLeft';
 import { ColumnRight } from '../../components/articleComponents/ColumnRight';
@@ -20,28 +20,29 @@ const ArticleForm = () => {
   const [address, setAddress] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [thumbnail, setThumbnail] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
-
-  // Track images used in article body (Tiptap)
   const [contentImages, setContentImages] = useState([]);
 
-  // Articles state
+  // Articles and filters
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterDate, setFilterDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
 
+  // Example categories (dropdown). Adapt to your actual categories if needed.
   const Categories = ['Education', 'Exhibit', 'Contents', 'Other'];
+
   const token = localStorage.getItem('token');
-  
   const BASE_URL = import.meta.env.VITE_API_URL;
   const UPLOAD_PATH = `${BASE_URL}/uploads/`;
 
-  // Set up Tiptap editor
+  // Tiptap Editor
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -55,14 +56,10 @@ const ArticleForm = () => {
       TwoColumnBlock,
       Image,
     ],
-    content: "", 
-    onUpdate: ({ editor }) => {
-      // You can track or log editor content changes here if needed
-      // console.log(editor.getHTML());
-    },
+    content: "",
   });
 
-  // Fetch articles on mount
+  // Fetch all articles on mount
   useEffect(() => {
     fetchArticles();
   }, []);
@@ -85,62 +82,60 @@ const ArticleForm = () => {
     }
   };
 
-  // Create or edit article
+  // Handle new or updated article submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
     const formData = new FormData();
     formData.append("title", title);
     formData.append("article_category", category);
     formData.append("description", editor?.getHTML() || "");
-    formData.append("user_id", 1); 
+    formData.append("user_id", 1);
     formData.append("author", author);
     formData.append("address", address);
     formData.append("selectedDate", selectedDate);
     formData.append("content_images", JSON.stringify(contentImages));
 
-    // Add thumbnail if it's a File
     if (thumbnail && thumbnail instanceof File) {
       formData.append("thumbnail", thumbnail);
     }
-  
+
     try {
       let response;
       if (isEditing) {
-        // Update existing article
+        // Update existing
         response = await axios.put(
           `${BASE_URL}/api/auth/article/${editingArticleId}`,
           formData,
           {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
+            headers: { "Content-Type": "multipart/form-data" },
             withCredentials: true,
           }
         );
         console.log("Article updated successfully!", response.data);
       } else {
-        // Create new article
+        // Create new
         response = await axios.post(
           `${BASE_URL}/api/auth/article`,
           formData,
           {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
+            headers: { "Content-Type": "multipart/form-data" },
             withCredentials: true,
           }
         );
         console.log("Article created successfully!", response.data);
       }
-      
+
       resetForm();
       fetchArticles();
     } catch (err) {
-      console.error(`Error ${isEditing ? 'updating' : 'creating'} article:`, err.response?.data || err.message);
+      console.error(
+        `Error ${isEditing ? 'updating' : 'creating'} article:`,
+        err.response?.data || err.message
+      );
     }
   };
 
+  // Reset form to initial state
   const resetForm = () => {
     setTitle("");
     setAuthor("");
@@ -156,16 +151,15 @@ const ArticleForm = () => {
     setEditingArticleId(null);
   };
 
-  // Handle clicking on a table row to edit an article
+  // Handle editing article (click on table row)
   const handleRowClick = (article) => {
     setIsEditing(true);
     setEditingArticleId(article.article_id);
-    
     setTitle(article.title || "");
     setAuthor(article.author || "");
     setCategory(article.article_category || "");
     setAddress(article.address || "");
-    
+
     if (article.upload_date) {
       const date = new Date(article.upload_date);
       const formattedDate = date.toISOString().split('T')[0];
@@ -178,7 +172,6 @@ const ArticleForm = () => {
       editor.commands.setContent(article.description);
     }
 
-    // Thumbnail
     if (article.images) {
       const imageUrl = `${UPLOAD_PATH}${article.images}`;
       setPreviewImage(imageUrl);
@@ -188,7 +181,6 @@ const ArticleForm = () => {
       setThumbnail(null);
     }
 
-    // Parse stored content images if available
     if (article.content_images) {
       try {
         const parsedImages = JSON.parse(article.content_images);
@@ -207,7 +199,7 @@ const ArticleForm = () => {
     setShowModal(true);
   };
 
-  // Handle uploading new thumbnail
+  // Handle new thumbnail in <input type="file" />
   const handleThumbnailChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -216,20 +208,29 @@ const ArticleForm = () => {
     }
   };
 
-  const filteredArticles = articles.filter(article => {
-    if (!searchTerm) return true;
+  // Filter the articles by searchTerm, category, and status
+  const filteredArticles = articles.filter((article) => {
     const term = searchTerm.toLowerCase();
-    return (
-      (article.title?.toLowerCase().includes(term)) ||
-      (article.author?.toLowerCase().includes(term)) ||
-      (article.article_category?.toLowerCase().includes(term))
-    );
+
+    const matchesSearch =
+      !searchTerm ||
+      article.title?.toLowerCase().includes(term) ||
+      article.author?.toLowerCase().includes(term) ||
+      article.article_category?.toLowerCase().includes(term);
+
+    const matchesCategory =
+      !selectedCategoryFilter || article.article_category === selectedCategoryFilter;
+
+    const matchesStatus =
+      !selectedStatusFilter || article.status === selectedStatusFilter;
+
+    return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const postedCount = articles.filter(article => article.status === 'posted').length;
-  const pendingCount = articles.filter(article => article.status === 'pending').length;
+  const postedCount = articles.filter((article) => article.status === 'posted').length;
+  const pendingCount = articles.filter((article) => article.status === 'pending').length;
   const totalCount = articles.length;
-  
+
   return (
     <>
       <div className='w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]'>
@@ -242,8 +243,7 @@ const ArticleForm = () => {
         <div className='w-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
           <span className='text-5xl font-semibold'>Article Management</span>
           <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-x-5 '>
-            
-            {/* Left Side: Stats, Add Button */}
+            {/* Left: Stats & Add New */}
             <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
               {/* Info bar */}
               <div className='w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex py-2 gap-x-2'>
@@ -262,7 +262,11 @@ const ArticleForm = () => {
 
                 <div className='w-full h-auto flex flex-col gap-y-7'>
                   <span className='text-2xl font-semibold text-[#727272]'>
-                    {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {new Date().toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
                   </span>
                   <div className='w-full h-fit flex justify-between items-center'>
                     <span className='text-2xl font-semibold'>Posted</span>
@@ -270,7 +274,6 @@ const ArticleForm = () => {
                       <span className='text-2xl font-semibold'>{postedCount || 0}</span>
                     </div>
                   </div>
-
                   <div className='w-full h-fit flex justify-between items-center'>
                     <span className='text-2xl font-semibold'>Pending</span>
                     <div className='w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center'>
@@ -294,7 +297,7 @@ const ArticleForm = () => {
               </div>
             </div>
 
-            {/* Right Side: Table */}
+            {/* Right: Table + Filters */}
             <div className='w-full h-full flex flex-col gap-y-7 overflow-x-auto overflow-y-auto'>
               {/* Filters */}
               <div className='min-w-[94rem] py-2 flex items-center gap-x-2'>
@@ -327,10 +330,16 @@ const ArticleForm = () => {
 
                 {/* Filter by category */}
                 <div className="relative h-full min-w-48">
-                  <select className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <select
+                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selectedCategoryFilter}
+                    onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                  >
                     <option value="">All Categories</option>
                     {Categories.map((cat, index) => (
-                      <option key={index} value={cat}>{cat}</option>
+                      <option key={index} value={cat}>
+                        {cat}
+                      </option>
                     ))}
                   </select>
                   <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
@@ -338,7 +347,11 @@ const ArticleForm = () => {
 
                 {/* Filter by status */}
                 <div className="relative h-full min-w-48">
-                  <select className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <select
+                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selectedStatusFilter}
+                    onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                  >
                     <option value="">All Status</option>
                     <option value="posted">Posted</option>
                     <option value="pending">Pending</option>
@@ -366,7 +379,7 @@ const ArticleForm = () => {
                   <div className="col-span-5 py-8 text-center text-2xl text-red-500">
                     {error}
                     <div className="mt-4">
-                      <button 
+                      <button
                         onClick={fetchArticles}
                         className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                       >
