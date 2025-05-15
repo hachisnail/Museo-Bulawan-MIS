@@ -1,3 +1,4 @@
+// SessionMonitor.js
 import axios from 'axios';
 
 class SessionMonitor {
@@ -6,13 +7,14 @@ class SessionMonitor {
     this.checkEndpoint = options.checkEndpoint || '/api/auth/session-status';
     this.refreshEndpoint = options.refreshEndpoint || '/api/auth/refresh-token';
     this.onSessionInvalid = options.onSessionInvalid || (() => {});
-    this.onError = options.onError || console.error;
+    this.onError = options.onError || (() => {}); // Silent error handling
     this.intervalId = null;
     this.isRefreshing = false;
+    this.refreshPromise = null;
   }
   
   start() {
-    console.log('Starting session monitor');
+    // No console logs for security
     this.checkSession(); // Initial check
     this.intervalId = setInterval(() => this.checkSession(), this.interval);
     return this;
@@ -20,7 +22,6 @@ class SessionMonitor {
   
   stop() {
     if (this.intervalId) {
-      console.log('Stopping session monitor');
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
@@ -28,45 +29,66 @@ class SessionMonitor {
   }
   
   async refreshAuthToken() {
-    if (this.isRefreshing) return;
+    // If already refreshing, return the existing promise to prevent multiple calls
+    if (this.refreshPromise) return this.refreshPromise;
     
+    // Create a new promise for the refresh operation
     this.isRefreshing = true;
-    try {
-      console.log('Refreshing auth token');
-      const response = await axios.post(this.refreshEndpoint, {}, { withCredentials: true });
-      
-      if (response.status === 200 && response.data.token) {
-        // For backward compatibility, store token in localStorage
-        // localStorage.setItem('token', response.data.token);
-        console.log('Token refreshed successfully');
-        return true;
+    this.refreshPromise = new Promise(async (resolve) => {
+      try {
+        // Silent refresh - no console logs
+        const response = await axios.post(this.refreshEndpoint, {}, { 
+          withCredentials: true,
+          // Important: This prevents navigation/redirection during refresh
+          headers: { 'X-Silent-Refresh': 'true' } 
+        });
+        
+        // Handle successful refresh
+        if (response.status === 200) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      } catch (error) {
+        // Silent failure - don't log errors publicly
+        resolve(false);
+      } finally {
+        this.isRefreshing = false;
+        // Clear the promise after a short delay
+        setTimeout(() => {
+          this.refreshPromise = null;
+        }, 1000);
       }
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      return false;
-    } finally {
-      this.isRefreshing = false;
-    }
+    });
+    
+    return this.refreshPromise;
   }
   
   async checkSession() {
     try {
-      console.log('Checking session status');
-      
-      await axios.get(this.checkEndpoint, { 
+      // Check session without logging
+      const response = await axios.get(this.checkEndpoint, { 
         withCredentials: true 
       });
       
-      // Session is valid
-      console.log('Session confirmed valid');
+      // Get token expiration from response if available
+      if (response.data.expiresAt) {
+        const expiresAt = new Date(response.data.expiresAt).getTime();
+        const now = Date.now();
+        
+        // If token will expire soon (within 2 minutes), refresh it silently
+        if (expiresAt - now < 120000) {
+          this.refreshAuthToken();
+        }
+      }
     } catch (error) {
-      // If access token expired, try to refresh it
-      if (error.response && error.response.status === 401 && error.response.data.reason === 'TOKEN_EXPIRED') {
-        console.log('Access token expired, attempting refresh');
+      // If access token expired, try to refresh it silently
+      if (error.response && error.response.status === 401 && 
+          error.response.data.reason === 'TOKEN_EXPIRED') {
+        
         const refreshed = await this.refreshAuthToken();
         
         if (!refreshed) {
-          // If refresh failed, stop monitoring and trigger callback
           this.stop();
           this.onSessionInvalid({
             reason: 'REFRESH_FAILED',
@@ -75,12 +97,11 @@ class SessionMonitor {
         }
       } else if (error.response && error.response.status === 401) {
         // Other auth errors like SESSION_INVALIDATED
-        console.log('Session invalid:', error.response.data);
         this.stop();
         this.onSessionInvalid(error.response.data);
       } else {
-        // Network or other errors - log but don't invalidate session
-        this.onError('Session check error:', error);
+        // Network or other errors - silent handling
+        this.onError();
       }
     }
   }
