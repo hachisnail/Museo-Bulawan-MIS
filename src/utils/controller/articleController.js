@@ -126,22 +126,25 @@ export const getPublicArticles = async (req, res) => {
 
   try {
     const articles = await Article.findAll({
-      attributes: ['article_id', 'images', 'title', 'article_category', 'upload_date'],
+      attributes: ['article_id', 'images', 'title', 'article_category', 'upload_date','status'],
+      where: { status: 'posted' },
       order: [['created_at', 'DESC']]
     });
 
     // Convert stored image filenames to absolute URLs
     const formattedArticles = articles.map((article) => ({
-      ...article.dataValues,
-      images: article.images ? `${API_URL}/uploads/${article.images}` : null,
-    }));
+         ...article.dataValues,
+         images: article.images
+           ? `${API_URL}/uploads/${article.images}`
+           : null
+       }));
 
     return res.json(formattedArticles);
-  } catch (error) {
-    console.error('Error fetching public articles:', error);
-    return res.status(500).json({ message: 'Server error retrieving public articles.' });
-  }
-};
+     } catch (error) {
+       console.error('Error fetching public articles:', error);
+       return res.status(500).json({ message: 'Server error retrieving public articles.' });
+     }
+   };
 
 // Retrieve a specific public article
 export const getPublicArticle = async (req, res) => {
@@ -192,8 +195,8 @@ export const updateArticle = async (req, res) => {
       author,
       address,
       selectedDate,
-      // Previously "content_images"; now "editImages"
-      editImages
+      editImages,
+      status // <-- Add this line
     } = req.body;
 
     let thumbnail = null;
@@ -201,7 +204,6 @@ export const updateArticle = async (req, res) => {
       thumbnail = req.file.filename;
     }
 
-    // Make sure to store images in editImages
     let editImagesString = null;
     if (editImages) {
       if (typeof editImages === 'string') {
@@ -211,6 +213,7 @@ export const updateArticle = async (req, res) => {
       }
     }
 
+    // Include 'status' in fields to update
     const [updatedCount] = await Article.update(
       {
         title,
@@ -221,8 +224,8 @@ export const updateArticle = async (req, res) => {
         address,
         upload_date: selectedDate,
         images: thumbnail || undefined,
-        // Persist the new images in the column editImages
         editImages: editImagesString,
+        status: status || undefined,  // <-- Include status here
         updated_at: new Date()
       },
       { where: { article_id: id } }
@@ -234,7 +237,6 @@ export const updateArticle = async (req, res) => {
       });
     }
 
-    // Return the updated record if needed
     const updatedArticle = await Article.findOne({ where: { article_id: id } });
     return res.status(200).json({
       message: 'Article updated successfully',
@@ -248,3 +250,4 @@ export const updateArticle = async (req, res) => {
     });
   }
 };
+
