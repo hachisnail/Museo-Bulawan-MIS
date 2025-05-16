@@ -11,6 +11,7 @@ import { TwoColumnBlock } from '../../components/articleComponents/TwoColumnBloc
 import { ColumnLeft } from '../../components/articleComponents/ColumnLeft';
 import { ColumnRight } from '../../components/articleComponents/ColumnRight';
 import Image from '@tiptap/extension-image';
+import TextStyle from '@tiptap/extension-text-style';
 
 const ArticleForm = () => {
   // Form state
@@ -43,7 +44,7 @@ const ArticleForm = () => {
   const UPLOAD_PATH = `${BASE_URL}/uploads/`;
 
   // Tiptap Editor
-  const editor = useEditor({
+    const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
@@ -51,6 +52,7 @@ const ArticleForm = () => {
         types: ['heading', 'paragraph'],
         alignments: ['left', 'center', 'right', 'justify'],
       }),
+      TextStyle,
       ColumnLeft,
       ColumnRight,
       TwoColumnBlock,
@@ -231,6 +233,34 @@ const ArticleForm = () => {
   const pendingCount = articles.filter((article) => article.status === 'pending').length;
   const totalCount = articles.length;
 
+
+
+const handleStatusChange = async (articleId, newStatus) => {
+  try {
+    await axios.put(
+      `${BASE_URL}/api/auth/article/${articleId}`,
+      { status: newStatus }, // Make sure we send 'status' here
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      }
+    );
+
+    // Update local state or refetch
+    setArticles((prev) =>
+      prev.map((a) =>
+        a.article_id === articleId ? { ...a, status: newStatus } : a
+      )
+    );
+  } catch (error) {
+    console.error("Error updating status:", error);
+    alert("Unable to update article status.");
+  }
+};
+
+
   return (
     <>
       <div className='w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]'>
@@ -408,15 +438,23 @@ const ArticleForm = () => {
                       <div className='px-4 pt-1 pb-3'>
                         {article.article_category}
                       </div>
-                      <div className='px-4 py-1'>
-                        <span
-                          className={`text-white rounded-md px-4 py-1 ${
-                            article.status === 'posted' ? 'bg-[#4CAF50]' : 'bg-[#5C4624]'
-                          }`}
-                        >
-                          {article.status === 'posted' ? 'Posted' : 'Pending'}
-                        </span>
-                      </div>
+                      <div className="px-4 py-1">
+    <select
+      value={article.status}
+      onClick={(e) => e.stopPropagation()} // Prevent row click
+      onChange={(e) => handleStatusChange(article.article_id, e.target.value)}
+      className="text-white rounded-md px-4 py-1 bg-[#5C4624]" 
+      // You can adjust styles or conditionally change the background if you like
+    >
+      <option className="bg-white text-black" value="pending">
+        Pending
+      </option>
+      <option className="bg-white text-black" value="posted">
+        Posted
+      </option>
+    </select>
+  </div>
+
                     </div>
                   ))
                 ) : (
