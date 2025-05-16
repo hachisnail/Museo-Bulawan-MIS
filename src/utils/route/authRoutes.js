@@ -84,7 +84,7 @@ const router = express.Router();
 // Authentication
 router.post('/login', login);
 router.post('/logout', auth, logout);
-router.get('/refresh-token', refreshToken);
+// router.get('/refresh-token', refreshToken);
 router.get('/verify-cookie', verifyCookie);
 router.get('/session-status', auth, sessionStatus);
 router.post('/refresh-token', refreshToken);

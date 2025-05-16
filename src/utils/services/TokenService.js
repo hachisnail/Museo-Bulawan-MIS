@@ -1,8 +1,8 @@
 // services/tokenService.js
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'hachsinail';
-const REFRESH_SECRET = process.env.REFRESH_SECRET || 'hachsinail_refresh';
+const JWT_SECRET = process.env.JWT_SECRET ;
+const REFRESH_SECRET = process.env.REFRESH_SECRET ;
 const ACCESS_TOKEN_EXPIRY = '15m'; // Short-lived access token
 const REFRESH_TOKEN_EXPIRY = '7d'; // Longer-lived refresh token
 

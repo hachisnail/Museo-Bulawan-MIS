@@ -7,14 +7,40 @@ class SessionMonitor {
     this.checkEndpoint = options.checkEndpoint || '/api/auth/session-status';
     this.refreshEndpoint = options.refreshEndpoint || '/api/auth/refresh-token';
     this.onSessionInvalid = options.onSessionInvalid || (() => {});
-    this.onError = options.onError || (() => {}); // Silent error handling
+    this.onError = options.onError || (() => {});
     this.intervalId = null;
     this.isRefreshing = false;
     this.refreshPromise = null;
+    
+    // Set up axios interceptor to handle silent token refreshing
+    this.setupAxiosInterceptor();
+  }
+  
+  setupAxiosInterceptor() {
+    // Response interceptor to catch 401 errors
+    axios.interceptors.response.use(
+      response => response,
+      async error => {
+        // Only attempt refresh if it's a 401 error with TOKEN_EXPIRED reason
+        if (error.response?.status === 401 && 
+            error.response.data?.reason === 'TOKEN_EXPIRED' &&
+            error.config && !error.config.__isRetryRequest) {
+          
+          // Wait for token refresh
+          const refreshed = await this.refreshAuthToken();
+          
+          if (refreshed) {
+            // Clone the original request and retry
+            error.config.__isRetryRequest = true;
+            return axios(error.config);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
   }
   
   start() {
-    // No console logs for security
     this.checkSession(); // Initial check
     this.intervalId = setInterval(() => this.checkSession(), this.interval);
     return this;
@@ -36,21 +62,21 @@ class SessionMonitor {
     this.isRefreshing = true;
     this.refreshPromise = new Promise(async (resolve) => {
       try {
-        // Silent refresh - no console logs
         const response = await axios.post(this.refreshEndpoint, {}, { 
           withCredentials: true,
-          // Important: This prevents navigation/redirection during refresh
-          headers: { 'X-Silent-Refresh': 'true' } 
+          headers: { 
+            'X-Silent-Refresh': 'true',
+            // Prevent axios from following redirects
+            'X-Requested-With': 'XMLHttpRequest'
+          }
         });
         
-        // Handle successful refresh
         if (response.status === 200) {
           resolve(true);
         } else {
           resolve(false);
         }
       } catch (error) {
-        // Silent failure - don't log errors publicly
         resolve(false);
       } finally {
         this.isRefreshing = false;
@@ -66,12 +92,11 @@ class SessionMonitor {
   
   async checkSession() {
     try {
-      // Check session without logging
       const response = await axios.get(this.checkEndpoint, { 
-        withCredentials: true 
+        withCredentials: true,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
       });
       
-      // Get token expiration from response if available
       if (response.data.expiresAt) {
         const expiresAt = new Date(response.data.expiresAt).getTime();
         const now = Date.now();
@@ -82,7 +107,6 @@ class SessionMonitor {
         }
       }
     } catch (error) {
-      // If access token expired, try to refresh it silently
       if (error.response && error.response.status === 401 && 
           error.response.data.reason === 'TOKEN_EXPIRED') {
         
@@ -96,11 +120,10 @@ class SessionMonitor {
           });
         }
       } else if (error.response && error.response.status === 401) {
-        // Other auth errors like SESSION_INVALIDATED
+        // Only trigger session invalid for non-TOKEN_EXPIRED 401 errors
         this.stop();
         this.onSessionInvalid(error.response.data);
       } else {
-        // Network or other errors - silent handling
         this.onError();
       }
     }

@@ -310,10 +310,10 @@ export const refreshToken = async (req, res) => {
     const decoded_access = tokenService.decodeToken(newAccessToken);
     const expiresAt = decoded_access.exp * 1000; // Convert to milliseconds
     
-    // Return the new access token for backward compatibility
+    // Return JSON response for silent refreshes, never redirect
     return res.status(200).json({
       token: newAccessToken,
-      expiresAt, // Include expiration time
+      expiresAt,
       user: {
         id: user.id,
         email: user.email,
@@ -325,6 +325,7 @@ export const refreshToken = async (req, res) => {
     return res.status(500).json({ message: 'Server error during token refresh' });
   }
 };
+
 
 
 
