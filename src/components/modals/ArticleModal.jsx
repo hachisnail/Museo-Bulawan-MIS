@@ -38,7 +38,8 @@ const ArticleModal = ({
   setSelectedDate,
   resetForm,
   contentImages,
-  setContentImages
+  setContentImages,
+  onClose
 }) => {
   const imageInputRef = useRef(null);
   const thumbnailInputRef = useRef(null);
@@ -240,10 +241,24 @@ const ArticleModal = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 backdrop-blur-sm bg-opacity-50 flex items-center justify-center">
-        <div className="flex w-[85rem] gap-4">
+      <div className=" gap-y-2 font-semibold flex flex-col">
+        <span className="text-5xl">Add New Article</span>
+        <div className="text-2xl flex items-center text-center">
+          <span
+            onClick={onClose}
+            className="cursor-pointer text-gray-700 hover:text-black"
+          >
+            Article{' '}
+          </span>
+          <span className='text-2xl font-extrabold text-amber-900'>&nbsp; &gt; &nbsp;</span>
+          <span> Insert </span>
+        </div>
+
+
+      </div>
+        <div className="flex w-full h-full gap-4 pt-5 border-t-1 ">
           {/* LEFT SIDE - Editor + Form */}
-          <div className="bg-white w-[40rem] p-6 rounded-lg shadow-xl relative max-h-[90vh] overflow-auto">
+          <div className="bg-white w-1/2 p-6 rounded-lg shadow-xl relative max-h-[90vh] overflow-auto">
             <button
               onClick={handleCancelClick}
               className="absolute top-3 right-3 text-2xl text-gray-600 hover:text-black"
@@ -552,8 +567,14 @@ const ArticleModal = ({
                       onClick={(evt) => {
                         evt.preventDefault();
                         evt.stopPropagation();
-                        editor.chain().focus().setColumns(2).run();
-                        setIsDirty(true);
+                        if (
+                          editor &&
+                          editor.isEditable &&
+                          !editor.isActive('columns')
+                        ) {
+                          // Always use the extension's command
+                          editor.chain().focus().setColumns(2).run();
+                        }
                       }}
                       className="p-1 border rounded"
                       title="Insert Two Column Layout"
@@ -620,7 +641,7 @@ const ArticleModal = ({
           </div>
           
           {/* RIGHT SIDE - Article Preview */}
-          <div className="bg-white w-[40rem] p-6 rounded-lg shadow-xl overflow-y-auto max-h-[90vh]">
+          <div className="bg-white w-1/2 p-6 rounded-lg shadow-xl overflow-y-auto max-h-[90vh]">
             <h3 className="text-2xl font-bold mb-4">Article Preview</h3>
             <div className="border border-gray-200 p-4 mb-4 rounded">
               <h1 className="text-center text-3xl font-bold">
@@ -693,7 +714,6 @@ const ArticleModal = ({
             </div>
           </div>
         </div>
-      </div>
 
       {/* Cancel Confirmation Dialog */}
       <ConfirmDialog
