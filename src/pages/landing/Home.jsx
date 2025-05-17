@@ -3,7 +3,8 @@ import { NavLink } from 'react-router-dom'
 import LandingNav from '../../components/navbar/LandingNav'
 import { ScrollRestoration } from 'react-router-dom'
 import CalendarComponent from '../../components/function/CalendarComponent';
-import NewsEvents from '../../components/modals/NewsEvents'; // adjust the path as needed
+// import NewsEvents from '../../components/modals/NewsEvents'; // adjust the path as needed
+import axios from 'axios';
 
 
 import bgImage1 from '../../../src/assets/06-AfternoonMealOfTheWorker 1.png'
@@ -15,13 +16,61 @@ import img4 from '../../../src/assets/nae_img_4.png'
 import bgImage3 from '../../../src/assets/img_1.png'
 import dhome2 from '../../../src/assets/dhome2.png'
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Home = () => {
   const learnMore = useRef(null)
   const calendar = useRef(null)
   const events = useRef(null)
   const support = useRef(null)
   const home = useRef(null)
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todaysArticles = articles.filter(a => a.upload_date && a.upload_date.split('T')[0] === todayStr);
 
+
+useEffect(() => {
+    fetchArticles();
+  }, []);
+
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API_URL}/api/auth/public-articles`);
+      setArticles(response.data);
+      setLoading(false);
+    } catch (err) {
+      setError('Failed to load events.');
+      setLoading(false);
+    }
+  };
+  
+const encoded = (id, name) => {
+  const encodedString = `${id}::${name}`;
+  return btoa(encodedString);
+};
+
+const getImageUrl = (img) => {
+  if (!img) return '';
+  if (img.startsWith('http')) return img;
+  return `${API_URL}/uploads/${img}`;
+};
+
+let displayArticles = todaysArticles;
+if (displayArticles.length === 0) {
+  // Find the soonest future date
+  const futureArticles = articles
+    .filter(a => a.upload_date && a.upload_date.split('T')[0] > todayStr)
+    .sort((a, b) => a.upload_date.localeCompare(b.upload_date));
+  if (futureArticles.length > 0) {
+    const nextDate = futureArticles[0].upload_date.split('T')[0];
+    displayArticles = futureArticles.filter(a => a.upload_date.split('T')[0] === nextDate);
+  }
+}
+
+displayArticles = displayArticles.slice(0, 2);
 
   return (
     <>
@@ -287,16 +336,30 @@ const Home = () => {
                 </span>
             </div>
             <div className='w-[55rem] h-full flex flex-col justify-start gap-y-5'>
-              <div className='w-[33rem] mx-auto h-[20rem] md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage1})` }}
+  {displayArticles.length > 0 ? (
+    displayArticles.map((article, idx) => (
+      <NavLink
+        key={article.article_id}
+        to={`/article/${encoded(article.article_id, article.title)}`}
+        className='w-[33rem] mx-auto h-[20rem] md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat rounded-lg shadow-lg hover:opacity-90 transition'
+        style={{ backgroundImage: `url(${getImageUrl(article.images)})` }}
+        title={article.title}
       >
-
-              </div>
-              <div className='w-[33rem] h-[20rem] mx-auto md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat ' style={{ backgroundImage: `url(${bgImage3})` }}
-      >
-
-              </div>
-
-            </div>
+        <div className="w-full h-full flex flex-col justify-end bg-black bg-opacity-30 p-4">
+          <span className="text-white text-2xl font-bold drop-shadow">{article.title}</span>
+          <span className="text-white text-lg">{article.upload_date ? new Date(article.upload_date).toLocaleDateString() : ''}</span>
+        </div>
+      </NavLink>
+    ))
+  ) : (
+    <>
+      <div className='w-[33rem] mx-auto h-[20rem] md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat flex items-center justify-center text-gray-400' style={{ backgroundImage: `url(${bgImage1})` }}>
+        <span>No events today or upcoming.</span>
+      </div>
+      <div className='w-[33rem] h-[20rem] mx-auto md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat' style={{ backgroundImage: `url(${bgImage3})` }} />
+    </>
+  )}
+</div>
             <div className='w-full min-h-20 flex items-center justify-end pr-20'>
               <span
                 onClick={() =>
@@ -317,7 +380,7 @@ const Home = () => {
       <div ref={events} className="w-screen h-auto xl:h-screen min-h-[89rem] xl:min-h-[79rem]">
         <div className="w-full h-full py-24 px-4 bg-black xl:px-12 xl:py-26">
           <div className="w-full h-full flex flex-col">
-            <div className="w-full max-h-[3em]  flex text-2xl justify-between pr-9">
+            <div className="w-full max-h-[3em] flex text-2xl justify-between pr-9">
               <div className="flex items-center gap-2 px-4">
                 <h1 className="w-10 h-0.5 bg-[#63635C]"></h1>
                 <span className="text-2xl text-[#63635C]"> DON'T MISS</span>
@@ -325,7 +388,7 @@ const Home = () => {
               <NavLink to="/content">
                 <span className="text-2xl hover:underline text-white cursor-pointer">
                   See all Events
-                  <i class="fa-solid fa-arrow-right text-white"></i>
+                  <i className="fa-solid fa-arrow-right text-white"></i>
                 </span>
               </NavLink>
             </div>
@@ -336,180 +399,81 @@ const Home = () => {
             </div>
 
             <div className="w-full h-full flex flex-col px-8 py-3 gap-2 xl:gap-8">
-              <div className="h-1/2 w-full flex flex-col  xl:flex-row gap-4 xl:gap-8">
-                <div className="w-full h-1/2   xl:h-full">
-                  <div className="w-full h-full  flex justify-start items-center">
-                    <div className="w-full h-full flex gap-3 xl:gap-7">
-                      <div className="w-2/5 h-full">
-                        <div className="w-full h-full">
-                          <img
-                            src={img1}
-                            alt=""
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                      </div>
-                      <div className="w-3/5 h-full">
-                        <div className="w-full h-full flex flex-col gap-2 py-3">
-                          <div className="w-full min-h-[5em] flex items-center xl:min-h-[8em]">
-                            <span className="text-3xl font-bold text-white xl:text-5xl">
-                              {' '}
-                              THE TITLE OF THE EVENT WILL BE PLACED HERE
-                            </span>
-                          </div>
-                          <div className="w-full min-h-[3em] flex items-center xl:min-h-[5em]">
-                            <span className="text-xl font-semibold text-[#787878] xl:text-3xl">
-                              Month DD, YYYY
-                            </span>
-                          </div>
-                          <div className="w-full min-h-[7em] xl:max-h-[14em]">
-                            <span className="text-2xl text-white xl:text-4xl ">
-                              Brief description of the event will be placed
-                              here. Brief description of the event will be
-                              placed here
-                            </span>
-                          </div>
-                        </div>
+  {loading && (
+    <div className="text-white text-2xl text-center py-10">Loading events...</div>
+  )}
+  {error && (
+    <div className="text-red-500 text-2xl text-center py-10">{error}</div>
+  )}
+  {!loading && !error && (
+    <div>
+      {/* Show up to 4 latest articles, 2 per row */}
+      {[0, 2].map((rowIdx) => (
+        <div key={rowIdx} className="h-1/2 w-full flex flex-col xl:flex-row gap-4 xl:gap-8">
+          {[0, 1].map((colIdx) => {
+            const article = articles[rowIdx + colIdx];
+            if (!article) return null;
+            const displayDate = article.upload_date
+              ? new Date(article.upload_date).toLocaleDateString()
+              : "No Date";
+            return (
+              <NavLink
+                key={colIdx}
+                to={`/article/${encoded(article.article_id, article.title)}`}
+                className="w-full h-1/2 xl:h-full hover:opacity-90 transition duration-300"
+              >
+                <div className="w-full h-full flex justify-start items-center">
+                  <div className="w-full h-full flex gap-3 xl:gap-7">
+                    <div className="w-2/5 h-full">
+                      <div className="w-full h-full">
+                        <img
+                          src={article.images}
+                          alt={article.title}
+                          className="w-full h-full object-contain"
+                        />
                       </div>
                     </div>
-                    
-                  </div>
-                  
-                </div>
-
-                <div className="w-full h-1/2   xl:h-full">
-                  <div className="w-full h-full  flex justify-start items-center">
-                    <div className="w-full h-full flex gap-3 xl:gap-7">
-                      <div className="w-2/5 h-full">
-                        <div className="w-full h-full">
-                          <img
-                            src={img2}
-                            alt=""
-                            className="w-full h-full object-contain"
-                          />
+                    <div className="w-3/5 h-full">
+                      <div className="w-full h-full flex flex-col gap-2 py-3">
+                        <div className="w-full min-h-[5em] flex items-center xl:min-h-[8em]">
+                          <span className="text-3xl font-bold text-white xl:text-5xl">
+                            {article.title || 'Untitled'}
+                          </span>
                         </div>
-                      </div>
-                      <div className="w-3/5 h-full">
-                        <div className="w-full h-full flex flex-col gap-2 py-3">
-                          <div className="w-full min-h-[5em] flex items-center xl:min-h-[8em]">
-                            <span className="text-3xl font-bold text-white xl:text-4xl">
-                              {' '}
-                              THE TITLE OF THE EVENT WILL BE PLACED HERE
-                            </span>
-                          </div>
-                          <div className="w-full min-h-[3em] flex items-center xl:min-h-[5em]">
-                            <span className="text-xl font-semibold text-[#787878] xl:text-3xl">
-                              Month DD, YYYY
-                            </span>
-                          </div>
-                          <div className="w-full min-h-[7em] xl:max-h-[14em]">
-                            <span className="text-2xl text-white xl:text-4xl ">
-                              Brief description of the event will be placed
-                              here. Brief description of the event will be
-                              placed here
-                            </span>
-                          </div>
+                        <div className="w-full min-h-[3em] flex items-center xl:min-h-[5em]">
+                          <span className="text-xl font-semibold text-[#787878] xl:text-3xl">
+                            {displayDate}
+                          </span>
+                        </div>
+                        <div className="w-full min-h-[7em] xl:max-h-[14em]">
+                          <span className="text-2xl text-white xl:text-4xl">
+                            {article.article_category || ''}
+                          </span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="h-1/2 w-full flex flex-col  xl:flex-row gap-4 xl:gap-8">
-                <div className="w-full h-1/2  xl:h-full">
-                  <div className="w-full h-full  flex justify-start items-center">
-                    <div className="w-full h-full flex gap-3 xl:gap-7">
-                      <div className="w-2/5 h-full">
-                        <div className="w-full h-full">
-                          <img
-                            src={img3}
-                            alt=""
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                      </div>
-                      <div className="w-3/5 h-full">
-                        <div className="w-full h-full flex flex-col gap-2 py-3">
-                          <div className="w-full min-h-[5em] flex items-center xl:min-h-[8em]">
-                            <span className="text-3xl font-bold text-white xl:text-5xl">
-                              {' '}
-                              THE TITLE OF THE EVENT WILL BE PLACED HERE
-                            </span>
-                          </div>
-                          <div className="w-full min-h-[3em] flex items-center xl:min-h-[5em]">
-                            <span className="text-xl font-semibold text-[#787878] xl:text-3xl">
-                              Month DD, YYYY
-                            </span>
-                          </div>
-                          <div className="w-full min-h-[7em] xl:max-h-[14em]">
-                            <span className="text-2xl text-white xl:text-4xl">
-                              Brief description of the event will be placed
-                              here. Brief description of the event will be
-                              placed here
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-full h-1/2   xl:h-full">
-                  <div className="w-full h-full flex justify-start items-center">
-                    <div className="w-full h-full flex gap-3 xl:gap-7">
-                      <div className="w-2/5 h-full">
-                        <div className="w-full h-full">
-                          <img
-                            src={img4}
-                            alt=""
-                            className="w-full h-full object-contain"
-                          />
-                        </div>
-                      </div>
-                      <div className="w-3/5 h-full">
-                        <div className="w-full h-full flex flex-col gap-2 py-3">
-                          <div className="w-full min-h-[5em] flex items-center xl:min-h-[8em]">
-                            <span className="text-3xl font-bold text-white xl:text-5xl">
-                              {' '}
-                              THE TITLE OF THE EVENT WILL BE PLACED HERE
-                            </span>
-                          </div>
-                          <div className="w-full min-h-[3em] flex items-center xl:min-h-[5em]">
-                            <span className="text-xl font-semibold text-[#787878] xl:text-3xl">
-                              Month DD, YYYY
-                            </span>
-                          </div>
-                          <div className="w-full min-h-[7em] xl:max-h-[14em]">
-                            <span className="text-2xl text-white xl:text-4xl ">
-                              Brief description of the event will be placed
-                              here. Brief description of the event will be
-                              placed here
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-              </div>
-            </div>
-            <div className="w-full h-full flex mt-10 justify-end px-20">
-            <span
-              onClick={() =>
-                support.current?.scrollIntoView({ behavior: 'smooth' })
-              }
-              className="text-3xl text-white hover:underline cursor-pointer font-semibold"
-            >
-              Support Us <i class="fa-solid fa-arrow-right"></i>
-            </span>
-          </div>
-          </div>
-          
+              </NavLink>
+            );
+          })}
         </div>
-        
-       
+      ))}
+    </div>
+  )}
+</div>
+            <div className="w-full h-full flex mt-10 justify-end px-20">
+              <span
+                onClick={() =>
+                  support.current?.scrollIntoView({ behavior: 'smooth' })
+                }
+                className="text-3xl text-white hover:underline cursor-pointer font-semibold"
+              >
+                Support Us <i className="fa-solid fa-arrow-right"></i>
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div  ref={support} className="w-screen h-fit xl:h-screen min-h-[79rem]">

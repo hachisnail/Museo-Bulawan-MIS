@@ -122,8 +122,6 @@ export const getAllArticles = async (req, res) => {
 
 // Retrieve public articles (lightweight list for landing page)
 export const getPublicArticles = async (req, res) => {
-  const API_URL = process.env.VITE_API_URL || '';
-
   try {
     const articles = await Article.findAll({
       attributes: ['article_id', 'images', 'title', 'article_category', 'upload_date','status'],
@@ -131,20 +129,22 @@ export const getPublicArticles = async (req, res) => {
       order: [['created_at', 'DESC']]
     });
 
-    // Convert stored image filenames to absolute URLs
+    // Use req.protocol and req.get('host') to build the base URL
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
     const formattedArticles = articles.map((article) => ({
-         ...article.dataValues,
-         images: article.images
-           ? `${API_URL}/uploads/${article.images}`
-           : null
-       }));
+      ...article.dataValues,
+      images: article.images
+        ? `${baseUrl}/uploads/${article.images}`
+        : null
+    }));
 
     return res.json(formattedArticles);
-     } catch (error) {
-       console.error('Error fetching public articles:', error);
-       return res.status(500).json({ message: 'Server error retrieving public articles.' });
-     }
-   };
+  } catch (error) {
+    console.error('Error fetching public articles:', error);
+    return res.status(500).json({ message: 'Server error retrieving public articles.' });
+  }
+};
 
 // Retrieve a specific public article
 export const getPublicArticle = async (req, res) => {
@@ -250,4 +250,6 @@ export const updateArticle = async (req, res) => {
     });
   }
 };
+
+
 

@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { NavLink } from 'react-router-dom';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Calendar = () => {
   const now = new Date();
@@ -9,6 +13,8 @@ const Calendar = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedEvents, setSelectedEvents] = useState([]);
+
+
   
   const monthNames = ["January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
@@ -22,32 +28,22 @@ const Calendar = () => {
   
   const fetchEvents = async () => {
     try {
-      // Replace with your actual API endpoint
-      const response = await fetch('/api/events');
-      const data = await response.json();
-      
-      // Format events by date for easier lookup
+      const response = await axios.get(`${API_URL}/api/auth/public-articles`);
+      // Group articles by date (YYYY-MM-DD)
       const eventsByDate = {};
-      data.forEach(event => {
-        const dateStr = event.date.split('T')[0];
+      response.data.forEach(article => {
+        console.log("Article:", article);
+        if (!article.upload_date) return;
+        const dateStr = article.upload_date.split('T')[0];
         if (!eventsByDate[dateStr]) {
           eventsByDate[dateStr] = [];
         }
-        eventsByDate[dateStr].push(event);
+        eventsByDate[dateStr].push(article);
       });
-      
       setEvents(eventsByDate);
     } catch (error) {
       console.error('Error fetching events:', error);
-      
-      setEvents({
-        "2025-04-01": [{ title: "Monthly Meeting", description: "Team sync", special: false }],
-        "2025-04-09": [{ title: "Important Event", description: "Priority task", special: true }],
-        "2025-04-17": [{ title: "Conference", description: "Annual industry meet", special: false }],
-        "2025-04-18": [{ title: "Conference Day 2", description: "Workshops", special: false }],
-        "2025-04-19": [{ title: "Conference Day 3", description: "Networking", special: false }],
-        "2025-04-20": [{ title: "Report Due", description: "Submit quarterly report", special: false }],
-      });
+      setEvents({});
     }
   };
 
@@ -125,6 +121,11 @@ const Calendar = () => {
 
   const calendarDays = generateCalendarDays();
 
+ const encodeId = (id, name) => {
+  const encodedString = `${id}::${name}`;
+  return btoa(encodedString);
+};
+
   return (
     <div className="w-full mx-auto md:px-4 py-8 flex flex-col gap-y-5">
       {/* Month Header */}
@@ -146,8 +147,6 @@ const Calendar = () => {
           {calendarDays.map((date, index) => {
             const dateStr = `${date.year}-${String(date.month + 1).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
             const hasEvents = events[dateStr] && events[dateStr].length > 0;
-            const isSpecialEvent = hasEvents && events[dateStr].some(event => event.special === true);
-
             const isTodayDate = isToday(date);
             
             return (
@@ -158,14 +157,26 @@ const Calendar = () => {
                  h-23 xl:h-28 border border-gray-200 p-2 cursor-pointer transition
                   ${!date.isCurrentMonth ? 'text-gray-400' : ''}
                   ${isTodayDate ? 'bg-[#e0c67d]' : ''}
-                  ${hasEvents && !isSpecialEvent && !isTodayDate ? 'bg-yellow-100' : ''}
-                  ${isSpecialEvent ? 'bg-[#7d8e6a] text-white' : ''}
+                  ${hasEvents && !isTodayDate ? 'bg-yellow-100' : ''}
                   hover:bg-gray-100
                 `}
               >
                 <span className={`text-sm ${isTodayDate ? 'font-bold' : ''}`}>
                   {date.day}
                 </span>
+                {/* Show article titles if any */}
+                {hasEvents && (
+                  <div className="mt-1 space-y-1">
+                    {events[dateStr].slice(0, 2).map((event, idx) => (
+                      <div key={idx} className="text-xs truncate text-black font-semibold">
+                        {event.title}
+                      </div>
+                    ))}
+                    {events[dateStr].length > 2 && (
+                      <div className="text-xs text-gray-500">+{events[dateStr].length - 2} more</div>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -175,7 +186,7 @@ const Calendar = () => {
       {/* Event Modal */}
       {modalOpen && (
         <div className="fixed inset-0 backdrop-blur-xs bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white  border-1 border-gray-400 w-full max-w-md mx-4 overflow-hidden">
+          <div className="bg-white border-1 border-gray-400 w-full max-w-md mx-4 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-300 flex justify-between items-center">
               <h3 className="text-lg font-medium">
                 {selectedDate?.toLocaleDateString('en-US', { 
@@ -188,27 +199,31 @@ const Calendar = () => {
                 onClick={() => setModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
               >
-                <i class="fas fa-times text-xl cursor-pointer"></i>
+                <i className="fas fa-times text-xl cursor-pointer"></i>
               </button>
             </div>
             <div className="px-6 py-4">
               {selectedEvents.length === 0 ? (
-                <p className="text-gray-500">No events for this date</p>
-              ) : (
-                <div className="space-y-4">
-                  {selectedEvents.map((event, index) => (
-                    <div key={index} className="border-b border-gray-200 pb-4 last:border-0">
-                      <h4 className="font-medium text-lg">{event.title}</h4>
-                      {event.description && (
-                        <p className="text-gray-600 mt-1">{event.description}</p>
-                      )}
-                      {event.time && (
-                        <p className="text-gray-500 text-sm mt-2">{event.time}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+  <p className="text-gray-500">No events for this date</p>
+) : (
+  <div className="space-y-4">
+    {selectedEvents.map((event, index) => (
+  <NavLink
+    key={index}
+    to={`/article/${encodeId(event.article_id, event.title)}`}
+    className="block border-b border-gray-200 pb-4 last:border-0 cursor-pointer hover:bg-gray-100 transition"
+    onClick={() => setModalOpen(false)}
+    title={event.title}
+  >
+    <h4 className="font-medium text-lg text-blue-700 underline">{event.title}</h4>
+    {event.article_category && (
+      <p className="text-gray-600 mt-1">{event.article_category}</p>
+    )}
+    {/* You can add more fields here if needed */}
+  </NavLink>
+))}
+  </div>
+)}
             </div>
           </div>
         </div>
