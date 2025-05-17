@@ -307,11 +307,11 @@ const DayScheduler = ({
               }}
             >
               {/* Normal (non-hover) view - SIMPLIFIED */}
-              <div
+                            <div
                 className={`
                   w-full h-full
                   border ${isSelected ? 'border-white bg-gray-500 text-white' : 'border-gray-300 bg-white'}
-                  rounded shadow-sm p-2 flex flex-col justify-between relative
+                  rounded shadow-sm p-2 
                   transition-all overflow-hidden
                   group-hover:opacity-0
                   ${ev.isAppointment ? 'border-l-4 border-l-blue-500' : ''}
@@ -319,45 +319,58 @@ const DayScheduler = ({
                   ${ev.isSchedule && ev.availability === 'SHARED' ? 'border-l-4 border-l-green-500' : ''}
                 `}
               >
-                <div
-                  className="pl-2 h-full flex flex-col justify-between relative"
-                >
-                  <div className="flex-1 overflow-hidden">
-                    {/* Title with proper formatting */}
-                    <p className="font-bold text-xs sm:text-sm truncate">
-                      {ev.title}
-                    </p>
-
-                    {/* For appointments, show visitor name instead of organizer */}
-                    {ev.isAppointment && ev.organizer && (
-                      <p className="text-[10px] sm:text-xs truncate">
-                        Visitor: {ev.organizer}
-                      </p>
-                    )}
-
-                    {/* People count only for appointments */}
-                    {ev.isAppointment && ev.numPeople && (
-                      <p className="text-[10px] sm:text-xs truncate">
-                        {ev.numPeople}
-                      </p>
-                    )}
-
-                    {/* Simple type label without availability text */}
-                    <p className={`text-[10px] sm:text-xs truncate ${ev.isAppointment ? 'text-blue-500' : 'text-green-500'}`}>
-                      {ev.isAppointment ? 'Appointment' : 'Schedule'}
+                {/* Check if duration is 15 minutes or less */}
+                {(timeStringToMinutes(ev.endTime) - timeStringToMinutes(ev.startTime)) <= 15 ? (
+                  // Compact row layout for very short events
+                  <div className="flex items-center justify-between h-full space-x-2">
+                   
+              
+                    {/* Title and badge in middle */}
+                    <div className="flex-1 min-w-0 flex items-center space-x-2">
+                      <span className="font-bold text-xs truncate">
+                        {ev.title}
+                      </span>
+                      <span className={`
+                        text-[10px] px-1.5 py-0.5 rounded-full 
+                        ${ev.isAppointment ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}
+                      `}>
+                        {ev.isAppointment ? 'Appt' : 'Sched'}
+                      </span>
+                    </div>
+               <p className={`absolute bottom-1 right-2 text-[10px] sm:text-xs ${isSelected ? '' : 'text-gray-400'}`}>
+                      {formatTimeTo12H(ev.startTime)} - {formatTimeTo12H(ev.endTime)}
                     </p>
                   </div>
-
-                  {/* Time display at the bottom */}
-                  <p
-                    className={`
-                      absolute bottom-1 right-2 text-[10px] sm:text-xs
-                      ${isSelected ? '' : 'text-gray-400'}
-                    `}
-                  >
-                    {formatTimeTo12H(ev.startTime)} - {formatTimeTo12H(ev.endTime)}
-                  </p>
-                </div>
+                ) : (
+                  // Original layout for longer events
+                  <div className="pl-2 h-full flex flex-col justify-between relative">
+                    <div className="flex-1 overflow-hidden">
+                      <p className="font-bold text-xs sm:text-sm truncate">
+                        {ev.title}
+                      </p>
+              
+                      {ev.isAppointment && ev.organizer && (
+                        <p className="text-[10px] sm:text-xs truncate">
+                          Visitor: {ev.organizer}
+                        </p>
+                      )}
+              
+                      {ev.isAppointment && ev.numPeople && (
+                        <p className="text-[10px] sm:text-xs truncate">
+                          {ev.numPeople}
+                        </p>
+                      )}
+              
+                      <p className={`text-[10px] sm:text-xs truncate ${ev.isAppointment ? 'text-blue-500' : 'text-green-500'}`}>
+                        {ev.isAppointment ? 'Appointment' : 'Schedule'}
+                      </p>
+                    </div>
+              
+                    <p className={`absolute bottom-1 right-2 text-[10px] sm:text-xs ${isSelected ? '' : 'text-gray-400'}`}>
+                      {formatTimeTo12H(ev.startTime)} - {formatTimeTo12H(ev.endTime)}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Hover (expanded) view */}
@@ -636,8 +649,10 @@ const Schedule = () => {
   };
 
   const fetchTodayTours = async () => {
+    
     try {
-      
+
+      console.log("hit");
 
       // Format date for API
       const formattedDate = dateString;
@@ -757,11 +772,8 @@ const Schedule = () => {
   const fetchMonthEvents = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
+     
+      
 
       // Use viewedDate instead of selectedDate to determine which month to fetch
       const year = viewedDate.getFullYear();
@@ -888,7 +900,7 @@ const Schedule = () => {
 
     if (selectedAppointment.isAppointment) {
       try {
-        const token = localStorage.getItem('token');
+        
         const appointmentId = selectedAppointment.id.replace('appointment-', '');
 
         // Get the full appointment data
@@ -929,7 +941,7 @@ const Schedule = () => {
   const handleScheduleConfirm = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
+      
       const scheduleId = selectedAppointment.schedule_id;
 
       // Update schedule status to COMPLETED
@@ -954,7 +966,7 @@ const Schedule = () => {
 
 
 
-  const handleAddEvent = async () => {
+const handleAddEvent = async () => {
     try {
       // Validate input
       if (!newTitle) {
@@ -962,31 +974,80 @@ const Schedule = () => {
         return;
       }
 
-      if (newStartTime >= newEndTime) {
+      // Convert times to minutes for comparison
+      const startMinutes = timeStringToMinutes(newStartTime);
+      const endMinutes = timeStringToMinutes(newEndTime);
+      const sevenAM = timeStringToMinutes('07:00');
+      const fivePM = timeStringToMinutes('17:00');
+
+      // Check if time is within operational hours (7 AM - 5 PM)
+      if (startMinutes < sevenAM || endMinutes > fivePM) {
+        showToast('Schedule must be between 7:00 AM and 5:00 PM', 'error');
+        return;
+      }
+
+      // Check if start time is before end time
+      if (startMinutes >= endMinutes) {
         showToast('Start time must be earlier than end time', 'error');
         return;
       }
 
-      // Check for overlapping limit - NEW CODE
-      const overlappingCount = countOverlappingEvents(backendEvents, newStartTime, newEndTime);
-
-      // Enforce limit of 5 overlapping events
-      if (overlappingCount >= 5) {
-        showToast('Maximum limit reached: Cannot add more than 5 overlapping events at the same time', 'error');
+      // Check minimum duration (15 minutes)
+      const duration = endMinutes - startMinutes;
+      if (duration < 15) {
+        showToast('Schedule duration must be at least 15 minutes', 'error');
         return;
       }
 
-      // Get the token from localStorage (same pattern as in Appointment.jsx)
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showToast('You need to be logged in to add schedules', 'error');
+      // Check for existing exclusive schedules
+      const existingExclusiveEvent = backendEvents.find(event => {
+        if (!event.isSchedule) return false;
+        
+        // Check if there's an exclusive event on the same date
+        if (event.availability === 'EXCLUSIVE' && event.date === dateString) {
+          // Convert times to minutes for comparison
+          const eventStart = timeStringToMinutes(event.startTime);
+          const eventEnd = timeStringToMinutes(event.endTime);
+          
+          // Check for time overlap
+          return (startMinutes < eventEnd && eventStart < endMinutes);
+        }
+        return false;
+      });
+
+      // If trying to add during an exclusive slot
+      if (existingExclusiveEvent) {
+        showToast('Cannot schedule during an exclusive event time slot', 'error');
         return;
       }
 
-      // Get API URL from environment variables
-      const API_URL = import.meta.env.VITE_API_URL || '/api';
+      // If adding an exclusive event, check for any existing events
+      if (newAvailability === 'EXCLUSIVE') {
+        const existingEvents = backendEvents.filter(event => {
+          if (event.date !== dateString) return false;
+          
+          const eventStart = timeStringToMinutes(event.startTime);
+          const eventEnd = timeStringToMinutes(event.endTime);
+          
+          return (startMinutes < eventEnd && eventStart < endMinutes);
+        });
 
-      // Create the schedule data object
+        if (existingEvents.length > 0) {
+          showToast('Cannot set as exclusive - time slot already has events scheduled', 'error');
+          return;
+        }
+      }
+
+      // Check for overlapping limit for shared events
+      if (newAvailability === 'SHARED') {
+        const overlappingCount = countOverlappingEvents(backendEvents, newStartTime, newEndTime);
+        if (overlappingCount >= 5) {
+          showToast('Maximum limit reached: Cannot add more than 5 overlapping events', 'error');
+          return;
+        }
+      }
+
+      // Create and send schedule data
       const scheduleData = {
         title: newTitle,
         description: newDesc,
@@ -996,45 +1057,28 @@ const Schedule = () => {
         availability: newAvailability
       };
 
-      console.log('Sending schedule data:', scheduleData);
-
-      // Make API call to backend using axios
       const response = await axios.post(
         `${API_URL}/api/auth/schedules`,
         scheduleData,
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
+        { withCredentials: true }
       );
-      console.log('Schedule created successfully:', response.data);
 
-      // Show success notification
       showToast('Schedule added successfully', 'success');
-
-      // Clear form fields
+      
+      // Reset form
       setNewTitle('');
       setNewDesc('');
       setNewStartTime('09:00');
       setNewEndTime('10:00');
       setNewAvailability('SHARED');
-
-      // Refresh the events to show the newly added event
+      
       fetchEvents();
 
     } catch (error) {
       console.error('Error creating schedule:', error);
-
-      // Show error notification
-      if (error.response) {
-        showToast(`Error: ${error.response.data.message || 'Failed to create schedule'}`, 'error');
-      } else {
-        showToast('Network error. Please try again.', 'error');
-      }
+      showToast(error.response?.data?.message || 'Failed to create schedule', 'error');
     }
-  };
+};
 
 
 
@@ -1177,17 +1221,14 @@ const Schedule = () => {
                     className="p-2 rounded-lg mx-auto text-lg"
                   />
 
-
-
-
-
                 </div>
               </div>
 
               {/* Today's Scheduled Tours */}
-              <div className="min-w-[31rem] max-w-[31rem] flex flex-col h-[25rem] bg-white rounded-xl shadow-xl p-5">
+              <div className="min-w-[31rem] max-w-[31rem] flex flex-col h-[40rem] bg-white rounded-xl shadow-xl p-5">
                 <span className="text-2xl font-semibold mb-4">Today's Scheduled Tours</span>
-                <div className="w-full border-t border-gray-200 pt-4 space-y-3 max-h-120 overflow-y-auto">
+                <div className="w-full border-t border-gray-200 pt-4 space-y-3 max-h-140 overflow-y-auto">
+                  
                   {todayTours.length === 0 && (
                     <div className="bg-gray-100 text-gray-700 p-3 rounded-lg">
                       No Scheduled Tours
@@ -1534,7 +1575,7 @@ const Schedule = () => {
           }}
           updateAppointmentStatus={async (id, status, presentCount) => {
             try {
-              const token = localStorage.getItem('token');
+              
               await axios.patch(
                 `${API_URL}/api/auth/appointment/${id}/status`,
                 {
