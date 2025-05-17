@@ -16,8 +16,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import ConfirmDialog from './ConfirmDialog.jsx';
-
-
+import '../../index.css';
 const ArticleModal = ({
   showModal,
   editor,
@@ -553,7 +552,7 @@ const ArticleModal = ({
                       onClick={(evt) => {
                         evt.preventDefault();
                         evt.stopPropagation();
-                        editor?.chain().focus().insertTwoColumnBlock().run();
+                        editor.chain().focus().setColumns(2).run();
                         setIsDirty(true);
                       }}
                       className="p-1 border rounded"
@@ -561,6 +560,7 @@ const ArticleModal = ({
                     >
                       <ColumnsIcon size={16} />
                     </button>
+
                     
                     <button
                       type="button"

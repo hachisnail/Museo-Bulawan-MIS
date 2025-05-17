@@ -4,6 +4,7 @@
 
 
 
+
 html {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -130,3 +131,31 @@ html {
   word-break: break-word;
 }
 
+.ProseMirror .column-block {
+  width: 100%;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.ProseMirror .column {
+  overflow: auto;
+  border: 1px gray dashed;
+  border-radius: 8px;
+  padding: 8px;
+  margin: -8px;
+}
+
+/* GoCapsule Extension Css */
+.editor-content-preview .column-block {
+  display: flex;         /* Arrange columns side-by-side */
+  gap: 1.5rem;           /* Spacing between columns */
+}
+
+.editor-content-preview .column {
+  flex: 1;               /* Make each column flexible */
+  min-width: 0;          /* Necessary to prevent overflow in flex layout */
+  padding: 0 0.75rem;    /* Optional: column padding */
+}

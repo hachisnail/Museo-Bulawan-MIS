@@ -6,12 +6,19 @@ import { useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
-import ArticleModal from '../../components/modals/ArticleModal';
-import { TwoColumnBlock } from '../../components/articleComponents/TwoColumnBlock';
-import { ColumnLeft } from '../../components/articleComponents/ColumnLeft';
-import { ColumnRight } from '../../components/articleComponents/ColumnRight';
 import Image from '@tiptap/extension-image';
 import TextStyle from '@tiptap/extension-text-style';
+// Commenting out the old custom column blocks
+// import { TwoColumnBlock } from '../../components/articleComponents/TwoColumnBlock';
+// import { ColumnLeft } from '../../components/articleComponents/ColumnLeft';
+// import { ColumnRight } from '../../components/articleComponents/ColumnRight';
+
+import { ColumnExtension } from '@gocapsule/column-extension';
+
+
+
+
+import ArticleModal from '../../components/modals/ArticleModal';
 
 const ArticleForm = () => {
   // Form state
@@ -36,15 +43,15 @@ const ArticleForm = () => {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
 
-  // Example categories (dropdown). Adapt to your actual categories if needed.
+  // Example categories
   const Categories = ['Education', 'Exhibit', 'Contents', 'Other'];
 
   const token = localStorage.getItem('token');
   const BASE_URL = import.meta.env.VITE_API_URL;
   const UPLOAD_PATH = `${BASE_URL}/uploads/`;
 
-  // Tiptap Editor
-    const editor = useEditor({
+  // Initialize TipTap editor
+  const editor = useEditor({
     extensions: [
       StarterKit,
       Underline,
@@ -53,15 +60,19 @@ const ArticleForm = () => {
         alignments: ['left', 'center', 'right', 'justify'],
       }),
       TextStyle,
-      ColumnLeft,
-      ColumnRight,
-      TwoColumnBlock,
       Image,
+
+      // Commented out custom local column blocks:
+      // ColumnLeft,
+      // ColumnRight,
+      // TwoColumnBlock,
+
+      // Add the new column extension
+      ColumnExtension,
     ],
     content: "",
   });
 
-  // Fetch all articles on mount
   useEffect(() => {
     fetchArticles();
   }, []);
@@ -233,33 +244,29 @@ const ArticleForm = () => {
   const pendingCount = articles.filter((article) => article.status === 'pending').length;
   const totalCount = articles.length;
 
+  const handleStatusChange = async (articleId, newStatus) => {
+    try {
+      await axios.put(
+        `${BASE_URL}/api/auth/article/${articleId}`,
+        { status: newStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
 
-
-const handleStatusChange = async (articleId, newStatus) => {
-  try {
-    await axios.put(
-      `${BASE_URL}/api/auth/article/${articleId}`,
-      { status: newStatus }, // Make sure we send 'status' here
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      }
-    );
-
-    // Update local state or refetch
-    setArticles((prev) =>
-      prev.map((a) =>
-        a.article_id === articleId ? { ...a, status: newStatus } : a
-      )
-    );
-  } catch (error) {
-    console.error("Error updating status:", error);
-    alert("Unable to update article status.");
-  }
-};
-
+      setArticles((prev) =>
+        prev.map((a) =>
+          a.article_id === articleId ? { ...a, status: newStatus } : a
+        )
+      );
+    } catch (error) {
+      console.error("Error updating status:", error);
+      alert("Unable to update article status.");
+    }
+  };
 
   return (
     <>
@@ -439,22 +446,20 @@ const handleStatusChange = async (articleId, newStatus) => {
                         {article.article_category}
                       </div>
                       <div className="px-4 py-1">
-    <select
-      value={article.status}
-      onClick={(e) => e.stopPropagation()} // Prevent row click
-      onChange={(e) => handleStatusChange(article.article_id, e.target.value)}
-      className="text-white rounded-md px-4 py-1 bg-[#5C4624]" 
-      // You can adjust styles or conditionally change the background if you like
-    >
-      <option className="bg-white text-black" value="pending">
-        Pending
-      </option>
-      <option className="bg-white text-black" value="posted">
-        Posted
-      </option>
-    </select>
-  </div>
-
+                        <select
+                          value={article.status}
+                          onClick={(e) => e.stopPropagation()} // Prevent row click
+                          onChange={(e) => handleStatusChange(article.article_id, e.target.value)}
+                          className="text-white rounded-md px-4 py-1 bg-[#5C4624]"
+                        >
+                          <option className="bg-white text-black" value="pending">
+                            Pending
+                          </option>
+                          <option className="bg-white text-black" value="posted">
+                            Posted
+                          </option>
+                        </select>
+                      </div>
                     </div>
                   ))
                 ) : (
