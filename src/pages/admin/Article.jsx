@@ -8,14 +8,22 @@ import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import Image from '@tiptap/extension-image';
 import TextStyle from '@tiptap/extension-text-style';
-// Commenting out the old custom column blocks
-// import { TwoColumnBlock } from '../../components/articleComponents/TwoColumnBlock';
-// import { ColumnLeft } from '../../components/articleComponents/ColumnLeft';
-// import { ColumnRight } from '../../components/articleComponents/ColumnRight';
-
 import { ColumnBlock, Column } from '../../components/articleComponents/ColumBlock';
-
 import ArticleModal from '../../components/modals/ArticleModal';
+
+import Placeholder from '@tiptap/extension-placeholder';
+import Link from '@tiptap/extension-link';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import Highlight from '@tiptap/extension-highlight';
+import Youtube from '@tiptap/extension-youtube';
+import { HardBreak } from '@tiptap/extension-hard-break';
+
+import FontSize from '../../components/articleComponents/FontSize';
+
+
 
 const ArticleForm = () => {
   // Form state
@@ -60,10 +68,41 @@ const ArticleForm = () => {
       Image,
       ColumnBlock,
       Column,
-      
+      FontSize,
+      Link.configure({
+        openOnClick: true,
+        autolink: true,
+        linkOnPaste: true,
+      }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      Placeholder.configure({
+        placeholder: 'Start writing your article...',
+      }),
+      Highlight,
+      Youtube,
+      HardBreak.configure({
+        HTMLAttributes: {
+          class: 'hard-break',
+        },
+      }),
     ],
     content: "",
-    
+    editorProps: {
+      handleKeyDown(view, event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          view.dispatch(
+            view.state.tr.replaceSelectionWith(
+              view.state.schema.nodes.hardBreak.create()
+            )
+          );
+          return true;
+        }
+        return false;
+      },
+    },
   });
 
   useEffect(() => {
@@ -264,6 +303,17 @@ const ArticleForm = () => {
     }
   };
 
+  const encodedProfile = localStorage.getItem('userProfile');
+let userRole = '';
+if (encodedProfile) {
+  try {
+    const profile = JSON.parse(atob(encodedProfile));
+    userRole = profile.role;
+  } catch (e) {
+    userRole = '';
+  }
+}
+
   return (
     <>
       <div className='w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]'>
@@ -361,70 +411,105 @@ const ArticleForm = () => {
             </div>
 
             {/* Right: Table + Filters */}
-            <div className='w-full h-full flex flex-col gap-y-7 overflow-x-auto overflow-y-auto'>
+            <div className='w-full h-full flex flex-col gap-y-7'>
               {/* Filters */}
-              <div className='min-w-[94rem] py-2 flex items-center gap-x-2'>
-                {/* Date filter */}
-                <div className='flex-shrink-0'>
-                  <CustomDatePicker
-                    selected={filterDate}
-                    onChange={(date) => setFilterDate(date)}
-                    popperPlacement="bottom-start"
-                    popperClassName="z-50"
-                    customInput={
-                      <button className='px-3 h-16 rounded-lg border-1 border-gray-500'>
-                        <i className="text-gray-500 fa-regular fa-calendar text-4xl"></i>
-                      </button>
-                    }
-                  />
-                </div>
+              <div
+  className="
+    w-full
+    py-2
+    flex flex-wrap items-center gap-x-2
+    min-w-[20rem]
+    sm:min-w-[28rem]
+    md:min-w-[32rem]
+    lg:min-w-[38rem]
+    xl:min-w-[40rem]
+  "
+>
+  {/* Date filter */}
+  <div className='flex-shrink-0'>
+    <CustomDatePicker
+      selected={filterDate}
+      onChange={(date) => setFilterDate(date)}
+      popperPlacement="bottom-start"
+      popperClassName="z-50"
+      customInput={
+        <button className='px-3 h-12 sm:h-14 md:h-16 rounded-lg border-1 border-gray-500'>
+          <i className="text-gray-500 fa-regular fa-calendar text-3xl sm:text-4xl"></i>
+        </button>
+      }
+    />
+  </div>
 
-                {/* Search box */}
-                <div className="relative h-full min-w-[20rem]">
-                  <i className="text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                  <input
-                    type="text"
-                    placeholder="Search Articles"
-                    className="h-full pl-10 pr-3 py-2 border-1 border-gray-500 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
+  {/* Search box */}
+  <div className="
+    relative h-full
+    min-w-[12rem] sm:min-w-[16rem] md:min-w-[20rem] lg:min-w-[24rem] xl:min-w-[28rem]
+    flex-1
+  ">
+    <i className="text-xl sm:text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
+    <input
+      type="text"
+      placeholder="Search Articles"
+      className="
+        h-full pl-10 pr-3 py-2 border-1 border-gray-500 rounded-lg w-full
+        focus:outline-none focus:ring-2 focus:ring-blue-500
+        text-base sm:text-lg md:text-xl
+      "
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+  </div>
 
-                {/* Filter by category */}
-                <div className="relative h-full min-w-48">
-                  <select
-                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={selectedCategoryFilter}
-                    onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                  >
-                    <option value="">All Categories</option>
-                    {Categories.map((cat, index) => (
-                      <option key={index} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
-                </div>
+  {/* Filter by category */}
+  <div className="
+    relative h-full
+    min-w-[8rem] sm:min-w-[10rem] md:min-w-[12rem] lg:min-w-[14rem] xl:min-w-[16rem]
+  ">
+    <select
+      className="
+        appearance-none border-1 border-gray-500 h-full
+        text-base sm:text-lg md:text-xl
+        rounded-lg text-gray-500 w-full py-2 pl-4 pr-8
+        focus:outline-none focus:ring-2 focus:ring-blue-500
+      "
+      value={selectedCategoryFilter}
+      onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+    >
+      <option value="">All Categories</option>
+      {Categories.map((cat, index) => (
+        <option key={index} value={cat}>
+          {cat}
+        </option>
+      ))}
+    </select>
+    <i className="text-xl sm:text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
+  </div>
 
-                {/* Filter by status */}
-                <div className="relative h-full min-w-48">
-                  <select
-                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={selectedStatusFilter}
-                    onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                  >
-                    <option value="">All Status</option>
-                    <option value="posted">Posted</option>
-                    <option value="pending">Pending</option>
-                  </select>
-                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
-                </div>
-              </div>
+  {/* Filter by status */}
+  <div className="
+    relative h-full
+    min-w-[8rem] sm:min-w-[10rem] md:min-w-[12rem] lg:min-w-[14rem] xl:min-w-[16rem]
+  ">
+    <select
+      className="
+        appearance-none border-1 border-gray-500 h-full
+        text-base sm:text-lg md:text-xl
+        rounded-lg text-gray-500 w-full py-2 pl-4 pr-8
+        focus:outline-none focus:ring-2 focus:ring-blue-500
+      "
+      value={selectedStatusFilter}
+      onChange={(e) => setSelectedStatusFilter(e.target.value)}
+    >
+      <option value="">All Status</option>
+      <option value="posted">Posted</option>
+      <option value="pending">Pending</option>
+    </select>
+    <i className="text-xl sm:text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
+  </div>
+</div>
 
               {/* Table header */}
-              <div className='min-w-[94rem] grid grid-cols-5 font-semibold'>
+              <div className='min-w-[40rem] grid grid-cols-5 font-semibold'>
                 <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Date</div>
                 <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Title</div>
                 <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Author</div>
@@ -432,74 +517,85 @@ const ArticleForm = () => {
                 <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Status</div>
               </div>
 
-              {/* Table rows */}
-              <div className='w-full min-w-[94rem] flex flex-col border-t-1 border-t-gray-400'>
-                {loading ? (
-                  <div className="col-span-5 py-8 text-center text-2xl text-gray-500">
-                    Loading articles...
-                  </div>
-                ) : error ? (
-                  <div className="col-span-5 py-8 text-center text-2xl text-red-500">
-                    {error}
-                    <div className="mt-4">
-                      <button
-                        onClick={fetchArticles}
-                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                      >
-                        Try Again
-                      </button>
-                    </div>
-                  </div>
-                ) : filteredArticles.length > 0 ? (
-                  filteredArticles.map((article) => (
-                    <div
-                      key={article.article_id}
-                      className='min-w-[94rem] text-xl grid grid-cols-5 border-b-1 border-gray-400 hover:bg-gray-300 cursor-pointer'
-                      onClick={() => handleRowClick(article)}
-                    >
-                      <div className='px-4 pt-1 pb-3'>
-                        {article.upload_date
-                          ? new Date(article.upload_date).toLocaleDateString()
-                          : new Date(article.created_at).toLocaleDateString()}
-                      </div>
-                      <div className='px-4 pt-1 pb-3 truncate'>
-                        {article.title}
-                      </div>
-                      <div className='px-4 pt-1 pb-3'>
-                        {article.author || 'Unknown'}
-                      </div>
-                      <div className='px-4 pt-1 pb-3'>
-                        {article.article_category}
-                      </div>
-                      <div className="px-4 py-1">
-                        <select
-                          value={article.status}
-                          onClick={(e) => e.stopPropagation()} // Prevent row click
-                          onChange={(e) => handleStatusChange(article.article_id, e.target.value)}
-                          className="text-white rounded-md px-4 py-1 bg-[#5C4624]"
-                        >
-                          <option className="bg-white text-black" value="pending">
-                            Pending
-                          </option>
-                          <option className="bg-white text-black" value="posted">
-                            Posted
-                          </option>
-                        </select>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="min-w-[94rem] py-16 flex justify-center items-center">
-                    <div className="text-2xl text-gray-500 flex flex-col items-center">
-                      <i className="fas fa-inbox text-5xl mb-4"></i>
-                      <p>No article found</p>
-                      <p className="text-lg mt-2">
-                        Try adjusting your filters or search criteria
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Table rows - only this is scrollable */}
+              <div
+    className='min-w-[40rem] flex flex-col border-t-1 border-t-gray-400 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100
+      h-[30rem] md:h-[35rem] lg:h-[40rem] xl:h-[45rem]'
+  >
+    {loading ? (
+      <div className="col-span-5 py-8 text-center text-2xl text-gray-500">
+        Loading articles...
+      </div>
+    ) : error ? (
+      <div className="col-span-5 py-8 text-center text-red-500">
+        {error}
+        <div className="mt-4">
+          <button
+            onClick={fetchArticles}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    ) : filteredArticles.length > 0 ? (
+      filteredArticles.map((article) => (
+        <div
+          key={article.article_id}
+          className='min-w-[40rem] text-xl grid grid-cols-5 border-b-1 border-gray-400 hover:bg-gray-300 cursor-pointer'
+          onClick={() => handleRowClick(article)}
+        >
+          <div className='px-4 pt-1 pb-3'>
+            {article.upload_date
+              ? new Date(article.upload_date).toLocaleDateString()
+              : new Date(article.created_at).toLocaleDateString()}
+          </div>
+          <div className='px-4 pt-1 pb-3 truncate'>
+            {article.title}
+          </div>
+          <div className='px-4 pt-1 pb-3'>
+            {article.author || 'Unknown'}
+          </div>
+          <div className='px-4 pt-1 pb-3'>
+            {article.article_category}
+          </div>
+          <div className="px-4 py-1">
+            {userRole === 'admin' ? (
+              <select
+                value={article.status}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  handleStatusChange(article.article_id, e.target.value);
+                }}
+                onClick={e => e.stopPropagation()}
+                className="border rounded px-2 py-1"
+              >
+                <option value="pending">Pending</option>
+                <option value="posted">Posted</option>
+              </select>
+            ) : (
+              <span
+                className="px-2 py-1 cursor-pointer"
+                onClick={() => handleRowClick(article)}
+              >
+                {article.status}
+              </span>
+            )}
+          </div>
+        </div>
+      ))
+    ) : (
+      <div className="min-w-[40rem] py-16 flex justify-center items-center">
+        <div className="text-2xl text-gray-500 flex flex-col items-center">
+          <i className="fas fa-inbox text-5xl mb-4"></i>
+          <p>No article found</p>
+          <p className="text-lg mt-2">
+            Try adjusting your filters or search criteria
+          </p>
+        </div>
+      </div>
+    )}
+  </div>
             </div>
           </div>
         </>) }
