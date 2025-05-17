@@ -33,7 +33,7 @@ const ArticleForm = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editingArticleId, setEditingArticleId] = useState(null);
   const [contentImages, setContentImages] = useState([]);
-
+  const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
   // Articles and filters
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,16 +61,14 @@ const ArticleForm = () => {
       }),
       TextStyle,
       Image,
-
       // Commented out custom local column blocks:
       // ColumnLeft,
       // ColumnRight,
       // TwoColumnBlock,
-
-      // Add the new column extension
       ColumnExtension,
     ],
     content: "",
+    
   });
 
   useEffect(() => {
@@ -150,6 +148,7 @@ const ArticleForm = () => {
 
   // Reset form to initial state
   const resetForm = () => {
+
     setTitle("");
     setAuthor("");
     setCategory("");
@@ -162,6 +161,7 @@ const ArticleForm = () => {
     setShowModal(false);
     setIsEditing(false);
     setEditingArticleId(null);
+    setIsArtifactModalOpen(false);
   };
 
   // Handle editing article (click on table row)
@@ -210,6 +210,7 @@ const ArticleForm = () => {
     }
 
     setShowModal(true);
+    setIsArtifactModalOpen(true);
   };
 
   // Handle new thumbnail in <input type="file" />
@@ -275,11 +276,40 @@ const ArticleForm = () => {
         <div className='bg-[#1C1B19] w-auto min-h-full'>
           <AdminNav />
         </div>
+        <div className='w-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
+        
+
+        {isArtifactModalOpen ? (<ArticleModal
+          showModal={showModal}
+          onClose={resetForm}
+          isEditing={isEditing}
+          editor={editor}
+          title={title}
+          setTitle={setTitle}
+          author={author}
+          setAuthor={setAuthor}
+          category={category}
+          setCategory={setCategory}
+          address={address}
+          setAddress={setAddress}
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          thumbnail={thumbnail}
+          previewImage={previewImage}
+          handleThumbnailChange={handleThumbnailChange}
+          Categories={Categories}
+          onSubmit={handleSubmit}
+          resetForm={resetForm}
+          contentImages={contentImages}
+          setContentImages={setContentImages}
+        />) : (<>
 
         {/* Main content */}
-        <div className='w-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
-          <span className='text-5xl font-semibold'>Article Management</span>
-          <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-x-5 '>
+          <div className='flex flex-col gap-y-2 '>
+                <span className=' text-5xl font-semibold'>Article Management</span>
+                <span className='text-2xl font-semibold'>Article</span>
+              </div>
+          <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-x-5 pt-5 border-t-1'>
             {/* Left: Stats & Add New */}
             <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
               {/* Info bar */}
@@ -321,7 +351,8 @@ const ArticleForm = () => {
                   <button
                     onClick={() => {
                       resetForm();
-                      setShowModal(true);
+                       setShowModal(true);
+                      setIsArtifactModalOpen(true);
                     }}
                     className="cursor-pointer flex items-center justify-between w-full px-6 py-4 bg-[#6BFFD5] text-black font-medium"
                   >
@@ -476,10 +507,11 @@ const ArticleForm = () => {
               </div>
             </div>
           </div>
+        </>) }
         </div>
 
         {/* Modal for adding/editing articles */}
-        <ArticleModal
+        {/* <ArticleModal
           showModal={showModal}
           onClose={resetForm}
           isEditing={isEditing}
@@ -502,7 +534,7 @@ const ArticleForm = () => {
           resetForm={resetForm}
           contentImages={contentImages}
           setContentImages={setContentImages}
-        />
+        /> */}
       </div>
     </>
   );
