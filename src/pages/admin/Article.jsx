@@ -13,10 +13,7 @@ import TextStyle from '@tiptap/extension-text-style';
 // import { ColumnLeft } from '../../components/articleComponents/ColumnLeft';
 // import { ColumnRight } from '../../components/articleComponents/ColumnRight';
 
-import { ColumnExtension } from '@gocapsule/column-extension';
-
-
-
+import { ColumnBlock, Column } from '../../components/articleComponents/ColumBlock';
 
 import ArticleModal from '../../components/modals/ArticleModal';
 
@@ -61,11 +58,9 @@ const ArticleForm = () => {
       }),
       TextStyle,
       Image,
-      // Commented out custom local column blocks:
-      // ColumnLeft,
-      // ColumnRight,
-      // TwoColumnBlock,
-      ColumnExtension,
+      ColumnBlock,
+      Column,
+      
     ],
     content: "",
     
@@ -510,31 +505,7 @@ const ArticleForm = () => {
         </>) }
         </div>
 
-        {/* Modal for adding/editing articles */}
-        {/* <ArticleModal
-          showModal={showModal}
-          onClose={resetForm}
-          isEditing={isEditing}
-          editor={editor}
-          title={title}
-          setTitle={setTitle}
-          author={author}
-          setAuthor={setAuthor}
-          category={category}
-          setCategory={setCategory}
-          address={address}
-          setAddress={setAddress}
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-          thumbnail={thumbnail}
-          previewImage={previewImage}
-          handleThumbnailChange={handleThumbnailChange}
-          Categories={Categories}
-          onSubmit={handleSubmit}
-          resetForm={resetForm}
-          contentImages={contentImages}
-          setContentImages={setContentImages}
-        /> */}
+
       </div>
     </>
   );

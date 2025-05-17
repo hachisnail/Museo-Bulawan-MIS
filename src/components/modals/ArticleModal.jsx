@@ -62,6 +62,8 @@ const ArticleModal = ({
   // Track if a thumbnail is present
   const [hasThumbnail, setHasThumbnail] = useState(!!thumbnail || !!previewImage);
 
+
+  
   // Update hasThumbnail when thumbnail changes
   useEffect(() => {
     setHasThumbnail(!!thumbnail || !!previewImage);
@@ -234,6 +236,9 @@ const ArticleModal = ({
       setShowSubmitConfirm(true);
     }
   };
+
+
+  
 
   if (!showModal) {
     return null;
@@ -563,24 +568,23 @@ const ArticleModal = ({
                   {/* Two Column / Insert Image */}
                   <div className="flex gap-1">
                     <button
-                      type="button"
-                      onClick={(evt) => {
-                        evt.preventDefault();
-                        evt.stopPropagation();
-                        if (
-                          editor &&
-                          editor.isEditable &&
-                          !editor.isActive('columns')
-                        ) {
-                          // Always use the extension's command
-                          editor.chain().focus().setColumns(2).run();
-                        }
-                      }}
-                      className="p-1 border rounded"
-                      title="Insert Two Column Layout"
-                    >
-                      <ColumnsIcon size={16} />
-                    </button>
+  type="button"
+  onClick={(evt) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    editor.chain().focus().insertContent({
+      type: 'columnBlock',
+      content: [
+        { type: 'column', content: [{ type: 'paragraph' }] },
+        { type: 'column', content: [{ type: 'paragraph' }] },
+      ],
+    }).run();
+  }}
+  className="p-1 border rounded"
+  title="Insert Two Column Layout"
+>
+  <ColumnsIcon size={16} />
+</button>
 
                     
                     <button
