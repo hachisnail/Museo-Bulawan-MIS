@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import LandingNav from '../../components/navbar/LandingNav'
 import { ScrollRestoration } from 'react-router-dom'
 import CalendarComponent from '../../components/function/CalendarComponent';
+import NewsEvents from '../../components/modals/NewsEvents'; // adjust the path as needed
 
 
 import bgImage1 from '../../../src/assets/06-AfternoonMealOfTheWorker 1.png'

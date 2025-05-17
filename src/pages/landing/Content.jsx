@@ -214,9 +214,10 @@ const Content = () => {
                     <p className="text-[#F05454] text-base uppercase mt-2">
                       {article.article_category || 'No Category'}
                     </p>
-                    <h2 className="text-white text-2xl font-bold mt-1">
+                    <h2 className="text-[#E5D2AC] italic text-[3rem] font-semibold mt-1">
                       {article.title || 'Untitled'}
                     </h2>
+
                     <p className="text-gray-300 text-base mt-1">
                       {displayDate}
                     </p>

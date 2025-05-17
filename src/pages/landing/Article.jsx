@@ -123,7 +123,7 @@ const Article = () => {
               <img
                 src={`${API_URL}/uploads/${article.images}`}
                 alt="Article Thumbnail"
-                className="max-h-64 object-contain"
+                className="mx-[2.5rem] object-contain"
               />
             </div>
           )}
