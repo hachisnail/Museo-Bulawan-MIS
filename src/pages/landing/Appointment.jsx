@@ -142,18 +142,44 @@ const Appointment = () => {
     purp === 'Workshops or Classes' ||
     purp === 'Others';
 
+  function convertTimeFormatToUIKey(startTime, endTime) {
+    // Map 24-hour time back to UI display format
+    const timeMap = {
+      "09:00-10:29": "09:00-10:29",
+      "10:30-11:59": "10:30-11:59",
+      "13:00-14:29": "01:00-02:29", // 1:00 PM - 2:29 PM
+      "14:30-16:00": "02:30-04:00"  // 2:30 PM - 4:00 PM
+    };
+
+    const standardKey = `${startTime}-${endTime}`;
+
+    // Return the UI format key if found in our mapping
+    if (timeMap[standardKey]) {
+      return timeMap[standardKey];
+    }
+
+    // Check if we have 12-hour format already
+    if (timeMap.values().includes(standardKey)) {
+      return standardKey;
+    }
+
+    return null;
+  }
+
   // Function to check time slot availability considering both appointments and schedules
   // Inside the checkTimeSlotAvailability function
   const checkTimeSlotAvailability = async (date) => {
     if (!date) return;
 
     setIsLoadingTimeSlots(true);
+    console.log('Checking availability for date:', date);
 
     try {
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const formattedDate = `${year}-${month}-${day}`;
+      console.log('Formatted date:', formattedDate);
 
       const API_URL = import.meta.env.VITE_API_URL || '/api';
       const timeSlots = ['09:00-10:29', '10:30-11:59', '01:00-02:29', '02:30-04:00'];
@@ -168,42 +194,83 @@ const Appointment = () => {
       });
 
       // Fetch confirmed appointments
+      console.log('Fetching appointments...');
       const appointmentResponse = await axios.get(`${API_URL}/api/auth/appointment`, { withCredentials: true });
+      console.log('Appointments fetched:', appointmentResponse.data);
 
       const todayAppointments = appointmentResponse.data.filter(appointment => {
         const appointmentDate = appointment.preferred_date.split('T')[0];
         return appointmentDate === formattedDate;
       });
+      console.log('Today\'s appointments:', todayAppointments);
 
+      // Inside checkTimeSlotAvailability function
       todayAppointments.forEach(appointment => {
         const status = (appointment.AppointmentStatus?.status || '').toUpperCase();
         if (status === 'CONFIRMED') {
-          if (appointment.preferred_time && timeSlots.includes(appointment.preferred_time)) {
-            confirmedSlots[appointment.preferred_time] = true; // Mark slot as having a confirmed appointment
-            counts[appointment.preferred_time] += 1;
+          if (appointment.start_time && appointment.end_time) {
+            // Convert HH:MM:SS to HH:MM format
+            let startTime = appointment.start_time.substring(0, 5);
+            let endTime = appointment.end_time.substring(0, 5);
+
+            // Create a standardized time slot key by converting to 24-hour format if needed
+            let timeSlotKey;
+
+            // Check if we need to convert from 12-hour to 24-hour format
+            const startHour = parseInt(startTime.split(':')[0], 10);
+            const endHour = parseInt(endTime.split(':')[0], 10);
+
+            // Convert afternoon hours (1-4) to 24-hour format
+            if (startHour >= 1 && startHour <= 4) {
+              const convertedStartHour = startHour + 12;
+              startTime = `${convertedStartHour}:${startTime.split(':')[1]}`;
+            }
+
+            if (endHour >= 1 && endHour <= 4) {
+              const convertedEndHour = endHour + 12;
+              endTime = `${convertedEndHour}:${endTime.split(':')[1]}`;
+            }
+
+            // Find matching time slot in UI format
+            const mappedKey = convertTimeFormatToUIKey(startTime, endTime);
+
+            if (mappedKey) {
+              confirmedSlots[mappedKey] = true; // Block this time slot
+            }
           }
         }
       });
 
+
       // Fetch exclusive schedules
+      console.log('Fetching schedules...');
       const scheduleResponse = await axios.get(`${API_URL}/api/auth/schedules?date=${formattedDate}`, { withCredentials: true });
+      console.log('Schedules fetched:', scheduleResponse.data);
 
       if (scheduleResponse.data && Array.isArray(scheduleResponse.data)) {
         scheduleResponse.data.filter(schedule => schedule.status !== 'COMPLETED').forEach(schedule => {
+          console.log('Processing schedule:', schedule);
           if (schedule.start_time && schedule.end_time) {
             timeSlots.forEach(slot => {
               const [slotStart, slotEnd] = slot.split('-');
               if (checkTimeOverlap(schedule.start_time, schedule.end_time, slotStart, slotEnd)) {
+                console.log(`Overlap found for slot ${slot}`);
                 if (schedule.availability === 'EXCLUSIVE') {
                   exclusive[slot] = true;
+                  console.log(`Slot ${slot} marked as exclusive`);
                 } else {
                   counts[slot] += 1;
+                  console.log(`Count increased for slot ${slot}`);
                 }
               }
             });
           }
         });
       }
+
+      console.log('Final counts:', counts);
+      console.log('Final exclusive slots:', exclusive);
+      console.log('Final confirmed slots:', confirmedSlots);
 
       // Update time slot counts, exclusivity, and confirmed slots
       setTimeSlotCounts(counts);
@@ -223,7 +290,7 @@ const Appointment = () => {
       let hour, minute;
 
       if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) {
-        // Handle 12-hour format (e.g. "1:00 PM")
+        // Handle 12-hour format with AM/PM indicator
         const isPM = timeStr.toLowerCase().includes('pm');
         const timePart = timeStr.toLowerCase().replace(/am|pm/g, '').trim();
         const [hourStr, minuteStr] = timePart.split(':');
@@ -234,21 +301,18 @@ const Appointment = () => {
         if (isPM && hour !== 12) hour += 12;
         if (!isPM && hour === 12) hour = 0;
       } else {
-        // Handle 24-hour format (e.g. "13:00:00" or "13:00")
-        // Remove seconds if present
+        // Handle format without AM/PM indicator
         const cleanTime = timeStr.split(':').slice(0, 2).join(':');
         const [hourStr, minuteStr] = cleanTime.split(':');
         hour = parseInt(hourStr, 10);
         minute = parseInt(minuteStr || '0', 10);
-      }
 
-      // Special handling for "01:00" vs "1:00" format
-      if (hour < 10 && !timeStr.toLowerCase().includes('pm') && !timeStr.toLowerCase().includes('am')) {
-        // If afternoon hours in 24-hour format, keep as is
-        // Otherwise, handle "01:00" as "13:00" if it's supposed to be afternoon
-        if (timeStr.startsWith('0') && ['01', '02', '03', '04'].includes(timeStr.slice(0, 2))) {
-          hour += 12;
+        // Museum hours are 9:00am-5:00pm
+        // For hours between 1 and 5 without AM/PM indicator, assume PM (13:00-17:00)
+        if (hour >= 1 && hour <= 5) {
+          hour += 12; // Convert to 24-hour format (e.g., 2:30 becomes 14:30)
         }
+        // Hours 9-12 remain as is (assumed to be AM)
       }
 
       return hour * 60 + minute;
@@ -306,9 +370,22 @@ const Appointment = () => {
 
     if (selectedTime) {
       const [startTime, endTime] = selectedTime.split('-');
-      startTimeValue = startTime + ":00"; // Add seconds for SQL TIME format
-      endTimeValue = endTime + ":00";     // Add seconds for SQL TIME format
+
+      // Convert to 24-hour format
+      const convertTo24Hour = (timeStr) => {
+        const [hourStr, minuteStr] = timeStr.split(':');
+        let hour = parseInt(hourStr, 10);
+        // For hours 1-5 without AM/PM, assume PM (13:00-17:00)
+        if (hour >= 1 && hour <= 5) {
+          hour += 12; // Convert to 24-hour format
+        }
+        return `${hour.toString().padStart(2, '0')}:${minuteStr}:00`;
+      };
+
+      startTimeValue = convertTo24Hour(startTime);
+      endTimeValue = convertTo24Hour(endTime);
     }
+
 
     const payload = {
       first_name: firstName,

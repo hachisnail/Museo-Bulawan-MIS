@@ -78,6 +78,26 @@ const Appointment = () => {
   const token = localStorage.getItem('token')
   const API_URL = import.meta.env.VITE_API_URL
 
+  // Convert time from 24-hour to 12-hour format for display
+  const convertTo12Hour = (timeStr) => {
+    if (!timeStr) return '';
+
+    // Remove seconds if they exist
+    const cleanTime = timeStr.includes(':') ? timeStr.split(':').slice(0, 2).join(':') : timeStr;
+
+    // Parse hours and minutes
+    const [hourStr, minuteStr] = cleanTime.split(':');
+    let hour = parseInt(hourStr, 10);
+    const minute = parseInt(minuteStr || '0', 10);
+
+    // Convert to 12-hour format
+    const period = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12 || 12;
+
+    return `${hour}:${minute.toString().padStart(2, '0')} ${period}`;
+  };
+
+
   /**
    * Format date to YYYY-MM-DD for API requests
    */
@@ -107,17 +127,9 @@ const Appointment = () => {
       return "Flexible";
     }
 
-    // Convert and format the time strings
-    const formatTime = (time) => {
-      if (!time) return '';
-      // Remove seconds if they exist
-      return time.includes(':')
-        ? time.split(':').slice(0, 2).join(':')
-        : time;
-    };
-
-    const formattedStart = formatTime(start_time);
-    const formattedEnd = formatTime(end_time);
+    // Convert and format to 12-hour format
+    const formattedStart = convertTo12Hour(start_time);
+    const formattedEnd = convertTo12Hour(end_time);
 
     // Only return the time range if both times are valid
     if (formattedStart && formattedEnd) {
@@ -126,6 +138,7 @@ const Appointment = () => {
 
     return "Flexible";
   };
+
 
 
   // Add these functions to your Appointment.jsx component
