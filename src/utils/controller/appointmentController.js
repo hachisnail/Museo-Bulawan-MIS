@@ -153,37 +153,37 @@ export const updateAppointmentStatus = async (req, res) => {
 }
 
 export const getAppointmentStats = async (req, res) => {
-    try {
-      // Default should load all data without date filtering
-      // Only filter when date is explicitly provided
-      const filterDate = req.query.date ? new Date(req.query.date) : null;
-      
-      // Build the where clause for date filtering (only if date is provided)
-      const dateWhere = {};
-      if (filterDate) {
-        const startDate = new Date(filterDate);
-        startDate.setHours(0, 0, 0, 0);
-        
-        const endDate = new Date(filterDate);
-        endDate.setHours(23, 59, 59, 999);
-        
-        dateWhere.creation_date = {
-          [Op.between]: [startDate, endDate]
-        };
-      }
-  
-      // Get all appointment data without filtering by default
-      const appointments = await Appointment.findAll({
-        where: Object.keys(dateWhere).length > 0 ? dateWhere : {},
-        include: [
-          {
-            model: AppointmentStatus,
-            required: false
-          }
-        ],
-        attributes: ['appointment_id', 'population_count']
-      });
-    
+  try {
+    // Default should load all data without date filtering
+    // Only filter when date is explicitly provided
+    const filterDate = req.query.date ? new Date(req.query.date) : null;
+
+    // Build the where clause for date filtering (only if date is provided)
+    const dateWhere = {};
+    if (filterDate) {
+      const startDate = new Date(filterDate);
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = new Date(filterDate);
+      endDate.setHours(23, 59, 59, 999);
+
+      dateWhere.creation_date = {
+        [Op.between]: [startDate, endDate]
+      };
+    }
+
+    // Get all appointment data without filtering by default
+    const appointments = await Appointment.findAll({
+      where: Object.keys(dateWhere).length > 0 ? dateWhere : {},
+      include: [
+        {
+          model: AppointmentStatus,
+          required: false
+        }
+      ],
+      attributes: ['appointment_id', 'population_count']
+    });
+
     // Calculate stats in memory
     let approvedCount = 0;
     let rejectedCount = 0;
@@ -191,20 +191,20 @@ export const getAppointmentStats = async (req, res) => {
     let failedCount = 0;
     let expectedVisitors = 0;
     let presentCount = 0;
-    
+
     appointments.forEach(appointment => {
       // Sum expected visitors
       expectedVisitors += appointment.population_count || 0;
-      
+
       // Process status counts
       if (appointment.AppointmentStatus) {
         const status = (appointment.AppointmentStatus.status || '').toUpperCase();
-        
+
         if (status.includes('CONFIRM')) approvedCount++;
         else if (status.includes('REJECT')) rejectedCount++;
         else if (status.includes('COMPLET')) completedCount++;
         else if (status.includes('FAIL')) failedCount++;
-        
+
         // Sum present count - safely handle null values
         const present = appointment.AppointmentStatus.present_count;
         presentCount += present !== null && present !== undefined ? Number(present) : 0;
@@ -240,17 +240,17 @@ export const getAllAppointments = async (req, res) => {
   try {
     // Get date from query param if provided
     const filterDate = req.query.date ? new Date(req.query.date) : null;
-    
+
     // Build the where clause for date filtering
     let where = {};
     if (filterDate) {
       // Set start and end time for the selected date
       const startDate = new Date(filterDate);
       startDate.setHours(0, 0, 0, 0);
-      
+
       const endDate = new Date(filterDate);
       endDate.setHours(23, 59, 59, 999);
-      
+
       where.creation_date = {
         [Op.between]: [startDate, endDate]
       };
@@ -266,7 +266,7 @@ export const getAllAppointments = async (req, res) => {
     // Process data to prioritize "To Review" status
     const toReview = [];
     const others = [];
-    
+
     // Split appointments into two categories
     appointments.forEach(appointment => {
       const status = appointment.AppointmentStatus?.status?.toUpperCase() || 'TO_REVIEW';
@@ -276,10 +276,10 @@ export const getAllAppointments = async (req, res) => {
         others.push(appointment);
       }
     });
-    
+
     // Combine arrays with "To Review" first
     const sortedAppointments = [...toReview, ...others];
-    
+
     return res.json(sortedAppointments);
   } catch (error) {
     console.error('Error fetching appointments:', error);
@@ -288,29 +288,26 @@ export const getAllAppointments = async (req, res) => {
 };
 
 
-
-
-
 export const getAttendanceData = async (req, res) => {
   try {
     // Get date from query param if provided
     const filterDate = req.query.date ? new Date(req.query.date) : null;
-    
+
     // Build the where clause for date filtering
     const where = {};
     if (filterDate) {
       // Set start and end time for the selected date
       const startDate = new Date(filterDate);
       startDate.setHours(0, 0, 0, 0);
-      
+
       const endDate = new Date(filterDate);
       endDate.setHours(23, 59, 59, 999);
-      
+
       where.creation_date = {
         [Op.between]: [startDate, endDate]
       };
     }
-    
+
     const data = await Appointment.findAll({
       where,
       attributes: [
@@ -359,21 +356,21 @@ export const getVisitorRecords = async (req, res) => {
   try {
     // Get date from query param if provided
     const filterDate = req.query.date ? new Date(req.query.date) : null;
-    
+
     let appointmentWhere = {};
     if (filterDate) {
       // Set start and end time for the selected date
       const startDate = new Date(filterDate);
       startDate.setHours(0, 0, 0, 0);
-      
+
       const endDate = new Date(filterDate);
       endDate.setHours(23, 59, 59, 999);
-      
+
       appointmentWhere.creation_date = {
         [Op.between]: [startDate, endDate]
       };
     }
-    
+
     // Load all visitors with their associated appointments and statuses
     const visitors = await Visitor.findAll({
       include: [
@@ -390,14 +387,14 @@ export const getVisitorRecords = async (req, res) => {
     const records = visitors.map((visitor) => {
       // Gather all appointments
       // Update this part in the getVisitorRecords function in appointmentController.js
-const details = visitor.Appointments.map((appt) => ({
-  appointment_id: appt.appointment_id, // Add this line
-  purpose: appt.purpose_of_visit,
-  visitorCount: appt.population_count,
-  present: appt.AppointmentStatus?.present_count || 0,
-  date: appt.preferred_date,
-  status: appt.AppointmentStatus?.status || 'TO_REVIEW'
-}));
+      const details = visitor.Appointments.map((appt) => ({
+        appointment_id: appt.appointment_id, // Add this line
+        purpose: appt.purpose_of_visit,
+        visitorCount: appt.population_count,
+        present: appt.AppointmentStatus?.present_count || 0,
+        date: appt.preferred_date,
+        status: appt.AppointmentStatus?.status || 'TO_REVIEW'
+      }));
 
 
       return {
@@ -428,16 +425,33 @@ const details = visitor.Appointments.map((appt) => ({
 export const getAttendanceDetail = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Find the appointment with its related visitor and status
+
+    // Find the appointment with ALL fields and its related data
     const appointment = await Appointment.findByPk(id, {
+      attributes: [
+        'appointment_id',
+        'purpose_of_visit',
+        'population_count',
+        'preferred_date',
+        'start_time',
+        'end_time',
+        'additional_notes',
+        'creation_date'
+      ],
       include: [
         {
           model: Visitor,
           attributes: [
-            'visitor_id', 'first_name', 'last_name', 'email', 
-            'phone', 'organization', 'street', 'barangay',
-            'city_municipality', 'province'
+            'visitor_id',
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'organization',
+            'street',
+            'barangay',
+            'city_municipality',
+            'province'
           ]
         },
         {
@@ -446,10 +460,25 @@ export const getAttendanceDetail = async (req, res) => {
         }
       ]
     });
-    
+
     if (!appointment) {
       return res.status(404).json({ message: 'Attendance record not found.' });
     }
+
+    // Format time display helper function
+    const formatTimeDisplay = (start_time, end_time) => {
+      if (!start_time || !end_time) return "Flexible";
+
+      const formatTime = (time) => {
+        if (!time) return '';
+        return time.includes(':') ? time.split(':').slice(0, 2).join(':') : time;
+      };
+
+      const formattedStart = formatTime(start_time);
+      const formattedEnd = formatTime(end_time);
+
+      return formattedStart && formattedEnd ? `${formattedStart} - ${formattedEnd}` : "Flexible";
+    };
 
     // Format the data for the frontend
     const detailData = {
@@ -457,12 +486,13 @@ export const getAttendanceDetail = async (req, res) => {
       purpose: appointment.purpose_of_visit,
       populationCount: appointment.population_count,
       preferredDate: appointment.preferred_date,
-      preferredTime: appointment.preferred_time,
+      preferredTime: formatTimeDisplay(appointment.start_time, appointment.end_time),
       notes: appointment.additional_notes,
       creation_date: appointment.creation_date,
       status: appointment.AppointmentStatus?.status || 'TO_REVIEW',
       present: appointment.AppointmentStatus?.present_count,
-      
+      updatedAt: appointment.AppointmentStatus?.updated_at,
+
       // Visitor information
       fromFirstName: appointment.Visitor?.first_name || '',
       fromLastName: appointment.Visitor?.last_name || '',
@@ -491,20 +521,32 @@ export const getAttendanceDetail = async (req, res) => {
 export const getVisitorRecordDetail = async (req, res) => {
   try {
     const { visitorId, appointmentId } = req.params;
-    
+    console.log('Searching for visitor/appointment:', { visitorId, appointmentId });
+
     // Find the specific visitor
     const visitor = await Visitor.findByPk(visitorId);
-    
+    console.log('Found visitor:', visitor ? 'yes' : 'no', visitor);
+
     if (!visitor) {
       return res.status(404).json({ message: 'Visitor record not found.' });
     }
-    
-    // Find the specific appointment for this visitor
+
+    // Find the specific appointment with ALL necessary fields
     const appointment = await Appointment.findOne({
       where: {
         visitor_id: visitorId,
         appointment_id: appointmentId
       },
+      attributes: [
+        'appointment_id',
+        'purpose_of_visit',
+        'population_count',
+        'preferred_date',
+        'start_time',
+        'end_time',
+        'additional_notes',
+        'creation_date'
+      ],
       include: [
         {
           model: AppointmentStatus,
@@ -512,23 +554,40 @@ export const getVisitorRecordDetail = async (req, res) => {
         }
       ]
     });
-    
+    console.log('Found appointment:', appointment ? 'yes' : 'no', appointment);
+
     if (!appointment) {
       return res.status(404).json({ message: 'Appointment record not found for this visitor.' });
     }
-    
+
+    // Format time display helper function
+    const formatTimeDisplay = (start_time, end_time) => {
+      if (!start_time || !end_time) return "Flexible";
+
+      const formatTime = (time) => {
+        if (!time) return '';
+        return time.includes(':') ? time.split(':').slice(0, 2).join(':') : time;
+      };
+
+      const formattedStart = formatTime(start_time);
+      const formattedEnd = formatTime(end_time);
+
+      return formattedStart && formattedEnd ? `${formattedStart} - ${formattedEnd}` : "Flexible";
+    };
+
     // Format the data for the frontend
     const detailData = {
       appointment_id: appointment.appointment_id,
       purpose: appointment.purpose_of_visit,
       populationCount: appointment.population_count,
       preferredDate: appointment.preferred_date,
-      preferredTime: appointment.preferred_time,
+      preferredTime: formatTimeDisplay(appointment.start_time, appointment.end_time),
       notes: appointment.additional_notes,
       creation_date: appointment.creation_date,
       status: appointment.AppointmentStatus?.status || 'TO_REVIEW',
       present: appointment.AppointmentStatus?.present_count,
-      
+      updatedAt: appointment.AppointmentStatus?.updated_at,
+
       // Visitor information
       fromFirstName: visitor.first_name || '',
       fromLastName: visitor.last_name || '',
@@ -540,7 +599,9 @@ export const getVisitorRecordDetail = async (req, res) => {
       city_municipality: visitor.city_municipality || '',
       province: visitor.province || ''
     };
-    
+
+    console.log('Formatted detail data:', detailData);
+
     return res.json(detailData);
   } catch (error) {
     console.error('Error fetching visitor record detail:', error);
@@ -625,7 +686,7 @@ export const sendEmailNotification = async (req, res) => {
     return res.status(200).json({
       message: 'Email notification sent successfully'
     });
-    
+
   } catch (error) {
     console.error('Error sending email notification:', error);
     return res.status(500).json({
