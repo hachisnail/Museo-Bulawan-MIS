@@ -16,10 +16,13 @@ import Link from '@tiptap/extension-link';
 import Table from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
-import TableHeader from '@tiptap/extension-table-header';
-import Highlight from '@tiptap/extension-highlight';
-import Youtube from '@tiptap/extension-youtube';
+// import TableHeader from '@tiptap/extension-table-header';
+// import Highlight from '@tiptap/extension-highlight';
+// import Youtube from '@tiptap/extension-youtube';
 import { HardBreak } from '@tiptap/extension-hard-break';
+
+
+
 
 import FontSize from '../../components/articleComponents/FontSize';
 

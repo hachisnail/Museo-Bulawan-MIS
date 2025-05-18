@@ -1,0 +1,36 @@
+import express from 'express';
+import { login, logout, autoLogout, refreshToken, verifyCookie  } from '../controller/authController.js';
+import { displayUsers, displaySpecificUser, getUserLoginLogs } from '../controller/userController.js';
+import { createAppointment, getAllAppointments } from '../controller/appointmentController.js';
+import { createForm, getAllForms } from '../controller/formController.js';
+import { updateFormStatus } from '../controller/formController.js';
+import { updateFormTimestamp } from '../controller/formController.js';
+import { updateTransferStatus } from '../controller/formController.js'; // Adjust the path as necessary
+
+
+
+
+const router = express.Router();
+
+router.post('/login', login);
+router.post('/logout', logout);
+
+router.get('/fetchUsers', autoLogout ,displayUsers);
+router.get('/fetchUser/:id', autoLogout, displaySpecificUser);
+router.get('/login-logs/:userId',autoLogout , getUserLoginLogs);
+
+router.post('/appointment' , createAppointment);
+router.get('/appointment', autoLogout ,getAllAppointments);
+router.get('/refresh-token', refreshToken);
+// in routes/auth.js or wherever you handle routes
+router.get('/verify-cookie', verifyCookie);
+
+router.post('/form', createForm);     // existing route for creating a form
+router.get('/form', autoLogout, getAllForms);  // new route for fetching all forms
+router.put('/form/:id/status', updateFormStatus);
+router.put('/form/:id/timestamp', updateFormTimestamp);
+router.put('/form/:id/transfer_status', updateTransferStatus); // New route for updating transfer status
+
+
+
+export default router;

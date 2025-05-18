@@ -14,6 +14,7 @@ const Acquisition = () => {
   const [acquisitions, setAcquisitions] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedForm, setSelectedForm] = useState(null);
+    const [isAcquisitionModalOpen, setIsAcquisitionModalOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState(null);
   const [selectedResponse, setSelectedResponse] = useState(null);
@@ -40,7 +41,7 @@ const Acquisition = () => {
 
   // Add state for document management
   const [documentView, setDocumentView] = useState(false);
-  const [storedDocuments, setStoredDocuments] = useState([]);
+
 
   
 
@@ -62,26 +63,9 @@ const Acquisition = () => {
       }
     }
     setStoredDocuments(docs);
+    setIsAcquisitionModalOpen(true);
   };
 
-  // Function to handle document download
-  const handleDocumentDownload = (doc) => {
-    const link = document.createElement('a');
-    link.href = doc.data; // Use the data URL directly
-    link.download = doc.name || 'document';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Function to delete document
-  const handleDocumentDelete = (key) => {
-    if (window.confirm('Are you sure you want to delete this document?')) {
-      localStorage.removeItem(key);
-      fetchDocuments();
-      showToast('Document deleted successfully', 'success');
-    }
-  };
 
   // Toast functions
   const showToast = (message, type = 'success') => {
@@ -250,17 +234,17 @@ const Acquisition = () => {
     if (!selectedForm) return;
 
     try {
-      const status = confirmationAction === 'approve' ? 'accepted' : 'rejected';
+      const status = confirmationAction === 'approve' ? 'Accepted' : 'Rejected';
 
       // Update the form status
       await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/status`, { status });
 
       // If the form is rejected, automatically set transfer status to Failed
-      if (status === 'rejected') {
+      if (status === 'Rejected') {
         await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
           transfer_status: 'Failed'
         });
-      } else if (status === 'accepted') {
+      } else if (status === 'Accepted') {
         // If the form is accepted, set transfer status to On Progress
         await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
           transfer_status: 'On Progress'
@@ -303,8 +287,8 @@ const Acquisition = () => {
 
   // Handle modal actions
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedForm(null);
+    setIsAcquisitionModalOpen(false); // 👈 hides the modal
+    setSelectedForm(null);  
     setSelectedResponse(null);
   };
 
@@ -344,7 +328,29 @@ const Acquisition = () => {
       setHighlightedDonator(donorId);
     }
   };
-
+  useEffect(() => {
+    // Only run this if we have forms data
+    if (forms.length > 0) {
+      // Filter forms based on selected date
+      let filteredForms = [...forms];
+      
+      if (selectedDate) {
+        const selectedDateTime = new Date(selectedDate);
+        filteredForms = forms.filter(form => {
+          const formDate = new Date(form.donation_date || form.createdAt);
+          return (
+            formDate.getFullYear() === selectedDateTime.getFullYear() && 
+            formDate.getMonth() === selectedDateTime.getMonth() && 
+            formDate.getDate() === selectedDateTime.getDate()
+          );
+        });
+      }    // Update counts based on filtered forms
+      setDonationCount(filteredForms.filter(form => form.ContributionType?.accession_type === 'Donation').length);
+      setLendingCount(filteredForms.filter(form => form.ContributionType?.accession_type === 'Lending').length);
+      setAcceptedCount(filteredForms.filter(form => form.ContributionType?.status === 'Accepted').length);
+      setRejectedCount(filteredForms.filter(form => form.ContributionType?.status === 'Rejected').length);
+    }
+  }, [forms, selectedDate]);
   // Fetch documents when tab changes or component loads
   useEffect(() => {
     if (documentView) {
@@ -442,9 +448,31 @@ const Acquisition = () => {
 
         {/* Main Content */}
         <div className='w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-auto'>
-          <span className='text-5xl font-semibold'>Donation and Lending Management</span>
-
-          <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
+        {isAcquisitionModalOpen ? (<AcquisitionModal
+     
+          isModalOpen={isAcquisitionModalOpen} // ✅ use the correct state
+        
+          selectedForm={selectedForm}
+          handleCloseModal={handleCloseModal}
+          isDonationModalOpen={isDonationModalOpen}
+          selectedDonationForm={selectedDonationForm}
+          handleCloseDonationModal={handleCloseDonationModal}
+          confirmationModal={confirmationModal}
+          setConfirmationModal={setConfirmationModal}
+          isConfirmationOpen={isConfirmationOpen}
+          confirmationAction={confirmationAction}
+          handleConfirmAction={handleConfirmAction}
+          setIsConfirmationOpen={setIsConfirmationOpen}
+          selectedResponse={selectedResponse}
+          handleApprove={handleApprove}
+          handleDecline={handleDecline}
+          handleDeliveryAction={handleDeliveryAction}
+        />) : (<>
+         <div className='flex flex-col '>
+                <span className=' text-5xl font-semibold'>Donation and Lending Management</span>
+                <span className='text-2xl font-semibold'>Acquisition</span>
+              </div>
+          <div className='w-full h-[calc(100%-9rem)] flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5'>
             {/* Left Panel: Stats + Tabs */}
             <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
               {/* Tab Selector - add Documents tab */}
@@ -466,18 +494,21 @@ const Acquisition = () => {
 
               {/* Stats Section */}
               <div className='w-full h-full flex flex-col gap-y-[5rem]'>
-                <div className='bg-[#161616] px-4 h-[5rem] flex justify-between items-center rounded-sm'>
-                  <span className='text-2xl text-white font-semibold'>Total Forms</span>
-                  <div className='w-[6rem] h-[3rem] bg-[#D4DBFF] flex items-center justify-center rounded-md'>
-                    <span className='text-2xl text-black font-semibold'>
-                      {forms.length}
-                    </span>
-                  </div>
-                </div>
+              <div className='bg-[#161616] px-4 h-[5rem] flex justify-between items-center rounded-sm'>
+              <span className='text-2xl text-white font-semibold'>Total Forms</span>
+              <div className='w-[6rem] h-[3rem] bg-[#D4DBFF] flex items-center justify-center rounded-md'>
+                <span className='text-2xl text-black font-semibold'>
+                  {filteredData.acquisitions.length}
+                </span>
+              </div>
+            </div>
+
 
                 {/* Statistics */}
                 <div className='w-full h-fit flex flex-col gap-y-7'>
-                  <span className='text-2xl font-semibold text-[#727272]'>{currentDate}</span>
+                <span className='text-2xl font-semibold text-[#727272]'>
+                    {selectedDate ? formatDate(selectedDate) : currentDate}
+                  </span>
 
                   <div className='w-full h-fit flex justify-between items-center'>
                     <span className='text-2xl font-semibold'>Donation Forms</span>
@@ -611,8 +642,10 @@ const Acquisition = () => {
                           <div
                             key={form.id}
                             className='min-w-[94rem] text-xl h-[4rem] font-semibold grid grid-cols-6 cursor-pointer hover:bg-gray-300'
-                            onClick={() => handleOpenModal(form)}
-                          >
+                            onClick={() => {
+                              setSelectedForm(form);
+                              setIsAcquisitionModalOpen(true);
+                            }}                          >
                             <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
                               {form.donation_date ? new Date(form.donation_date).toLocaleDateString() : 'N/A'}
                             </div>
@@ -738,6 +771,7 @@ const Acquisition = () => {
               </div>
             </div>
           </div>
+          </>) }
         </div>
         <SelectedDonatorModal
         isOpen={isDonationModalOpen}
@@ -748,7 +782,7 @@ const Acquisition = () => {
 
 
       {/* Modals */}
-      <AcquisitionModal
+      {/* <AcquisitionModal
         isModalOpen={isModalOpen}
         selectedForm={selectedForm}
         handleCloseModal={handleCloseModal}
@@ -765,7 +799,7 @@ const Acquisition = () => {
         handleApprove={handleApprove}
         handleDecline={handleDecline}
         handleDeliveryAction={handleDeliveryAction}
-      />
+      /> */}
 
       {/* Toast Message Component */}
       <Toast

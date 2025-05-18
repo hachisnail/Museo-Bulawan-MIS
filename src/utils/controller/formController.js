@@ -164,6 +164,7 @@ export const createForm = async (req, res) => {
           condition: req.body.condition,
           reason: req.body.reason,
           status: 'Pending',
+          transfer_status: 'On Progress',
           accession_type: 'Lending'
         });
 
@@ -397,11 +398,11 @@ export const sendFormStatusEmail = async (req, res) => {
       });
 
       // If rejected, set transfer status to Failed
-      if (status === 'rejected') {
+      if (status === 'Rejected') {
         await form.ContributionType.update({
           transfer_status: 'Failed'
         });
-      } else if (status === 'accepted') {
+      } else if (status === 'Accepted') {
         await form.ContributionType.update({
           transfer_status: 'On Progress'
         });
