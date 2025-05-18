@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../database.js';
-import LoginLog from '../models/LoginLogs.js'
+import LoginLog from './LoginLogs.js';
 
 const Credential = sequelize.define('Credential', {
   id: {
@@ -20,9 +20,7 @@ const Credential = sequelize.define('Credential', {
     type: DataTypes.STRING(255),
     allowNull: false,
     unique: true,
-    validate: {
-      isEmail: true,
-    },
+    validate: { isEmail: true },
   },
   contact_number: {
     type: DataTypes.STRING(20),
@@ -48,12 +46,23 @@ const Credential = sequelize.define('Credential', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
   },
+
+  // ← Add these two:
+  resetToken: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+  },
+  resetExpires: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  }
+
 }, {
   tableName: 'credentials',
   timestamps: false,
 });
 
 Credential.hasMany(LoginLog, { foreignKey: 'credential_id' });
-LoginLog.belongsTo(Credential, { foreignKey: 'credential_id' });
+LoginLog.belongsTo(Credential,   { foreignKey: 'credential_id' });
 
 export default Credential;
