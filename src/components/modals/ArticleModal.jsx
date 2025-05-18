@@ -62,6 +62,8 @@ const ArticleModal = ({
   // Track if a thumbnail is present
   const [hasThumbnail, setHasThumbnail] = useState(!!thumbnail || !!previewImage);
 
+
+  
   // Update hasThumbnail when thumbnail changes
   useEffect(() => {
     setHasThumbnail(!!thumbnail || !!previewImage);
@@ -140,8 +142,7 @@ const ArticleModal = ({
   // Apply selected font size to the editor
   const handleFontSizeChange = (e) => {
     const fontSize = e.target.value;
-    editor?.chain().focus().setMark('textStyle', { fontSize }).run();
-    setIsDirty(true);
+    editor?.chain().focus().setFontSize(fontSize).run();
   };
   
   // Handle removing the thumbnail
@@ -235,6 +236,9 @@ const ArticleModal = ({
     }
   };
 
+
+  
+
   if (!showModal) {
     return null;
   }
@@ -242,7 +246,9 @@ const ArticleModal = ({
   return (
     <>
       <div className=" gap-y-2 font-semibold flex flex-col">
-        <span className="text-5xl">Add New Article</span>
+        <span className="text-5xl">
+          {isEditing ? 'Editing an Article' : 'Add New Article'}
+        </span>
         <div className="text-2xl flex items-center text-center">
           <span
             onClick={onClose}
@@ -251,14 +257,28 @@ const ArticleModal = ({
             Article{' '}
           </span>
           <span className='text-2xl font-extrabold text-amber-900'>&nbsp; &gt; &nbsp;</span>
-          <span> Insert </span>
+          <span>{isEditing ? 'Edit' : 'Insert'}</span>
         </div>
-
-
       </div>
-        <div className="flex w-full h-full gap-4 pt-5 border-t-1 ">
+        <div className="flex w-full h-full gap-4 pt-5 border-t-1">
+          {/* LEFT SPACER */}
+          <div className="hidden 2xl:block 2xl:w-1/5" />
           {/* LEFT SIDE - Editor + Form */}
-          <div className="bg-white w-1/2 p-6 rounded-lg shadow-xl relative max-h-[90vh] overflow-auto">
+          <div
+            className="
+              bg-white
+              w-full
+              2xl:w-2/5
+              p-6
+              rounded-lg
+              shadow-xl
+              relative
+              max-h-[90vh]
+              overflow-auto
+              transition-all
+              duration-300
+            "
+          >
             <button
               onClick={handleCancelClick}
               className="absolute top-3 right-3 text-2xl text-gray-600 hover:text-black"
@@ -271,135 +291,122 @@ const ArticleModal = ({
             </h2>
             
             <form onSubmit={handleFormSubmit} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Title */}
-                <div>
-                  <label className={`${errors.title ? 'text-red-600' : ''}`}>
-                    Title {errors.title && '*'}
-                  </label>
-                  <input
-                    className="w-full border px-2 py-1 rounded"
-                    type="text"
-                    value={title}
-                    onChange={(e) => {
-                      setTitle(e.target.value);
-                      setIsDirty(true);
-                      clearFieldError('title');
-                    }}
-                    onClick={() => clearFieldError('title')}
-                  />
-                </div>
-                
-                {/* Author */}
-                <div>
-                  <label className={`${errors.author ? 'text-red-600' : ''}`}>
-                    Author {errors.author && '*'}
-                  </label>
-                  <input
-                    className="w-full border px-2 py-1 rounded"
-                    type="text"
-                    value={author}
-                    onChange={(e) => {
-                      setAuthor(e.target.value);
-                      setIsDirty(true);
-                      clearFieldError('author');
-                    }}
-                    onClick={() => clearFieldError('author')}
-                  />
-                </div>
-                
-                {/* Category */}
-                <div>
-                  <label className={`${errors.category ? 'text-red-600' : ''}`}>
-                    Category {errors.category && '*'}
-                  </label>
-                  <select
-                    className="w-full border px-2 py-1 rounded"
-                    value={category}
-                    onChange={(e) => {
-                      setCategory(e.target.value);
-                      setIsDirty(true);
-                      clearFieldError('category');
-                    }}
-                    onClick={() => clearFieldError('category')}
-                  >
-                    <option value="" disabled={category !== ''}>
-                      Select a category
-                    </option>
-                    {Categories.map((cat, index) => (
-                      <option key={index} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                {/* Address */}
-                <div>
-                  <label className={`${errors.address ? 'text-red-600' : ''}`}>
-                    Address {errors.address && '*'}
-                  </label>
-                  <input
-                    className="w-full border px-2 py-1 rounded"
-                    type="text"
-                    value={address}
-                    onChange={(e) => {
-                      setAddress(e.target.value);
-                      setIsDirty(true);
-                      clearFieldError('address');
-                    }}
-                    onClick={() => clearFieldError('address')}
-                  />
-                </div>
-                
-                {/* Date */}
-                <div>
-                  <label className={`${errors.selectedDate ? 'text-red-600' : ''}`}>
-                    Date {errors.selectedDate && '*'}
-                  </label>
-                  <input
-                    className="w-full border px-2 py-1 rounded"
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => {
-                      setSelectedDate(e.target.value);
-                      setIsDirty(true);
-                      clearFieldError('selectedDate');
-                    }}
-                    onClick={() => clearFieldError('selectedDate')}
-                  />
-                </div>
-                
-                {/* Thumbnail with Remove Button */}
-                <div>
-                  <label>Thumbnail</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={thumbnailInputRef}
-                      className="w-full border px-2 py-1 rounded"
-                      type="file"
-                      name="thumbnail"
-                      onChange={handleCustomThumbnailChange}
-                    />
-                    {hasThumbnail && !removeThumbnail ? (
-                      <button
-                        type="button"
-                        onClick={handleRemoveThumbnail}
-                        className="p-1 border rounded bg-red-50 hover:bg-red-100 text-red-600"
-                        title="Remove thumbnail"
-                      >
-                        <XIcon size={16} />
-                      </button>
-                    ) : null}
-                  </div>
-                  
-                  {isEditing && thumbnail && typeof thumbnail === 'string' && !removeThumbnail && (
-                    <div className="mt-1 text-sm text-gray-600">
-                      Current image: {thumbnail}
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* Row 1: Title */}
+  <div className="flex flex-col gap-2">
+    <input
+      className={`w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.title ? 'border-red-600' : ''}`}
+      type="text"
+      value={title}
+      onChange={(e) => {
+        setTitle(e.target.value);
+        setIsDirty(true);
+        clearFieldError('title');
+      }}
+      onClick={() => clearFieldError('title')}
+      placeholder={`Title${errors.title ? ' *' : ''}`}
+    />
+  </div>
+
+  {/* Row 2: Author, Category, Address */}
+  <div className="flex flex-col md:flex-row gap-4">
+    {/* Author */}
+    <div className="flex-1 flex flex-col gap-2">
+      <input
+        className={`w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.author ? 'border-red-600' : ''}`}
+        type="text"
+        value={author}
+        onChange={(e) => {
+          setAuthor(e.target.value);
+          setIsDirty(true);
+          clearFieldError('author');
+        }}
+        onClick={() => clearFieldError('author')}
+        placeholder={`Author${errors.author ? ' *' : ''}`}
+      />
+    </div>
+    {/* Category */}
+    <div className="flex-1 flex flex-col gap-2">
+      <select
+        className={`w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.category ? 'border-red-600' : ''}`}
+        value={category}
+        onChange={(e) => {
+          setCategory(e.target.value);
+          setIsDirty(true);
+          clearFieldError('category');
+        }}
+        onClick={() => clearFieldError('category')}
+      >
+        <option value="" disabled={category !== ''}>
+          {`Category${errors.category ? ' *' : ''}`}
+        </option>
+        {Categories.map((cat, index) => (
+          <option key={index} value={cat}>{cat}</option>
+        ))}
+      </select>
+    </div>
+    {/* Address */}
+    <div className="flex-1 flex flex-col gap-2">
+      <input
+        className={`w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.address ? 'border-red-600' : ''}`}
+        type="text"
+        value={address}
+        onChange={(e) => {
+          setAddress(e.target.value);
+          setIsDirty(true);
+          clearFieldError('address');
+        }}
+        onClick={() => clearFieldError('address')}
+        placeholder={`Address${errors.address ? ' *' : ''}`}
+      />
+    </div>
+  </div>
+
+  {/* Row 3: Date and Thumbnail */}
+  <div className="flex flex-col md:flex-row gap-4">
+    {/* Date */}
+    <div className="flex-1 flex flex-col gap-2">
+      <input
+        className={`w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.selectedDate ? 'border-red-600' : ''}`}
+        type="date"
+        value={selectedDate}
+        onChange={(e) => {
+          setSelectedDate(e.target.value);
+          setIsDirty(true);
+          clearFieldError('selectedDate');
+        }}
+        onClick={() => clearFieldError('selectedDate')}
+        placeholder=""
+      />
+    </div>
+    {/* Thumbnail */}
+    <div className="flex-1 flex flex-col gap-2">
+      <div className="relative">
+        <input
+          ref={thumbnailInputRef}
+          className="w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black"
+          type="file"
+          name="thumbnail"
+          onChange={handleCustomThumbnailChange}
+        />
+        {hasThumbnail && !removeThumbnail ? (
+          <button
+            type="button"
+            onClick={handleRemoveThumbnail}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-red-600 hover:text-red-800 bg-transparent border-none p-0 m-0"
+            title="Remove thumbnail"
+            style={{ zIndex: 2, background: 'none', border: 'none' }}
+          >
+            <XIcon size={15} strokeWidth={3} />
+          </button>
+        ) : null}
+      </div>
+      {isEditing && thumbnail && typeof thumbnail === 'string' && !removeThumbnail && (
+        <div className="mt-1 text-sm text-gray-600">
+          Current image: {thumbnail}
+        </div>
+      )}
+    </div>
+  </div>
               
               {/* Tiptap Rich Text Editor */}
               <div className="space-y-2">
@@ -567,14 +574,13 @@ const ArticleModal = ({
                       onClick={(evt) => {
                         evt.preventDefault();
                         evt.stopPropagation();
-                        if (
-                          editor &&
-                          editor.isEditable &&
-                          !editor.isActive('columns')
-                        ) {
-                          // Always use the extension's command
-                          editor.chain().focus().setColumns(2).run();
-                        }
+                        editor.chain().focus().insertContent({
+                          type: 'columnBlock',
+                          content: [
+                            { type: 'column', content: [{ type: 'paragraph' }] },
+                            { type: 'column', content: [{ type: 'paragraph' }] },
+                          ],
+                        }).run();
                       }}
                       className="p-1 border rounded"
                       title="Insert Two Column Layout"
@@ -603,24 +609,85 @@ const ArticleModal = ({
                       className="hidden"
                     />
                   </div>
-                </div>
+                      {/* Table, Link, Highlight, YouTube */}
+<div className="flex gap-1 ml-2">
+  {/* Insert Table */}
+  <button
+    type="button"
+    onClick={(evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+      setIsDirty(true);
+    }}
+    className="p-1 border rounded"
+    title="Insert Table"
+  >
+    <i className="fas fa-table" />
+  </button>
+
+  {/* Add/Edit Link */}
+  <button
+    type="button"
+    onClick={async (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      const url = prompt('Enter URL');
+      if (url) {
+        editor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+        setIsDirty(true);
+      }
+    }}
+    className={`p-1 border rounded ${editor?.isActive('link') ? 'bg-white' : ''}`}
+    title="Add/Edit Link"
+  >
+    <i className="fas fa-link" />
+  </button>
+
+  {/* Highlight */}
+  <button
+    type="button"
+    onClick={(evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      editor?.chain().focus().toggleHighlight().run();
+      setIsDirty(true);
+    }}
+    className={`p-1 border rounded ${editor?.isActive('highlight') ? 'bg-white' : ''}`}
+    title="Highlight"
+  >
+    <i className="fas fa-highlighter" />
+  </button>
+
+  {/* YouTube Embed */}
+  <button
+    type="button"
+    onClick={async (evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      const url = prompt('Enter YouTube URL');
+      if (url) {
+        editor?.chain().focus().setYoutubeVideo({ src: url }).run();
+        setIsDirty(true);
+      }
+    }}
+    className="p-1 border rounded"
+    title="Embed YouTube Video"
+  >
+    <i className="fab fa-youtube" />
+  </button>
+</div>
+
+                </div>  
                 
                 {/* Editor area */}
                 <div
-                  className="border rounded p-4 min-h-[150px] max-h-[50vh] overflow-auto prose"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearFieldError('description');
-                  }}
+                  className="border rounded p-4 min-h-[150px] max-h-[50vh] overflow-auto prose focus:outline-none"
+                  tabIndex={0}
+                  onClick={() => editor?.commands.focus()}
                 >
                   <EditorContent 
-                    editor={editor} 
-                    onFocus={() => {
-                      editor?.on('update', () => {
-                        setIsDirty(true);
-                        clearFieldError('description');
-                      });
-                    }}
+                    editor={editor}
                   />
                 </div>
               </div>
@@ -639,9 +706,23 @@ const ArticleModal = ({
               </div>
             </form>
           </div>
-          
           {/* RIGHT SIDE - Article Preview */}
-          <div className="bg-white w-1/2 p-6 rounded-lg shadow-xl overflow-y-auto max-h-[90vh]">
+          <div
+            className="
+              bg-white
+              w-full
+              2xl:w-2/5
+              p-6
+              rounded-lg
+              shadow-xl
+              overflow-y-auto
+              max-h-[90vh]
+              mt-4
+              2xl:mt-0
+              hidden
+              lg:block
+            "
+          >
             <h3 className="text-2xl font-bold mb-4">Article Preview</h3>
             <div className="border border-gray-200 p-4 mb-4 rounded">
               <h1 className="text-center text-3xl font-bold">
@@ -688,7 +769,7 @@ const ArticleModal = ({
               </div>
             </div>
             
-            <div className="border border-gray-200 p-4 rounded min-h-[300px]">
+            <div className="border border-gray-200 p-4 rounded min-h-[300px] font-[Hina Mincho]">
               {previewImage && !removeThumbnail ? (
                 <div className="flex justify-center mb-4">
                   <img
@@ -698,7 +779,6 @@ const ArticleModal = ({
                   />
                 </div>
               ) : null}
-              
               <div className="prose max-w-none">
                 {editor?.getHTML() ? (
                   <div
@@ -713,6 +793,8 @@ const ArticleModal = ({
               </div>
             </div>
           </div>
+          {/* RIGHT SPACER */}
+          <div className="hidden 2xl:block 2xl:w-1/5" />
         </div>
 
       {/* Cancel Confirmation Dialog */}

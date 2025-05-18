@@ -214,6 +214,9 @@ const Log = () => {
                       tab = 'User Management';
                       
                       break;
+
+                    case 'ResetPassword':
+                      break;
                       
                     default:
                       console.log('well this is awkward!');
