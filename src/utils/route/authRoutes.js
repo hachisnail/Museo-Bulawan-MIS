@@ -1,16 +1,18 @@
 import express from 'express';
-import { login,
-  logout, 
-  auth, 
-  refreshToken, 
-  verifyCookie, 
+import {
+  login,
+  logout,
+  auth,
+  refreshToken,
+  verifyCookie,
   sessionStatus,
-  getUserProfile 
+  getUserProfile
 } from '../controller/authController.js';
-import { displayUsers, 
-  displaySpecificUser, 
-  getUserLoginLogs, 
-  fetchCredential 
+import {
+  displayUsers,
+  displaySpecificUser,
+  getUserLoginLogs,
+  fetchCredential
 } from '../controller/userController.js';
 import {
   createAppointment,
@@ -30,7 +32,11 @@ import {
   revokeInvitation,
   renderCompleteRegistration,
   completeRegistration,
-  registrationSuccess
+  registrationSuccess,
+  forgotPassword,
+  renderResetPassword,
+  resetPassword,
+  resetSuccess
 } from '../controller/invitationController.js';
 
 import {
@@ -42,7 +48,9 @@ import {
   sendFormStatusEmail
 } from '../controller/formController.js';
 
-import { logAction, fetchLog } from '../controller/LogService.js';
+import { 
+   logAction,
+   fetchLog } from '../controller/LogService.js';
 import {
   createArticle,
   upload,
@@ -62,7 +70,7 @@ import {
   updateScheduleStatus
 } from '../controller/scheduleController.js';
 
-import { 
+import {
   createArtifact,
   getAllArtifacts,
   getDeletedArtifacts,
@@ -97,10 +105,10 @@ router.get('/login-logs/:userId', auth, getUserLoginLogs);
 
 // Appointments
 router.post('/appointment', createAppointment, logAction('create', 'Appointment'));
-router.get('/appointment', auth, getAllAppointments);
+router.get('/appointment', getAllAppointments);
 router.patch('/appointment/:id/status', auth, updateAppointmentStatus);
 router.get('/appointment/stats', auth, getAppointmentStats);
-router.get('/attendance', auth, getAttendanceData);
+router.get('/attendance/', auth, getAttendanceData);
 router.get('/visitor-records', auth, getVisitorRecords);
 router.get('/attendance/:id', auth, getAttendanceDetail);
 router.get('/visitor-record/:visitorId/:appointmentId', auth, getVisitorRecordDetail);
@@ -124,6 +132,10 @@ router.delete('/invitations/:id', auth, revokeInvitation, logAction('delete', 'I
 router.get('/complete-registration/:token', renderCompleteRegistration);
 router.post('/complete-registration/:token', completeRegistration, logAction('create', 'Credential'));
 router.get('/registration-success', registrationSuccess);
+router.post('/forgot-password', forgotPassword);
+router.get ('/reset-password/:token', renderResetPassword);
+router.post('/reset-password/:token', resetPassword, logAction('update', 'ResetPassword'));
+router.get('/reset-success', resetSuccess);
 
 // Acquisition forms
 router.post('/form', createForm);
@@ -146,6 +158,8 @@ router.post('/artifact/:id/remove-file', auth, removeArtifactFile, logAction('up
 router.post('/artifact/batch-delete', auth, batchSoftDelete, logAction('batch-delete', 'Artifact'));
 router.post('/artifact/batch-restore', auth, batchRestore, logAction('batch-restore', 'Artifact'));
 router.post('/artifact/batch-hard-delete', auth, batchHardDelete, logAction('batch-permanent-delete', 'Artifact'));
+
+
 
 
 // Articles
