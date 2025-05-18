@@ -49,8 +49,13 @@ const ArticleForm = () => {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
 
   // Example categories
-  const Categories = ['Education', 'Exhibit', 'Contents', 'Other'];
-
+  const Categories = ['Article','Education', 'Exhibit', 'Contents', 'Other'];
+  // Municipality list (copied from Content.jsx)
+  const Municipalities = [
+    "Basud", "Capalonga", "Daet", "Jose Panganiban", "Labo",
+    "Mercedes", "Paracale", "San Lorenzo Ruiz", "San Vicente",
+    "Santa Elena", "Talisay", "Vinzons"
+  ];
   const token = localStorage.getItem('token');
   const BASE_URL = import.meta.env.VITE_API_URL;
   const UPLOAD_PATH = `${BASE_URL}/uploads/`;
@@ -343,6 +348,7 @@ if (encodedProfile) {
           previewImage={previewImage}
           handleThumbnailChange={handleThumbnailChange}
           Categories={Categories}
+          Municipalities={Municipalities} // <-- pass the list
           onSubmit={handleSubmit}
           resetForm={resetForm}
           contentImages={contentImages}
