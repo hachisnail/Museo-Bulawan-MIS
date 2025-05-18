@@ -496,9 +496,328 @@ export const registrationSuccess = (req, res) => {
           <h1>Registration Successful!</h1>
           <p>Your account has been created successfully.</p>
          
-          <p>Return to <a href="http://localhost:5173/login">Login</a></p>
+          <p>Return to <a href="http://localhost:5173/login>Login</a></p>
         </div>
       </body>
+    </html>
+  `);
+};
+
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    // 1. Lookup credential
+    const credential = await Credential.findOne({ where: { email } });
+    if (!credential) {
+      // prevent enumeration
+      return res.status(200).json({
+        message: 'If that email exists, you will receive reset instructions.'
+      });
+    }
+
+    // 2. Generate token + set 1‑hour expiry
+    const token   = uuidv4();
+    const expires = new Date();
+    expires.setHours(expires.getHours() + 1);
+
+    credential.resetToken   = token;
+    credential.resetExpires = expires;
+    await credential.save();
+
+    // 3. Email link
+    const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/reset-password/${token}`;
+    const html = `
+      <div style="font-family:'Segoe UI',sans-serif;padding:20px;background:#f9f9f9;color:#333">
+        <div style="max-width:600px;margin:auto;background:#fff;border-radius:10px;padding:30px;
+                    box-shadow:0 5px 15px rgba(0,0,0,0.1)">
+          <h2 style="color:#6F3FFF">Reset Your Museo Bulawan Password</h2>
+          <p>Hello,</p>
+          <p>You requested a password reset. Click the button below to choose a new one. This link expires in 1 hour.</p>
+          <a href="${resetUrl}" style="display:inline-block;padding:12px 20px;
+             background-color:#6F3FFF;color:white;text-decoration:none;border-radius:5px;margin-top:10px;">
+            Reset Password
+          </a>
+          <p style="margin-top:30px;font-size:14px;color:#777">
+            If you didn’t request this, just ignore this email.
+          </p>
+        </div>
+      </div>
+    `;
+
+    await sendEmail({
+      from:    '"Museo Bulawan" <museobulawanmis@gmail.com>',
+      to:      email,
+      subject: 'Password Reset Instructions',
+      html
+    });
+
+    return res.status(200).json({
+      message: 'If that email exists, you will receive reset instructions.'
+    });
+
+  } catch (error) {
+    console.error('forgotPassword error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const renderResetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const credential = await Credential.findOne({
+      where: {
+        resetToken:   token,
+        resetExpires: { [sequelize.Sequelize.Op.gt]: new Date() }
+      }
+    });
+
+    if (!credential) {
+      return res.status(400).send(`
+         <html>
+          <head>
+            <title>Invalid Password Reset</title>
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; }
+              .error { color: #ff0000; }
+            </style>
+          </head>
+          <body>
+            <h1 class="error">Invalid or expired reset link</h1>
+            <p>The forgot password link you accessed is invalid or has expired.</p>
+            <p>Please <a href="/login">request a new one</a>.</p>
+          </body>
+        </html>
+      `);
+    }
+
+   res.send(`
+  <html>
+    <head>
+      <title>Reset Password</title>
+      <style>
+        body {
+          font-family: 'Segoe UI', sans-serif;
+          background: #f4f4f9;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+        }
+        .form-container {
+          background: white;
+          padding: 30px;
+          border-radius: 12px;
+          box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+          max-width: 500px;
+          width: 100%;
+        }
+        h1 {
+          margin-bottom: 20px;
+          color: #6F3FFF;
+          text-align: center;
+        }
+        .form-group {
+          margin-bottom: 15px;
+        }
+        label {
+          display: block;
+          font-weight: 600;
+          margin-bottom: 5px;
+        }
+        input {
+          width: 100%;
+          padding: 10px;
+          border-radius: 6px;
+          border: 1px solid #ccc;
+        }
+        button {
+          width: 100%;
+          padding: 12px;
+          background: #6F3FFF;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-size: 16px;
+          cursor: pointer;
+          margin-top: 10px;
+        }
+        .error {
+          color: red;
+          margin-top: 10px;
+          text-align: center;
+          display: none;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="form-container">
+        <h1>Choose a New Password</h1>
+        <form id="resetForm">
+          <div class="form-group">
+            <label for="password">New Password</label>
+            <input type="password" id="password" name="password" required minlength="8" />
+          </div>
+          <div class="form-group">
+            <label for="confirmPassword">Confirm Password</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" />
+          </div>
+          <button type="submit">Reset Password</button>
+          <div id="error" class="error"></div>
+        </form>
+      </div>
+
+      <script>
+        document.getElementById('resetForm').addEventListener('submit', async function(e) {
+          e.preventDefault();
+
+          const password = document.getElementById('password').value;
+          const confirmPassword = document.getElementById('confirmPassword').value;
+          const errorDiv = document.getElementById('error');
+
+          // Clear previous error
+          errorDiv.style.display = 'none';
+          errorDiv.textContent = '';
+
+          if (password.length < 8) {
+            errorDiv.textContent = "Password must be at least 8 characters long.";
+            errorDiv.style.display = "block";
+            return;
+          }
+
+          if (password !== confirmPassword) {
+            errorDiv.textContent = "Passwords do not match.";
+            errorDiv.style.display = "block";
+            return;
+          }
+
+          try {
+            const response = await fetch('/api/auth/reset-password/${token}', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ password, confirmPassword })
+            });
+
+            const contentType = response.headers.get("content-type");
+
+            if (contentType && contentType.includes("application/json")) {
+              const data = await response.json();
+              if (!response.ok) throw new Error(data.message || "Password reset failed.");
+            } else if (!response.ok) {
+              throw new Error("Unexpected server response. Please try again.");
+            }
+
+            window.location.href = '/api/auth/reset-success';
+          } catch (error) {
+            errorDiv.textContent = error.message;
+            errorDiv.style.display = "block";
+          }
+        });
+      </script>
+    </body>
+  </html>
+`);
+
+  } catch (error) {
+    console.error('renderResetPassword error:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { password, confirmPassword } = req.body;
+
+    if (!password || password !== confirmPassword) {
+      return res.status(400).json({ message: 'Passwords must match.' });
+    }
+
+    const credential = await Credential.findOne({
+      where: {
+        resetToken:   token,
+        resetExpires: { [sequelize.Sequelize.Op.gt]: new Date() }
+      }
+    });
+
+    if (!credential) {
+      return res.status(400).json({ message: 'Invalid or expired reset link' });
+    }
+
+    // Hash & clear token
+    credential.password     = await bcrypt.hash(password, 10);
+    credential.resetToken   = null;
+    credential.resetExpires = null;
+    await credential.save();
+
+    // Logging middleware data
+    req.logDetails = {
+      message: `Password reset for user ${credential.email}`,
+      new:     { credential_id: credential.id },
+      first_name: `${credential.first_name}`,
+      last_name: `${credential.last_name}`,
+      email: `${credential.email}`
+
+    };
+    res.locals.newRecordId = credential.id;
+
+     res.status(200).json({ 
+      message: 'Password has been reset.' });
+     return next();
+    
+  } catch (error) {
+    console.error('resetPassword error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const resetSuccess = (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>Registration Successful</title>
+        <style>
+          body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+          }
+          .card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+          }
+          .card h1 {
+            color: #4CAF50;
+            margin-bottom: 16px;
+          }
+          .card a {
+            color: #6F3FFF;
+            text-decoration: none;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <h1>Password reset successfull</h1>
+          <p>You can now login with your new password.</p>
+         
+          <p>Return to <a href="/login>Login</a></p>
+        </div>
+        
+      </body>
+
     </html>
   `);
 };

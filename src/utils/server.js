@@ -165,6 +165,7 @@ wss.on('connection', (ws, req) => {
 // app.set('trust proxy', 1);
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
 app.use(cookieParser());
 

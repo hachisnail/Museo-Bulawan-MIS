@@ -29,6 +29,7 @@ const ArticleModal = ({
   thumbnail,
   previewImage,
   Categories,
+  Municipalities,
   onSubmit,
   handleThumbnailChange,
   setTitle,
@@ -287,7 +288,7 @@ const ArticleModal = ({
             </button>
             
             <h2 className="text-3xl font-bold mb-6">
-              {isEditing ? 'Edit Article' : 'Add New Article'}
+              Header
             </h2>
             
             <form onSubmit={handleFormSubmit} className="space-y-6">
@@ -344,20 +345,25 @@ const ArticleModal = ({
         ))}
       </select>
     </div>
-    {/* Address */}
+    {/* Address (Municipality Dropdown) */}
     <div className="flex-1 flex flex-col gap-2">
-      <input
-        className={`w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.address ? 'border-red-600' : ''}`}
-        type="text"
+      <select
+        className={`w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.address ? 'border-red-600' : ''}`}
         value={address}
-        onChange={(e) => {
+        onChange={e => {
           setAddress(e.target.value);
           setIsDirty(true);
           clearFieldError('address');
         }}
         onClick={() => clearFieldError('address')}
-        placeholder={`Address${errors.address ? ' *' : ''}`}
-      />
+      >
+        <option value="" disabled={address !== ''}>
+          {`Municipality${errors.address ? ' *' : ''}`}
+        </option>
+        {Municipalities.map((mun) => (
+          <option key={mun} value={mun}>{mun}</option>
+        ))}
+      </select>
     </div>
   </div>
 
@@ -383,11 +389,28 @@ const ArticleModal = ({
       <div className="relative">
         <input
           ref={thumbnailInputRef}
-          className="w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black"
+          className="w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black file:hidden"
           type="file"
           name="thumbnail"
           onChange={handleCustomThumbnailChange}
+          // Hide the default file input UI
+          style={{ color: 'transparent' }}
         />
+        {/* Custom file name display */}
+        <div
+          className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-sm pointer-events-none select-none"
+          style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}
+        >
+          {removeThumbnail || (!thumbnail && !previewImage)
+            ? 'No Image selected'
+            : (previewImage && previewImage.name)
+              ? previewImage.name
+              : typeof thumbnail === 'string'
+                ? thumbnail.split('/').pop()
+                : (thumbnail && thumbnail.name)
+                  ? thumbnail.name
+                  : 'No Image selected'}
+        </div>
         {hasThumbnail && !removeThumbnail ? (
           <button
             type="button"
@@ -400,11 +423,6 @@ const ArticleModal = ({
           </button>
         ) : null}
       </div>
-      {isEditing && thumbnail && typeof thumbnail === 'string' && !removeThumbnail && (
-        <div className="mt-1 text-sm text-gray-600">
-          Current image: {thumbnail}
-        </div>
-      )}
     </div>
   </div>
               
@@ -415,7 +433,7 @@ const ArticleModal = ({
                 </label>
                 
                 {/* Toolbar */}
-                <div className="flex flex-wrap items-center gap-2 p-2 bg-[#d6c2ad] rounded border border-blue-400">
+                <div className="flex flex-wrap items-center gap-2 p-2 bg-[#d6c2ad] rounded border border-black-400">
                   {/* Headings */}
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((level) => (
@@ -682,7 +700,13 @@ const ArticleModal = ({
                 
                 {/* Editor area */}
                 <div
-                  className="border rounded p-4 min-h-[150px] max-h-[50vh] overflow-auto prose focus:outline-none"
+                  className="border rounded p-4 min-h-[21.5rem] max-h-[21.5rem] 
+                  sm:min-h-[24rem] sm:max-h-[24rem] 
+                  md:min-h-[36.5rem] md:max-h-[36.5rem] 
+                  lg:min-h-[36.5rem] lg:max-h-[36.5rem] 
+                  xl:min-h-[36.6rem] xl:max-h-[36.6rem] 
+                  2xl:min-h-[37rem] 2xl:max-h-[37rem] 
+                  overflow-auto prose focus:outline-none"
                   tabIndex={0}
                   onClick={() => editor?.commands.focus()}
                 >
@@ -723,7 +747,7 @@ const ArticleModal = ({
               lg:block
             "
           >
-            <h3 className="text-2xl font-bold mb-4">Article Preview</h3>
+            <h3 className="text-2xl font-bold mb-4">Preview</h3>
             <div className="border border-gray-200 p-4 mb-4 rounded">
               <h1 className="text-center text-3xl font-bold">
                 {title || 'Title of the News or Event'}
@@ -779,18 +803,29 @@ const ArticleModal = ({
                   />
                 </div>
               ) : null}
-              <div className="prose max-w-none">
-                {editor?.getHTML() ? (
-                  <div
-                    className="editor-content-preview"
-                    dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
-                  />
-                ) : (
-                  <p className="text-gray-400 italic">
-                    Article content will appear here...
-                  </p>
-                )}
-              </div>
+              <div
+  className="
+    prose max-w-none
+    min-h-[18rem] max-h-[24rem]
+    sm:min-h-[22rem] sm:max-h-[28rem]
+    md:min-h-[26rem] md:max-h-[32rem]
+    lg:min-h-[47rem] lg:max-h-[36rem]
+    xl:min-h-[47rem] xl:max-h-[40rem]
+    2xl:min-h-[48.5rem] 2xl:max-h-[44rem]
+    overflow-auto
+  "
+>
+  {editor?.getHTML() ? (
+    <div
+      className="editor-content-preview"
+      dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
+    />
+  ) : (
+    <p className="text-gray-400 italic">
+      Article content will appear here...
+    </p>
+  )}
+</div>
             </div>
           </div>
           {/* RIGHT SPACER */}

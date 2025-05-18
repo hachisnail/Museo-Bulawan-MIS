@@ -144,10 +144,10 @@ export const AppointmentModal = ({
           `${API_URL}/api/auth/send-email-notification`,
           emailData,
           {
-             withCredentials: true ,
+            withCredentials: true,
             headers: {
               'Content-Type': 'application/json',
-              
+
             },
           }
         );
@@ -261,9 +261,10 @@ export const AppointmentModal = ({
             <div className="mb-6">
               <div className="text-gray-600 text-sm mb-1">Preferred Time</div>
               <div className="text-blue-500 text-lg">
-                {modalData.start_time && modalData.end_time
-                  ? `${modalData.start_time} - ${modalData.end_time}`
-                  : "Flexible"}
+                {modalData.preferredTime ||
+                  (modalData.start_time && modalData.end_time
+                    ? `${modalData.start_time} - ${modalData.end_time}`
+                    : "Flexible")}
               </div>
             </div>
 
