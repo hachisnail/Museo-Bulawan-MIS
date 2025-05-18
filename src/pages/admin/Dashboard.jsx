@@ -82,6 +82,7 @@ const Dashboard = () => {
       <i className="fa-solid fa-arrow-down"></i>;
   };
 
+
   // Fetch all dashboard data in one function
   const fetchDashboardData = async () => {
     try {
@@ -608,10 +609,18 @@ const Dashboard = () => {
               <div className='w-1/2 flex flex-col justify-around h-full p-2'>
                 <span className='text-2xl sm:text-6xl font-semibold'>Walk-Ins</span>
                 <div className='w-full h-fit gap-y-4 flex flex-col'>
-                  <button className='cursor-pointer shadow-lg shadow-gray-600 w-full flex items-center justify-between px-5 sm:px-10 border-3 rounded-lg h-[4rem] sm:h-[8rem]'>
+                  <button
+                    onClick={() => {
+                      window.open("/appointment", "appointmentTab");
+                    }}
+                    className='cursor-pointer shadow-lg shadow-gray-600 w-full flex items-center justify-between px-5 sm:px-10 border-3 rounded-lg h-[4rem] sm:h-[8rem]'
+                  >
                     <span className='sm:text-4xl text-2xl font-semibold'>Appointment</span>
                     <i className="fa-regular fa-square-plus text-2xl sm:text-5xl"></i>
                   </button>
+
+
+
                   <button className='cursor-pointer shadow-lg shadow-gray-600 w-full flex items-center justify-between px-5 sm:px-10 border-3 rounded-lg h-[4rem] sm:h-[8rem]'>
                     <span className='sm:text-4xl text-2xl font-semibold'>Donation</span>
                     <i className="fa-regular fa-square-plus text-2xl sm:text-5xl"></i>
