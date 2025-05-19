@@ -1,4 +1,3 @@
-// components/modals/DocumentView.jsx
 import React from 'react';
 
 const DocumentView = ({ documentKeys }) => {

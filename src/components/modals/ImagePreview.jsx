@@ -25,11 +25,11 @@ const ImagePreview = ({ isOpen, onClose, imageSrc, fileName }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-80 flex justify-center items-center z-[60]" onClick={onClose}>
-      <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg p-2" onClick={e => e.stopPropagation()}>
-        <div className="absolute top-2 right-2 flex gap-2 z-10">
+      <div className='w-fit h-fit flex-col gap-y-2 flex justify-end'>
+        <div className="flex gap-2 justify-end z-10">
           <button 
             onClick={handleDownload}
-            className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
+            className="cursor-pointer bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
             title="Download image"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -38,7 +38,7 @@ const ImagePreview = ({ isOpen, onClose, imageSrc, fileName }) => {
           </button>
           <button 
             onClick={onClose}
-            className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors"
+            className="cursor-pointer bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors"
             title="Close preview"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -46,6 +46,8 @@ const ImagePreview = ({ isOpen, onClose, imageSrc, fileName }) => {
             </svg>
           </button>
         </div>
+      <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg p-2" onClick={e => e.stopPropagation()}>
+        
         
         <div className="max-h-[85vh] overflow-auto">
           <img 
@@ -61,6 +63,8 @@ const ImagePreview = ({ isOpen, onClose, imageSrc, fileName }) => {
         
     
       </div>
+      </div>
+
     </div>
   );
 };

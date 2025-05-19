@@ -49,7 +49,7 @@ const Support = () => {
                 <div className="w-40 min-h-10 flex items-center justify-center outline-2 outline-[#867055]  bg-white xl:h-16 xl:w-60">
                   <NavLink to="/form">
                     <span className="text-2xl xl:text-4xl font-hina cursor-pointer">
-                      SUPPORT{' '}
+                      FORM{' '}
                     </span>
                   </NavLink>
                 </div>
