@@ -91,12 +91,12 @@ const ArticleModal = ({
 
   // Available font sizes for the dropdown
   const fontSizes = [
-    { label: 'Small', value: '12px' },
-    { label: 'Normal', value: '16px' },
-    { label: 'Medium', value: '20px' },
-    { label: 'Large', value: '24px' },
-    { label: 'XL', value: '28px' },
-    { label: '2XL', value: '32px' }
+    { label: 'Small', value: '0.75em' },   // ~14px if 1em = 16px
+    { label: 'Normal', value: '1em' },      // Default (16px)
+    { label: 'Medium', value: '1.25em' },   // 20px
+    { label: 'Large', value: '1.5em' },     // 24px
+    { label: 'XL', value: '1.75em' },       // 28px
+    { label: '2XL', value: '2em' }          // 32px
   ];
 
   // For uploading inline images from the editor
@@ -463,7 +463,7 @@ const ArticleModal = ({
                     <select
                       onChange={handleFontSizeChange}
                       className="px-1 py-1 border rounded text-sm"
-                      defaultValue="16px"
+                      defaultValue="1em"
                     >
                       {fontSizes.map((size) => (
                         <option key={size.value} value={size.value}>
@@ -585,97 +585,69 @@ const ArticleModal = ({
                   
                   <div className="border-l h-6 mx-2" />
                   
-                  {/* Two Column / Insert Image */}
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={(evt) => {
-                        evt.preventDefault();
-                        evt.stopPropagation();
-                        editor.chain().focus().insertContent({
-                          type: 'columnBlock',
-                          content: [
-                            { type: 'column', content: [{ type: 'paragraph' }] },
-                            { type: 'column', content: [{ type: 'paragraph' }] },
-                          ],
-                        }).run();
-                      }}
-                      className="p-1 border rounded"
-                      title="Insert Two Column Layout"
-                    >
-                      <ColumnsIcon size={16} />
-                    </button>
-
-                    
-                    <button
-                      type="button"
-                      onClick={(evt) => {
-                        evt.preventDefault();
-                        evt.stopPropagation();
-                        imageInputRef.current?.click();
-                      }}
-                      className="p-1 border rounded"
-                      title="Insert Image"
-                    >
-                      <ImageIcon size={16} />
-                    </button>
-                    <input
-                      type="file"
-                      ref={imageInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </div>
-                      {/* Table, Link, Highlight, YouTube */}
-<div className="flex gap-1 ml-2">
-  {/* Insert Table */}
+                  {/* Two Column / Three Column / Insert Image / YouTube / Highlight */}
+<div className="flex gap-1">
+  {/* Two Column */}
   <button
     type="button"
     onClick={(evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-      setIsDirty(true);
+      editor.chain().focus().insertContent({
+        type: 'columnBlock',
+        content: [
+          { type: 'column', content: [{ type: 'paragraph' }] },
+          { type: 'column', content: [{ type: 'paragraph' }] },
+        ],
+      }).run();
     }}
     className="p-1 border rounded"
-    title="Insert Table"
+    title="Insert Two Column Layout"
   >
-    <i className="fas fa-table" />
+    <ColumnsIcon size={16} />
   </button>
 
-  {/* Add/Edit Link */}
-  <button
-    type="button"
-    onClick={async (evt) => {
-      evt.preventDefault();
-      evt.stopPropagation();
-      const url = prompt('Enter URL');
-      if (url) {
-        editor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-        setIsDirty(true);
-      }
-    }}
-    className={`p-1 border rounded ${editor?.isActive('link') ? 'bg-white' : ''}`}
-    title="Add/Edit Link"
-  >
-    <i className="fas fa-link" />
-  </button>
-
-  {/* Highlight */}
+  {/* Three Column */}
   <button
     type="button"
     onClick={(evt) => {
       evt.preventDefault();
       evt.stopPropagation();
-      editor?.chain().focus().toggleHighlight().run();
-      setIsDirty(true);
+      editor.chain().focus().insertContent({
+        type: 'columnBlock',
+        content: [
+          { type: 'column', content: [{ type: 'paragraph' }] },
+          { type: 'column', content: [{ type: 'paragraph' }] },
+          { type: 'column', content: [{ type: 'paragraph' }] },
+        ],
+      }).run();
     }}
-    className={`p-1 border rounded ${editor?.isActive('highlight') ? 'bg-white' : ''}`}
-    title="Highlight"
+    className="p-1 border rounded"
+    title="Insert Three Column Layout"
   >
-    <i className="fas fa-highlighter" />
+    <span className="font-bold text-xs">3 Col</span>
   </button>
+
+  {/* Insert Image */}
+  <button
+    type="button"
+    onClick={(evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      imageInputRef.current?.click();
+    }}
+    className="p-1 border rounded"
+    title="Insert Image"
+  >
+    <ImageIcon size={16} />
+  </button>
+  <input
+    type="file"
+    ref={imageInputRef}
+    onChange={handleImageUpload}
+    accept="image/*"
+    className="hidden"
+  />
 
   {/* YouTube Embed */}
   <button
@@ -693,6 +665,21 @@ const ArticleModal = ({
     title="Embed YouTube Video"
   >
     <i className="fab fa-youtube" />
+  </button>
+
+  {/* Highlight */}
+  <button
+    type="button"
+    onClick={(evt) => {
+      evt.preventDefault();
+      evt.stopPropagation();
+      editor?.chain().focus().toggleHighlight().run();
+      setIsDirty(true);
+    }}
+    className={`p-1 border rounded ${editor?.isActive('highlight') ? 'bg-white' : ''}`}
+    title="Highlight"
+  >
+    <i className="fas fa-highlighter" />
   </button>
 </div>
 
@@ -804,16 +791,18 @@ const ArticleModal = ({
                 </div>
               ) : null}
               <div
-  className="
-    prose max-w-none
-    min-h-[18rem] max-h-[24rem]
-    sm:min-h-[22rem] sm:max-h-[28rem]
-    md:min-h-[26rem] md:max-h-[32rem]
-    lg:min-h-[47rem] lg:max-h-[36rem]
-    xl:min-h-[47rem] xl:max-h-[40rem]
-    2xl:min-h-[48.5rem] 2xl:max-h-[44rem]
-    overflow-auto
-  "
+    className="
+      prose max-w-none
+      min-h-[18rem] max-h-[24rem]
+      sm:min-h-[22rem] sm:max-h-[28rem]
+      md:min-h-[26rem] md:max-h-[32rem]
+      lg:min-h-[30rem] lg:max-h-[30rem]
+      xl:min-h-[32rem] xl:max-h-[32rem]
+      2xl:min-h-[34rem] 2xl:max-h-[34rem]
+      overflow-y-auto
+      relative
+      break-words
+    "
 >
   {editor?.getHTML() ? (
     <div
@@ -825,6 +814,10 @@ const ArticleModal = ({
       Article content will appear here...
     </p>
   )}
+  {/* Fade effect for overflow */}
+  <div className="absolute bottom-0 left-0 w-full h-12 pointer-events-none" style={{
+    background: 'linear-gradient(to top, white 80%, transparent)'
+  }} />
 </div>
             </div>
           </div>
