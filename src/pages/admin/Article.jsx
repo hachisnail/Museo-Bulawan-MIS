@@ -359,7 +359,10 @@ if (encodedProfile) {
           resetForm={resetForm}
           contentImages={contentImages}
           setContentImages={setContentImages}
-          onClose={() => setShowModal(false)}
+          onClose={() => {
+            setShowModal(false);
+            setIsArtifactModalOpen(false);
+          }}
           barangay={barangay}                // <-- Add this line
           setBarangay={setBarangay}          // <-- Add this line
         />) : (<>
