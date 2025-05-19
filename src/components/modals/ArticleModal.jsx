@@ -832,7 +832,7 @@ const ArticleModal = ({
             </div>
           </div>
           {/* RIGHT SPACER */}
-          <div className="hidden 2xl:block 2xl:w-1/5" />
+          <div className="hidden 2xl:block 2xl:w-1/5" />  
         </div>
 
       {/* Cancel Confirmation Dialog */}

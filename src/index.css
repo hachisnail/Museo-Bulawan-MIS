@@ -159,3 +159,10 @@ html {
   min-width: 0;          /* Necessary to prevent overflow in flex layout */
   padding: 0 0.75rem;    /* Optional: column padding */
 }
+
+/* Remove blue border on focus for the Tiptap editor */
+.ProseMirror:focus,
+.ProseMirror:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
