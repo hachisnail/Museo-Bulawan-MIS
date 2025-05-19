@@ -124,7 +124,7 @@ export const getAllArticles = async (req, res) => {
 export const getPublicArticles = async (req, res) => {
   try {
     const articles = await Article.findAll({
-      attributes: ['article_id', 'images', 'title', 'article_category', 'upload_date','status'],
+      attributes: ['article_id', 'images', 'title', 'article_category', 'upload_date','status', 'description'],
       where: { status: 'posted' },
       order: [['created_at', 'DESC']]
     });

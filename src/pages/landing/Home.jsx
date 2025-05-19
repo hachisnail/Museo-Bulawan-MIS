@@ -290,7 +290,7 @@ displayArticles = displayArticles.slice(0, 2);
                 </span>
                 <NavLink to="/about">
                   <span className="text-2xl cursor-pointer hover:underline">
-                    Learn More <i class="fa-solid fa-arrow-right "></i>
+                    Learn More <i className="fa-solid fa-arrow-right "></i>
                   </span>
                 </NavLink>
               </div>
@@ -310,7 +310,7 @@ displayArticles = displayArticles.slice(0, 2);
               }
               className="text-3xl hover:underline cursor-pointer font-semibold"
             >
-              Calendar <i class="fa-solid fa-arrow-right"></i>
+              Calendar <i className="fa-solid fa-arrow-right"></i>
             </span>
           </div>
         </div>
@@ -319,7 +319,7 @@ displayArticles = displayArticles.slice(0, 2);
       </div>
 
       <div ref={calendar} className="w-screen h-auto xl:h-screen min-h-[79rem] flex flex-col xl:flex-row border-t-1 border-gray-400 overflow-hidden ">
-          <div className='w-full xl:max-w-[90rem] xl:min-w-[90rem] xl:h-full h-[60rem] bg-[#FFF6E1] border-r-1 border-b-1 flex justify-center flex-col px-5 md:px-20 items-center border-gray-400'>
+          <div className='w-full xl:max-w-[80rem] xl:min-w-[80rem] xl:h-full h-[60rem] bg-[#FFF6E1] border-r-1 border-b-1 flex justify-center flex-col px-5 md:px-20 items-center border-gray-400'>
               <CalendarComponent/>
           </div>
           <div className='w-full h-full flex flex-col items-center justify-between gap-y-5'>
@@ -336,30 +336,30 @@ displayArticles = displayArticles.slice(0, 2);
                 </span>
             </div>
             <div className='w-[55rem] h-full flex flex-col justify-start gap-y-5'>
-  {displayArticles.length > 0 ? (
-    displayArticles.map((article, idx) => (
-      <NavLink
-        key={article.article_id}
-        to={`/article/${encoded(article.article_id, article.title)}`}
-        className='w-[33rem] mx-auto h-[20rem] md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat rounded-lg shadow-lg hover:opacity-90 transition'
-        style={{ backgroundImage: `url(${getImageUrl(article.images)})` }}
-        title={article.title}
-      >
-        <div className="w-full h-full flex flex-col justify-end bg-black bg-opacity-30 p-4">
-          <span className="text-white text-2xl font-bold drop-shadow">{article.title}</span>
-          <span className="text-white text-lg">{article.upload_date ? new Date(article.upload_date).toLocaleDateString() : ''}</span>
-        </div>
-      </NavLink>
-    ))
-  ) : (
-    <>
-      <div className='w-[33rem] mx-auto h-[20rem] md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat flex items-center justify-center text-gray-400' style={{ backgroundImage: `url(${bgImage1})` }}>
-        <span>No events today or upcoming.</span>
-      </div>
-      <div className='w-[33rem] h-[20rem] mx-auto md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat' style={{ backgroundImage: `url(${bgImage3})` }} />
-    </>
-  )}
-</div>
+            {displayArticles.length > 0 ? (
+              displayArticles.map((article, idx) => (
+                <NavLink
+                  key={article.article_id}
+                  to={`/article/${encoded(article.article_id, article.title)}`}
+                  className='w-[33rem] mx-auto h-[20rem] md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat rounded-lg shadow-lg hover:opacity-90 transition'
+                  style={{ backgroundImage: `url('${article.images}')` }}
+                  title={article.title}
+                >
+                  <div className="w-full h-full flex flex-col justify-end bg-opacity-30 p-4">
+                    <span className="text-white text-2xl font-bold drop-shadow">{article.title}</span>
+                    <span className="text-white text-lg">{article.upload_date ? new Date(article.upload_date).toLocaleDateString() : ''}</span>
+                  </div>
+                </NavLink>
+              ))
+            ) : (
+              <>
+                <div className='w-[33rem] mx-auto h-[20rem] md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat flex items-center justify-center text-gray-400' style={{ backgroundImage: `url(${bgImage1})` }}>
+                  <span>No events today or upcoming.</span>
+                </div>
+                <div className='w-[33rem] h-[20rem] mx-auto md:w-[55rem] md:h-[30rem] bg-cover bg-center bg-no-repeat' style={{ backgroundImage: `url(${bgImage3})` }} />
+              </>
+            )}
+          </div>
             <div className='w-full min-h-20 flex items-center justify-end pr-20'>
               <span
                 onClick={() =>
@@ -367,7 +367,7 @@ displayArticles = displayArticles.slice(0, 2);
                 }
                 className="text-3xl hover:underline cursor-pointer font-semibold"
               >
-                Events <i class="fa-solid fa-arrow-right"></i>
+                Events <i className="fa-solid fa-arrow-right"></i>
               </span>
             </div>
           </div>
@@ -398,71 +398,56 @@ displayArticles = displayArticles.slice(0, 2);
               </span>
             </div>
 
-            <div className="w-full h-full flex flex-col px-8 py-3 gap-2 xl:gap-8">
-  {loading && (
-    <div className="text-white text-2xl text-center py-10">Loading events...</div>
-  )}
-  {error && (
-    <div className="text-red-500 text-2xl text-center py-10">{error}</div>
-  )}
-  {!loading && !error && (
-    <div>
-      {/* Show up to 4 latest articles, 2 per row */}
-      {[0, 2].map((rowIdx) => (
-        <div key={rowIdx} className="h-1/2 w-full flex flex-col xl:flex-row gap-4 xl:gap-8">
-          {[0, 1].map((colIdx) => {
-            const article = articles[rowIdx + colIdx];
-            if (!article) return null;
-            const displayDate = article.upload_date
-              ? new Date(article.upload_date).toLocaleDateString()
-              : "No Date";
-            return (
-              <NavLink
-                key={colIdx}
-                to={`/article/${encoded(article.article_id, article.title)}`}
-                className="w-full h-1/2 xl:h-full hover:opacity-90 transition duration-300"
-              >
-                <div className="w-full h-full flex justify-start items-center">
-                  <div className="w-full h-full flex gap-3 xl:gap-7">
-                    <div className="w-2/5 h-full">
-                      <div className="w-full h-full">
-                        <img
-                          src={article.images}
-                          alt={article.title}
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    </div>
-                    <div className="w-3/5 h-full">
-                      <div className="w-full h-full flex flex-col gap-2 py-3">
-                        <div className="w-full min-h-[5em] flex items-center xl:min-h-[8em]">
-                          <span className="text-3xl font-bold text-white xl:text-5xl">
-                            {article.title || 'Untitled'}
-                          </span>
+            <div className="w-full h-full px-8 py-3 grid xl:grid-cols-2 xl:grid-rows-2 grid-rows-4 grid-cols-1 gap-4 xl:gap-8">
+              {loading && (
+                <div className="col-span-2 text-white text-2xl text-center py-10">Loading events...</div>
+              )}
+              {error && (
+                <div className="col-span-2 text-red-500 text-2xl text-center py-10">{error}</div>
+              )}
+              {!loading && !error &&
+                articles.slice(0, 4).map((article, index) => {
+                  const displayDate = article.upload_date
+                    ? new Date(article.upload_date).toLocaleDateString()
+                    : "No Date";
+
+                      return (
+                        <NavLink
+                          key={index}
+                          to={`/article/${encoded(article.article_id, article.title)}`}
+                          className="w-full h-full transition duration-300">
+                      <div className="w-full h-full flex flex-col xl:flex-row gap-4 bg-black/50 p-3 rounded-lg">
+                        <div className="w-full xl:w-2/5 h-40 xl:h-full rounded-lg overflow-hidden">
+                          <div
+                            className="w-full h-full bg-cover bg-no-repeat bg-center"
+                            style={{ backgroundImage: `url('${article.images}')` }}
+                          />
                         </div>
-                        <div className="w-full min-h-[3em] flex items-center xl:min-h-[5em]">
-                          <span className="text-xl font-semibold text-[#787878] xl:text-3xl">
-                            {displayDate}
-                          </span>
-                        </div>
-                        <div className="w-full min-h-[7em] xl:max-h-[14em]">
-                          <span className="text-2xl text-white xl:text-4xl">
-                            {article.article_category || ''}
-                          </span>
+                        <div className="w-full xl:w-3/5 flex flex-col justify-between gap-y-5">
+                          <div className='w-full h-70'>
+                            <h3 className="text-2xl xl:text-6xl font-bold text-white overflow-hidden">
+                              {article.title || "Untitled"}
+                            </h3>
+                          </div>
+                          <div className='w-full h-fit flex gap-x-5'>
+                            <p className="w-50 text-xl text-[#787878]">{displayDate}</p>
+                            <p className="text-xl  text-yellow-600">
+                              {article.article_category || ""}
+                            </p>
+                          </div>
+                          <div className='h-full w-full'>
+                            <span className='w-full h-full overflow-hidden text-white text-xl'>
+                              {article.description.replace(/<[^>]+>/g, '')|| '' }
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </NavLink>
-            );
-          })}
-        </div>
-      ))}
-    </div>
-  )}
-</div>
-            <div className="w-full h-full flex mt-10 justify-end px-20">
+                    </NavLink>
+                  );
+                })}
+            </div>
+
+            <div className="w-full h-fit flex mt-10 justify-end px-20">
               <span
                 onClick={() =>
                   support.current?.scrollIntoView({ behavior: 'smooth' })
