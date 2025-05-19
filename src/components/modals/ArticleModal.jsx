@@ -10,6 +10,7 @@ import {
   AlignRight,
   AlignJustify,
   Columns as ColumnsIcon,
+  LayoutGrid, // <-- Add this import
   Image as ImageIcon,
   Type as TypeIcon,
   X as XIcon
@@ -491,6 +492,20 @@ const ArticleModal = ({
                         </option>
                       ))}
                     </select>
+                    {/* Highlight (moved here) */}
+                    <button
+                      type="button"
+                      onClick={(evt) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        editor?.chain().focus().toggleHighlight().run();
+                        setIsDirty(true);
+                      }}
+                      className={`p-1 border rounded ${editor?.isActive('highlight') ? 'bg-white' : ''}`}
+                      title="Highlight"
+                    >
+                      <i className="fas fa-highlighter" />
+                    </button>
                   </div>
                   
                   <div className="border-l h-6 mx-2" />
@@ -626,7 +641,7 @@ const ArticleModal = ({
                     >
                       <ColumnsIcon size={16} />
                     </button>
-                    {/* Three Column */}
+                    {/* Three Column (custom box with 3 columns) */}
                     <button
                       type="button"
                       onClick={(evt) => {
@@ -641,10 +656,15 @@ const ArticleModal = ({
                           ],
                         }).run();
                       }}
-                      className="p-1 border rounded"
+                      className="p-1 border rounded flex items-center justify-center"
                       title="Insert Three Column Layout"
                     >
-                      <span className="font-bold text-xs">3 Col</span>
+                      {/* Custom SVG for 3 columns */}
+                      <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
+      <rect x="1" y="2" width="4" height="12" rx="1" fill="#555" />
+      <rect x="7" y="2" width="4" height="12" rx="1" fill="#555" />
+      <rect x="13" y="2" width="4" height="12" rx="1" fill="#555" />
+    </svg>
                     </button>
                   </div>
 
@@ -713,38 +733,26 @@ const ArticleModal = ({
                       <i className="fab fa-youtube" />
                     </button>
 
-                    {/* Highlight */}
-                    <button
-                      type="button"
-                      onClick={(evt) => {
-                        evt.preventDefault();
-                        evt.stopPropagation();
-                        editor?.chain().focus().toggleHighlight().run();
-                        setIsDirty(true);
-                      }}
-                      className={`p-1 border rounded ${editor?.isActive('highlight') ? 'bg-white' : ''}`}
-                      title="Highlight"
-                    >
-                      <i className="fas fa-highlighter" />
-                    </button>
+                    
                   </div>
                 </div>  
                 
                 {/* Editor area */}
                 <div
-                  className="border rounded p-4 min-h-[21.5rem] max-h-[21.5rem] 
-                  sm:min-h-[24rem] sm:max-h-[24rem] 
-                  md:min-h-[36.5rem] md:max-h-[36.5rem] 
-                  lg:min-h-[36.5rem] lg:max-h-[36.5rem] 
-                  xl:min-h-[36.6rem] xl:max-h-[36.6rem] 
-                  2xl:min-h-[37rem] 2xl:max-h-[37rem] 
-                  overflow-auto prose focus:outline-none"
+                  className="
+    border rounded p-4 min-h-[21.5rem] max-h-[21.5rem] 
+    sm:min-h-[24rem] sm:max-h-[24rem] 
+    md:min-h-[36.5rem] md:max-h-[36.5rem] 
+    lg:min-h-[36.5rem] lg:max-h-[36.5rem] 
+    xl:min-h-[36.6rem] xl:max-h-[36.6rem] 
+    2xl:min-h-[37rem] 2xl:max-h-[37rem] 
+    overflow-auto prose focus:outline-none
+    [&_.youtube-video]:!w-full [&_.youtube-video]:!max-w-[400px] [&_.youtube-video]:!mx-auto
+  "
                   tabIndex={0}
                   onClick={() => editor?.commands.focus()}
                 >
-                  <EditorContent 
-                    editor={editor}
-                  />
+                  <EditorContent editor={editor} />
                 </div>
               </div>
               
