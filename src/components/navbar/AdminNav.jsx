@@ -181,30 +181,7 @@ const AdminNav = () => {
               )}
             </NavLink>
 
-            <NavLink
-              to="/admin/appointment"
-              className={({ isActive }) =>
-                `relative group ${linkClasses} ${
-                  isActive ? activeClasses : 'text-white'
-                }`
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <img
-                    src={appointment_ico}
-                    alt="appointment"
-                    className={`h-auto w-[25px] filter brightness-1 ${
-                      isActive ? 'invert-1' : 'invert'
-                    }`}
-                  />
-                  <span className="hidden sm:block">Appointment</span>
-                  <span className="absolute  left-full ml-8 hidden group-hover:flex bg-gray-800 sm:text-transparent sm:bg-transparent text-white text-2xl rounded py-1 px-2 w-max">
-                    Appointment
-                  </span>
-                </>
-              )}
-            </NavLink>
+            
 
             <NavLink
               to="/admin/schedule"
@@ -231,6 +208,31 @@ const AdminNav = () => {
               )}
             </NavLink>
 
+
+            <NavLink
+              to="/admin/appointment"
+              className={({ isActive }) =>
+                `relative group ${linkClasses} ${
+                  isActive ? activeClasses : 'text-white'
+                }`
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  <img
+                    src={appointment_ico}
+                    alt="appointment"
+                    className={`h-auto w-[25px] filter brightness-1 ${
+                      isActive ? 'invert-1' : 'invert'
+                    }`}
+                  />
+                  <span className="hidden sm:block">Appointment</span>
+                  <span className="absolute  left-full ml-8 hidden group-hover:flex bg-gray-800 sm:text-transparent sm:bg-transparent text-white text-2xl rounded py-1 px-2 w-max">
+                    Appointment
+                  </span>
+                </>
+              )}
+            </NavLink>
             <NavLink
               to="/admin/acquisition"
               className={({ isActive }) =>

@@ -201,10 +201,7 @@ const User = () => {
               <div className="gap-y-2 text-white  font-semibold flex flex-col">
                 <span className="text-5xl">Access Management</span>
                 <div className="text-2xl flex items-center text-center">
-                  <span
-                    // onClick={handleCloseModal}
-                    className=""
-                  >
+                  <span>
                     User{' '}
                   </span>
                 </div>
