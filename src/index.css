@@ -166,3 +166,78 @@ html {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* Custom list styles for Tiptap editor */
+.ProseMirror ol,
+.ProseMirror ul {
+  color: #111 !important;
+}
+.ProseMirror ol.circle-number-list {
+  list-style-type: decimal;
+}
+.ProseMirror ol.circle-number-list > li::marker,
+.ProseMirror ol.roman-list > li::marker,
+.ProseMirror ol.letter-list > li::marker,
+.ProseMirror ol > li::marker,
+.ProseMirror ul > li::marker {
+  color: #111 !important;
+}
+.ProseMirror ol.roman-list {
+  list-style-type: upper-roman;
+}
+.ProseMirror ol.letter-list {
+  list-style-type: upper-alpha;
+}
+
+/* Bullet lists */
+.ProseMirror ul > li::marker {
+  color: #111 !important;
+}
+
+/* Ensure lists are visible in the editor */
+.ProseMirror ul,
+.ProseMirror ol {
+  list-style-position: inside !important;
+  color: #111 !important;
+}
+
+.ProseMirror ul > li::marker,
+.ProseMirror ol > li::marker {
+  color: #111 !important;
+  font-size: 1em;
+  opacity: 1 !important;
+}
+
+/* Optional: Remove any prose class hiding bullets */
+.prose ul,
+.prose ol {
+  list-style-type: initial !important;
+  margin-left: 1.5em !important;
+}
+
+.ProseMirror ul,
+.ProseMirror ul > li::marker {
+  color: #111 !important;
+  list-style-type: disc !important;
+}
+
+/* Fix bullet alignment for Tiptap's <li><p> structure */
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em !important;
+  margin-left: 0 !important;
+}
+
+.ProseMirror li > p {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.editor-content-preview p:empty,
+.editor-content-preview p.is-empty {
+  min-height: 1.5em;
+  display: block;
+  /* Optional: add a background for debugging */
+  /* background: #f9f9f9; */
+}

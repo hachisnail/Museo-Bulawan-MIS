@@ -239,8 +239,15 @@ const ArticleModal = ({
     }
   };
 
-
-  
+  // Add this helper function inside your ArticleModal component
+  const setListClass = (className) => {
+    setTimeout(() => {
+      document.querySelectorAll('.ProseMirror ol').forEach(ol => {
+        ol.classList.remove('circle-number-list', 'roman-list', 'letter-list');
+        if (className) ol.classList.add(className);
+      });
+    }, 10);
+  };
 
   if (!showModal) {
     return null;
@@ -598,104 +605,129 @@ const ArticleModal = ({
                   
                   <div className="border-l h-6 mx-2" />
                   
-                  {/* Two Column / Three Column / Insert Image / YouTube / Highlight */}
-<div className="flex gap-1">
-  {/* Two Column */}
-  <button
-    type="button"
-    onClick={(evt) => {
-      evt.preventDefault();
-      evt.stopPropagation();
-      editor.chain().focus().insertContent({
-        type: 'columnBlock',
-        content: [
-          { type: 'column', content: [{ type: 'paragraph' }] },
-          { type: 'column', content: [{ type: 'paragraph' }] },
-        ],
-      }).run();
-    }}
-    className="p-1 border rounded"
-    title="Insert Two Column Layout"
-  >
-    <ColumnsIcon size={16} />
-  </button>
+                  {/* Two Column / Three Column */}
+                  <div className="flex gap-1">
+                    {/* Two Column */}
+                    <button
+                      type="button"
+                      onClick={(evt) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        editor.chain().focus().insertContent({
+                          type: 'columnBlock',
+                          content: [
+                            { type: 'column', content: [{ type: 'paragraph' }] },
+                            { type: 'column', content: [{ type: 'paragraph' }] },
+                          ],
+                        }).run();
+                      }}
+                      className="p-1 border rounded"
+                      title="Insert Two Column Layout"
+                    >
+                      <ColumnsIcon size={16} />
+                    </button>
+                    {/* Three Column */}
+                    <button
+                      type="button"
+                      onClick={(evt) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        editor.chain().focus().insertContent({
+                          type: 'columnBlock',
+                          content: [
+                            { type: 'column', content: [{ type: 'paragraph' }] },
+                            { type: 'column', content: [{ type: 'paragraph' }] },
+                            { type: 'column', content: [{ type: 'paragraph' }] },
+                          ],
+                        }).run();
+                      }}
+                      className="p-1 border rounded"
+                      title="Insert Three Column Layout"
+                    >
+                      <span className="font-bold text-xs">3 Col</span>
+                    </button>
+                  </div>
 
-  {/* Three Column */}
-  <button
-    type="button"
-    onClick={(evt) => {
-      evt.preventDefault();
-      evt.stopPropagation();
-      editor.chain().focus().insertContent({
-        type: 'columnBlock',
-        content: [
-          { type: 'column', content: [{ type: 'paragraph' }] },
-          { type: 'column', content: [{ type: 'paragraph' }] },
-          { type: 'column', content: [{ type: 'paragraph' }] },
-        ],
-      }).run();
-    }}
-    className="p-1 border rounded"
-    title="Insert Three Column Layout"
-  >
-    <span className="font-bold text-xs">3 Col</span>
-  </button>
+                  {/* Divider before list buttons */}
+                  <div className="border-l h-6 mx-2" />
 
-  {/* Insert Image */}
-  <button
-    type="button"
-    onClick={(evt) => {
-      evt.preventDefault();
-      evt.stopPropagation();
-      imageInputRef.current?.click();
-    }}
-    className="p-1 border rounded"
-    title="Insert Image"
-  >
-    <ImageIcon size={16} />
-  </button>
-  <input
-    type="file"
-    ref={imageInputRef}
-    onChange={handleImageUpload}
-    accept="image/*"
-    className="hidden"
-  />
+                  {/* List Buttons */}
+                  <div className="flex gap-1">
+                    {/* Bullet List */}
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        editor?.chain().focus().toggleBulletList().run();
+                        setIsDirty(true);
+                      }}
+                      className={`p-1 border rounded ${editor?.isActive('bulletList') ? 'bg-white' : ''}`}
+                      title="Bullet List"
+                    >
+                      <i className="fas fa-list-ul" />
+                    </button>
+                  </div>
 
-  {/* YouTube Embed */}
-  <button
-    type="button"
-    onClick={async (evt) => {
-      evt.preventDefault();
-      evt.stopPropagation();
-      const url = prompt('Enter YouTube URL');
-      if (url) {
-        editor?.chain().focus().setYoutubeVideo({ src: url }).run();
-        setIsDirty(true);
-      }
-    }}
-    className="p-1 border rounded"
-    title="Embed YouTube Video"
-  >
-    <i className="fab fa-youtube" />
-  </button>
+                  {/* Divider before image/youtube/highlight */}
+                  <div className="border-l h-6 mx-2" />
 
-  {/* Highlight */}
-  <button
-    type="button"
-    onClick={(evt) => {
-      evt.preventDefault();
-      evt.stopPropagation();
-      editor?.chain().focus().toggleHighlight().run();
-      setIsDirty(true);
-    }}
-    className={`p-1 border rounded ${editor?.isActive('highlight') ? 'bg-white' : ''}`}
-    title="Highlight"
-  >
-    <i className="fas fa-highlighter" />
-  </button>
-</div>
+                  {/* Insert Image / YouTube / Highlight */}
+                  <div className="flex gap-1">
+                    {/* Insert Image */}
+                    <button
+                      type="button"
+                      onClick={(evt) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        imageInputRef.current?.click();
+                      }}
+                      className="p-1 border rounded"
+                      title="Insert Image"
+                    >
+                      <ImageIcon size={16} />
+                    </button>
+                    <input
+                      type="file"
+                      ref={imageInputRef}
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
 
+                    {/* YouTube Embed */}
+                    <button
+                      type="button"
+                      onClick={async (evt) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        const url = prompt('Enter YouTube URL');
+                        if (url) {
+                          editor?.chain().focus().setYoutubeVideo({ src: url }).run();
+                          setIsDirty(true);
+                        }
+                      }}
+                      className="p-1 border rounded"
+                      title="Embed YouTube Video"
+                    >
+                      <i className="fab fa-youtube" />
+                    </button>
+
+                    {/* Highlight */}
+                    <button
+                      type="button"
+                      onClick={(evt) => {
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        editor?.chain().focus().toggleHighlight().run();
+                        setIsDirty(true);
+                      }}
+                      className={`p-1 border rounded ${editor?.isActive('highlight') ? 'bg-white' : ''}`}
+                      title="Highlight"
+                    >
+                      <i className="fas fa-highlighter" />
+                    </button>
+                  </div>
                 </div>  
                 
                 {/* Editor area */}

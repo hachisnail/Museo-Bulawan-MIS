@@ -100,18 +100,10 @@ const ArticleForm = () => {
     ],
     content: "",
     editorProps: {
-      handleKeyDown(view, event) {
-        if (event.key === 'Enter' && !event.shiftKey) {
-          view.dispatch(
-            view.state.tr.replaceSelectionWith(
-              view.state.schema.nodes.hardBreak.create()
-            )
-          );
-          return true;
-        }
-        return false;
-      },
-    },
+  handleKeyDown(view, event) {
+    // ...custom logic...
+  }
+},
   });
 
   useEffect(() => {
