@@ -56,54 +56,39 @@ export const createArticle = async (req, res) => {
       address,
       selectedDate,
       // Previously called "content_images"; now changed to "editImages"
-      editImages
+      editImages,
+      status,
+      barangay // <-- ADD THIS LINE
     } = req.body;
-
-    console.log('📝 Incoming article POST request');
-    console.log('Request Body:', req.body);
-    console.log('File received (thumbnail):', req.file);
 
     let thumbnail = null;
     if (req.file) {
       thumbnail = req.file.filename;
-      console.log('Thumbnail image saved as:', thumbnail);
     }
 
-    if (!title || !article_category || !description || !user_id || !author || !address || !selectedDate) {
-      return res.status(400).json({ message: 'All fields are required.' });
-    }
-
-    // Convert editImages (if provided) to a string for storage
     let editImagesString = null;
     if (editImages) {
-      if (typeof editImages === 'string') {
-        editImagesString = editImages;
-      } else {
-        editImagesString = JSON.stringify(editImages);
-      }
+      editImagesString = typeof editImages === 'string' ? editImages : JSON.stringify(editImages);
     }
 
-    const newArticle = await Article.create({
+    const article = await Article.create({
       title,
       article_category,
       description,
       user_id,
       author,
       address,
+      barangay, // <-- ADD THIS LINE
       upload_date: selectedDate,
       images: thumbnail,
-      // Store in the model’s field: editImages
-      editImages: editImagesString
+      editImages: editImagesString,
+      status
     });
 
-    console.log('✅ Article successfully created:', newArticle);
-    return res.status(201).json({
-      message: 'Article created successfully',
-      article: newArticle
-    });
+    return res.status(201).json(article);
   } catch (error) {
-    console.error('💥 Error creating article:', error.message);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Error creating article:', error);
+    return res.status(500).json({ message: 'Server error creating article.' });
   }
 };
 
@@ -163,11 +148,12 @@ export const getPublicArticle = async (req, res) => {
         'user_id',
         'upload_date',
         'images',
-        'editImages', // The correct column from your model
+        'editImages',
         'article_category',
         'description',
         'author',
         'address',
+        'barangay',
         'status',
         'upload_period_start',
         'upload_period_end',

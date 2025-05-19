@@ -40,7 +40,9 @@ const ArticleModal = ({
   resetForm,
   contentImages,
   setContentImages,
-  onClose
+  onClose,
+  barangay,           
+  setBarangay         
 }) => {
   const imageInputRef = useRef(null);
   const thumbnailInputRef = useRef(null);
@@ -308,8 +310,23 @@ const ArticleModal = ({
     />
   </div>
 
-  {/* Row 2: Author, Category, Address */}
+  {/* Row 2: Date, Author, Category */}
   <div className="flex flex-col md:flex-row gap-4">
+    {/* Date */}
+    <div className="flex-1 flex flex-col gap-2">
+      <input
+        className={`w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.selectedDate ? 'border-red-600' : ''}`}
+        type="date"
+        value={selectedDate}
+        onChange={(e) => {
+          setSelectedDate(e.target.value);
+          setIsDirty(true);
+          clearFieldError('selectedDate');
+        }}
+        onClick={() => clearFieldError('selectedDate')}
+        placeholder=""
+      />
+    </div>
     {/* Author */}
     <div className="flex-1 flex flex-col gap-2">
       <input
@@ -330,7 +347,7 @@ const ArticleModal = ({
       <select
         className={`w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.category ? 'border-red-600' : ''}`}
         value={category}
-        onChange={(e) => {
+        onChange={e => {
           setCategory(e.target.value);
           setIsDirty(true);
           clearFieldError('category');
@@ -340,12 +357,29 @@ const ArticleModal = ({
         <option value="" disabled={category !== ''}>
           {`Category${errors.category ? ' *' : ''}`}
         </option>
-        {Categories.map((cat, index) => (
-          <option key={index} value={cat}>{cat}</option>
+        {Categories.map((cat) => (
+          <option key={cat} value={cat}>{cat}</option>
         ))}
       </select>
     </div>
-    {/* Address (Municipality Dropdown) */}
+  </div>
+
+  {/* Row 3: Barangay, Municipality, Thumbnail */}
+  <div className="flex flex-col md:flex-row gap-4">
+    {/* Barangay */}
+    <div className="flex-1 flex flex-col gap-2">
+      <input
+        className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg outline-none focus:ring-0 focus:border-black"
+        type="text"
+        value={barangay}
+        onChange={e => {
+          setBarangay(e.target.value);
+          setIsDirty(true);
+        }}
+        placeholder="Barangay"
+      />
+    </div>
+    {/* Municipality */}
     <div className="flex-1 flex flex-col gap-2">
       <select
         className={`w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.address ? 'border-red-600' : ''}`}
@@ -365,25 +399,6 @@ const ArticleModal = ({
         ))}
       </select>
     </div>
-  </div>
-
-  {/* Row 3: Date and Thumbnail */}
-  <div className="flex flex-col md:flex-row gap-4">
-    {/* Date */}
-    <div className="flex-1 flex flex-col gap-2">
-      <input
-        className={`w-full px-4 py-3 border-2 border-black rounded-2xl text-base md:text-lg outline-none focus:ring-0 focus:border-black ${errors.selectedDate ? 'border-red-600' : ''}`}
-        type="date"
-        value={selectedDate}
-        onChange={(e) => {
-          setSelectedDate(e.target.value);
-          setIsDirty(true);
-          clearFieldError('selectedDate');
-        }}
-        onClick={() => clearFieldError('selectedDate')}
-        placeholder=""
-      />
-    </div>
     {/* Thumbnail */}
     <div className="flex-1 flex flex-col gap-2">
       <div className="relative">
@@ -393,10 +408,8 @@ const ArticleModal = ({
           type="file"
           name="thumbnail"
           onChange={handleCustomThumbnailChange}
-          // Hide the default file input UI
           style={{ color: 'transparent' }}
         />
-        {/* Custom file name display */}
         <div
           className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700 text-sm pointer-events-none select-none"
           style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}
@@ -767,9 +780,10 @@ const ArticleModal = ({
                 </span>
                 <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
                   <h4 className="text-lg font-medium">Address</h4>
-                  <p className={`text-sm ${!address ? 'text-gray-500 italic' : ''}`}>
-                    {address || '[Location]'}
-                  </p>
+                  <p className={`text-sm ${!address && !barangay ? 'text-gray-500 italic' : ''}`}>
+    {(barangay ? `${barangay}, ` : '')}
+    {address || '[Location]'}
+  </p>
                 </span>
                 <span className="w-1/4 h-24 border border-gray-300 flex flex-col items-center justify-center p-2">
                   <h4 className="text-lg font-medium">Category</h4>

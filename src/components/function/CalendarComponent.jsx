@@ -186,7 +186,7 @@ const Calendar = () => {
             const filteredEvents = (events[dateStr] || []).filter(
               event =>
                 event.article_category &&
-                ['exhibit', 'contents'].includes(event.article_category.toLowerCase())
+                ['exhibit', 'contests'].includes(event.article_category.toLowerCase()) // changed from 'contents'
             );
             const hasEvents = filteredEvents.length > 0;
             const isTodayDate = isToday(date);
@@ -262,7 +262,7 @@ const Calendar = () => {
               {selectedEvents.filter(
                 event =>
                   event.article_category &&
-                  ['exhibit', 'contents'].includes(event.article_category.toLowerCase())
+                  ['exhibit', 'contests'].includes(event.article_category.toLowerCase()) // changed from 'contents'
               ).length === 0 ? (
                 <p className="text-gray-500">No events for this date</p>
               ) : (
@@ -271,7 +271,7 @@ const Calendar = () => {
                     .filter(
                       event =>
                         event.article_category &&
-                        ['exhibit', 'contents'].includes(event.article_category.toLowerCase())
+                        ['exhibit', 'contests'].includes(event.article_category.toLowerCase()) // changed from 'contents'
                     )
                     .map((event, index) => (
                       <NavLink
@@ -284,6 +284,12 @@ const Calendar = () => {
                         <h4 className="font-medium text-lg text-blue-700 underline">{event.title}</h4>
                         {event.article_category && (
                           <p className="text-gray-600 mt-1">{event.article_category}</p>
+                        )}
+                        {event.barangay && (
+                          <p className="text-gray-600 mt-1">Barangay: {event.barangay}</p>
+                        )}
+                        {event.address && (
+                          <p className="text-gray-600 mt-1">Municipality: {event.address}</p>
                         )}
                         {/* You can add more fields here if needed */}
                       </NavLink>

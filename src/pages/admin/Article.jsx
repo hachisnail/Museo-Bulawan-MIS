@@ -42,6 +42,7 @@ const ArticleForm = () => {
   const [editingArticleId, setEditingArticleId] = useState(null);
   const [contentImages, setContentImages] = useState([]);
   const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
+  const [barangay, setBarangay] = useState(""); // <-- Add this line
   // Articles and filters
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +53,7 @@ const ArticleForm = () => {
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("");
 
   // Example categories
-  const Categories = ['Article','Education', 'Exhibit', 'Contents', 'Other'];
+  const Categories = ['Article','Education', 'Exhibit', 'Contests', 'Other']; // changed from 'Contents'
   // Municipality list (copied from Content.jsx)
   const Municipalities = [
     "Basud", "Capalonga", "Daet", "Jose Panganiban", "Labo",
@@ -147,6 +148,7 @@ const ArticleForm = () => {
     formData.append("address", address);
     formData.append("selectedDate", selectedDate);
     formData.append("content_images", JSON.stringify(contentImages));
+    formData.append("barangay", barangay); // <-- Add this line
 
     if (thumbnail && thumbnail instanceof File) {
       formData.append("thumbnail", thumbnail);
@@ -199,6 +201,7 @@ const ArticleForm = () => {
     setThumbnail(null);
     setPreviewImage(null);
     setContentImages([]);
+    setBarangay(""); // <-- Reset barangay
     editor?.commands.setContent("");
     setShowModal(false);
     setIsEditing(false);
@@ -214,6 +217,7 @@ const ArticleForm = () => {
     setAuthor(article.author || "");
     setCategory(article.article_category || "");
     setAddress(article.address || "");
+    setBarangay(article.barangay || ""); // <-- Set barangay from article
 
     if (article.upload_date) {
       const date = new Date(article.upload_date);
@@ -334,28 +338,30 @@ if (encodedProfile) {
 
         {isArtifactModalOpen ? (<ArticleModal
           showModal={showModal}
-          onClose={resetForm}
-          isEditing={isEditing}
           editor={editor}
+          isEditing={isEditing}
           title={title}
-          setTitle={setTitle}
           author={author}
-          setAuthor={setAuthor}
           category={category}
-          setCategory={setCategory}
           address={address}
-          setAddress={setAddress}
           selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
           thumbnail={thumbnail}
           previewImage={previewImage}
-          handleThumbnailChange={handleThumbnailChange}
           Categories={Categories}
-          Municipalities={Municipalities} // <-- pass the list
+          Municipalities={Municipalities}
           onSubmit={handleSubmit}
+          handleThumbnailChange={handleThumbnailChange}
+          setTitle={setTitle}
+          setAuthor={setAuthor}
+          setCategory={setCategory}
+          setAddress={setAddress}
+          setSelectedDate={setSelectedDate}
           resetForm={resetForm}
           contentImages={contentImages}
           setContentImages={setContentImages}
+          onClose={() => setShowModal(false)}
+          barangay={barangay}                // <-- Add this line
+          setBarangay={setBarangay}          // <-- Add this line
         />) : (<>
 
         {/* Main content */}

@@ -81,7 +81,7 @@ const Article = () => {
             {/* Date */}
             <span className="w-1/4 h-[13rem] border border-black flex flex-col items-center justify-center">
               <h1 className="text-[1.5rem]">Date</h1>
-              <p>
+              <p className="break-words whitespace-normal px-4">
                 {article.upload_date
                   ? new Date(article.upload_date).toLocaleDateString('en-US', {
                       year: 'numeric',
@@ -95,13 +95,21 @@ const Article = () => {
             {/* Author */}
             <span className="w-1/4 h-[13rem] border border-black flex flex-col items-center justify-center">
               <h1 className="text-[1.5rem]">Author</h1>
-              <p>{article.author || 'N/A'}</p>
+              <p className="break-words whitespace-normal px-4">{article.author || 'N/A'}</p>
             </span>
 
-            {/* Address */}
+            {/* Address (with Barangay and Municipality) */}
             <span className="w-1/4 h-[13rem] border border-black flex flex-col items-center justify-center">
               <h1 className="text-[1.5rem]">Address</h1>
-              <p>{article.address || 'N/A'}</p>
+              <p className="break-words whitespace-normal px-4">
+                {article.barangay && article.address
+                  ? `${article.barangay}, ${article.address}`
+                  : article.barangay
+                  ? article.barangay
+                  : article.address
+                  ? article.address
+                  : 'N/A'}
+              </p>
             </span>
 
             {/* Category */}

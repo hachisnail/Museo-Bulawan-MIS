@@ -33,7 +33,21 @@ const Content = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/api/auth/public-articles`);
-      setArticles(response.data);
+      const articlesList = response.data;
+
+      // Fetch details for each article to get the address
+      const detailedArticles = await Promise.all(
+        articlesList.map(async (article) => {
+          try {
+            const detailRes = await axios.get(`${API_URL}/api/auth/public-article/${article.article_id}`);
+            return { ...article, address: detailRes.data.address };
+          } catch {
+            return article; // fallback if detail fetch fails
+          }
+        })
+      );
+
+      setArticles(detailedArticles);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching articles:", err);
@@ -43,18 +57,20 @@ const Content = () => {
   };
 
   const filteredArticles = articles.filter((article) => {
-    const matchesKeyword = !keyword ||
-      article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
-      article.author?.toLowerCase().includes(keyword.toLowerCase());
+  const matchesKeyword = !keyword ||
+    article.title?.toLowerCase().includes(keyword.toLowerCase()) ||
+    article.author?.toLowerCase().includes(keyword.toLowerCase());
 
-    const matchesCategory = !category ||
-      article.article_category?.toLowerCase() === category.toLowerCase();
+  const matchesCategory = !category ||
+    article.article_category?.toLowerCase() === category.toLowerCase();
 
-    const matchesMunicipality = !municipality ||
-      article.address?.toLowerCase().includes(municipality.toLowerCase());
+  // Updated: Match municipality exactly (case-insensitive)
+  const matchesMunicipality = !municipality ||
+    (article.address && article.address.toLowerCase().includes(municipality.toLowerCase()));
 
-    return matchesKeyword && matchesCategory && matchesMunicipality;
-  });
+  return matchesKeyword && matchesCategory && matchesMunicipality;
+});
+
 
   // Encode (ID :: Title) into base64
   const encoded = (id, name) => {
@@ -101,7 +117,7 @@ const Content = () => {
                   <option value="">Category</option>
                   <option value="Education">Education</option>
                   <option value="Exhibit">Exhibit</option>
-                  <option value="Contents">Contents</option>
+                  <option value="Contests">Contests</option>
                   <option value="Workshop">Workshop</option>
                   <option value="Seminar">Seminar</option>
                 </select>

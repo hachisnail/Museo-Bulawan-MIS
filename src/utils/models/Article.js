@@ -46,6 +46,10 @@ const Article = sequelize.define('Article', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  barangay: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   address: {
     type: DataTypes.STRING,
     allowNull: true,
