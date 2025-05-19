@@ -1,12 +1,17 @@
-import { Artifact, ArtifactDescription } from "../models/Artifacts.js";
+import { 
+  Artifact, 
+  ArtifactDetails, 
+  ArtifactFiles, 
+  ArtifactLending, 
+  Donator
+} from "../models/Artifacts.js";
+import { sequelize } from "../database.js";
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { Op } from 'sequelize';
-import { sequelize } from "../database.js";
 
-// Get the directory of the current module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -87,643 +92,301 @@ export { upload };
 
 // Controller to handle artifact creation
 export const createArtifact = async (req, res) => {
-  try {
-    upload(req, res, async (err) => {
-      if (err instanceof multer.MulterError) {
-        console.error("Multer error:", err);
-        return res.status(400).json({ message: `Upload error: ${err.message}` });
-      } else if (err) {
-        console.error("Unknown upload error:", err);
-        return res.status(500).json({ message: `Unknown upload error: ${err.message}` });
+  upload(req, res, async (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({ error: `File upload error: ${err.message}` });
+    }
+
+    const t = await sequelize.transaction();
+    
+    try {
+      // Add logging to debug the received data
+      console.log('Received form data:', req.body);
+      console.log('Received files:', req.files);
+
+      // Parse form data with validation
+      const name = req.body.name || req.body.artifact_creator;
+      if (!name) {
+        throw new Error('Artifact name/creator is required');
       }
+
+      // Create base artifact
+      const newArtifact = await Artifact.create({
+        name,
+        artifact_type: req.body.artifact_type,
+        creation_date: req.body.creation_date || null,
+        accession_type: req.body.accession_type,
+        condition: req.body.condition || req.body.artifact_condition,
+        display_status: req.body.display_status || 'stored',
+        description: req.body.description || null,
+        modified_date: new Date(),
+        upload_date: new Date()
+      }, { transaction: t });
+
+      // Parse JSON strings with error handling
+      let artifactDetails, donorInformation, lendingInformation;
       
-      // Parse form data
-      const {
-        artifact_creator,
-        artifact_type,
-        creation_date,
-        upload_date,
-        accession_type,
-        artifact_condition,
-        modified_date,
-        donation_date,
-        display_status
-      } = req.body;
-      
-      // Parse nested objects (they come as strings via FormData)
-      const lending_duration = JSON.parse(req.body.lending_duration || '{}');
-      const description = JSON.parse(req.body.description || '{}');
-
-      console.log('📝 Incoming artifact POST request');
-      console.log('Request Body:', req.body);
-      console.log('Files received:', req.files);
-
-      // Process uploaded files
-      let related_files = {
-        pictures: [],
-        documents: []
-      };
-
-      // If pictures were uploaded, process them
-      if (req.files && req.files['pictures']) {
-        const API_URL = process.env.VITE_API_URL;
-        
-        related_files.pictures = req.files['pictures'].map(file => ({
-          filename: file.filename,
-          originalName: file.originalname,
-          size: file.size,
-          path: `${API_URL}/uploads/artifacts/pictures/${file.filename}`,
-          mimetype: file.mimetype
-        }));
-      }
-
-      // If documents were uploaded, process them
-      if (req.files && req.files['documents']) {
-        const API_URL = process.env.VITE_API_URL;
-        
-        related_files.documents = req.files['documents'].map(file => ({
-          filename: file.filename,
-          originalName: file.originalname,
-          size: file.size,
-          path: `${API_URL}/uploads/artifacts/documents/${file.filename}`,
-          mimetype: file.mimetype
-        }));
-      }
-
-      // Validate required fields
-      if (!artifact_creator || !artifact_type || !accession_type || !artifact_condition || !display_status) {
-        return res.status(400).json({ message: 'Required fields are missing.' });
-      }
-
       try {
-        // Use a transaction to ensure database consistency
-        const result = await sequelize.transaction(async (t) => {
-          // We need to handle the circular dependency differently
-          // Create both records with allowNull temporarily set to true
-          
-          // Create a temporary description_id
-          const tempDescId = 'temp_' + Date.now();
-          
-          // Create artifact with temporary description_id
-          const newArtifact = await Artifact.create({
-            artifact_creator,
-            artifact_type,
-            creation_date: creation_date || null,
-            upload_date: upload_date || new Date(),
-            accession_type,
-            artifact_condition,
-            modified_date: modified_date || null,
-            donation_date: donation_date || null,
-            display_status,
-            lending_duration,
-            related_files,
-            // Set a temporary value to satisfy the constraint
-            description_id: tempDescId,
-            deleted_at: null // For soft deletion support
-          }, { 
-            transaction: t,
-            // Override validation for this operation
-            validate: false
+        artifactDetails = req.body.artifact_details ? JSON.parse(req.body.artifact_details) : {};
+        donorInformation = req.body.donor_information ? JSON.parse(req.body.donor_information) : {};
+        lendingInformation = req.body.lending_information ? JSON.parse(req.body.lending_information) : {};
+      } catch (parseError) {
+        console.error('JSON parsing error:', parseError);
+        throw new Error('Invalid JSON data provided');
+      }
+
+      // Create artifact details
+      await ArtifactDetails.create({
+        artifact_id: newArtifact.id,
+        country: artifactDetails.country || null,
+        region: artifactDetails.region || null,
+        culture: artifactDetails.culture || null,
+        period: artifactDetails.period || null,
+        discoverer: artifactDetails.discoverer || null,
+        discovery_date: artifactDetails.discovery_date || null,
+        excavation_site: artifactDetails.excavation_site || null,
+        site_location: artifactDetails.site_location || null
+      }, { transaction: t });
+
+      // Handle donor information if present
+      if (donorInformation.donor_name) {
+        try {
+          const [donor] = await Donator.findOrCreate({
+            where: { 
+              email: donorInformation.donor_email || '' 
+            },
+            defaults: {
+              name: donorInformation.donor_name,
+              email: donorInformation.donor_email || '',
+              phone: donorInformation.donor_phone || '',
+              organization: donorInformation.donor_organization || '',
+              sex: donorInformation.sex || null,
+              age: donorInformation.age ? parseInt(donorInformation.age) : null,
+              province: donorInformation.province || null,
+              city: donorInformation.city || null,
+              barangay: donorInformation.barangay || null,
+              street: donorInformation.street || null
+            },
+            transaction: t
           });
 
-          // Create artifact description with the new artifact's ID
-          const artifactDescription = await ArtifactDescription.create({
-            origin: description.origin || { country: '', region: '' },
-            culture: description.culture || { name: '' },
-            period: description.period || { name: '' },
-            discovery_details: description.discovery_details || { discoverer: '', discovery_date: '' },
-            excavation_site: description.excavation_site || { site_name: '', location: '' },
-            accession_no: description.accession_no || { number: '' },
-            aquisition_history: description.aquisition_history || { provenance: '' },
-            artifact_id: newArtifact.id
-          }, { transaction: t });
-
-          // Now update the artifact with the real description_id
           await newArtifact.update({
-            description_id: artifactDescription.id
+            donator_id: donor.id
           }, { transaction: t });
+        } catch (donorError) {
+          console.error('Error creating donor:', donorError);
+          throw new Error('Failed to process donor information');
+        }
+      }
 
-          return { newArtifact, artifactDescription };
-        });
+      // Handle lending information
+      if (req.body.accession_type === 'lend' && lendingInformation.lender_name) {
+        await ArtifactLending.create({
+          artifact_id: newArtifact.id,
+          lender_name: lendingInformation.lender_name,
+          start_date: lendingInformation.start_date || null,
+          end_date: lendingInformation.end_date || null
+        }, { transaction: t });
+      }
 
-        console.log('Artifact successfully created:', result.newArtifact.id);
+      // Handle file uploads
+      if (req.files) {
+        const baseUrl = process.env.VITE_API_URL || `${req.protocol}://${req.get('host')}`;
 
-        return res.status(201).json({
-          message: 'Artifact created successfully',
-          artifact: result.newArtifact,
-          description: result.artifactDescription
-        });
-      } catch (dbError) {
-        console.error('Database error creating artifact:', dbError);
-        return res.status(500).json({ message: 'Database error', error: dbError.message });
+        for (const fileType of ['pictures', 'documents']) {
+          if (req.files[fileType]) {
+            const files = Array.isArray(req.files[fileType]) ? 
+                         req.files[fileType] : [req.files[fileType]];
+
+            for (const file of files) {
+              await ArtifactFiles.create({
+                artifact_id: newArtifact.id,
+                file_type: fileType === 'pictures' ? 'picture' : 'document',
+                filename: file.filename,
+                original_name: file.originalname,
+                file_path: `${baseUrl}/uploads/artifacts/${fileType}/${file.filename}`,
+                file_size: file.size,
+                mimetype: file.mimetype
+              }, { transaction: t });
+            }
+          }
+        }
+      }
+
+      await t.commit();
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Artifact added successfully',
+        artifact_id: newArtifact.id
+      });
+
+    } catch (error) {
+      await t.rollback();
+      console.error('Error creating artifact:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error adding artifact',
+        error: error.message,
+        details: error.stack // Add stack trace for debugging
+      });
+    }
+  });
+};
+
+// Get all artifacts with filtering and pagination
+export const getAllArtifacts = async (req, res) => {
+  try {
+    const { 
+      search, 
+      display_status, 
+      artifact_type, 
+      date_from, 
+      date_to,
+      accession_type,
+      page = 1,
+      limit = 10
+    } = req.query;
+
+    // Calculate offset for pagination
+    const offset = (page - 1) * limit;
+
+    // Build the where clause for filtering
+    let whereClause = {
+      deleted_at: null
+    };
+
+    // Add filters if they exist
+    if (search) {
+      whereClause = {
+        ...whereClause,
+        [Op.or]: [
+          { name: { [Op.like]: `%${search}%` } },
+          { artifact_type: { [Op.like]: `%${search}%` } },
+          { description: { [Op.like]: `%${search}%` } }
+        ]
+      };
+    }
+
+    if (display_status && display_status !== 'all') {
+      whereClause.display_status = display_status;
+    }
+
+    if (artifact_type && artifact_type !== 'all') {
+      whereClause.artifact_type = artifact_type;
+    }
+
+    if (accession_type && accession_type !== 'all') {
+      whereClause.accession_type = accession_type;
+    }
+
+    // Date filtering
+    if (date_from || date_to) {
+      whereClause.creation_date = {};
+      
+      if (date_from) {
+        whereClause.creation_date[Op.gte] = new Date(date_from);
+      }
+      
+      if (date_to) {
+        whereClause.creation_date[Op.lte] = new Date(date_to);
+      }
+    }
+
+    // Get total count for pagination info
+    const totalCount = await Artifact.count({
+      where: whereClause
+    });
+
+    // Find artifacts with filters and pagination
+    const artifacts = await Artifact.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: ArtifactDetails,
+          attributes: ['country', 'region', 'culture', 'period', 'discoverer', 
+                      'discovery_date', 'excavation_site', 'site_location']
+        },
+        {
+          model: ArtifactFiles,
+          attributes: ['file_type', 'file_path', 'filename']
+        },
+        {
+          model: ArtifactLending,
+          attributes: ['lender_name', 'start_date', 'end_date']
+        },
+        {
+          model: Donator,
+          attributes: ['name', 'organization', 'email']
+        }
+      ],
+      order: [['modified_date', 'DESC']],
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+    // Return the artifacts with pagination metadata
+    return res.status(200).json({
+      artifacts,
+      pagination: {
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        currentPage: parseInt(page),
+        pageSize: parseInt(limit)
       }
     });
   } catch (error) {
-    console.error('Error creating artifact:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
-  }
-};
-
-// Controller to get all non-deleted artifacts
-export const getAllArtifacts = async (req, res) => {
-  try {
-    const artifacts = await Artifact.findAll({
-      where: {
-        deleted_at: null // Only fetch non-deleted artifacts
-      },
-      include: ArtifactDescription,
-      order: [['id', 'DESC']]
-    });
-    
-    return res.json(artifacts);
-  } catch (error) {
     console.error('Error fetching artifacts:', error);
-    return res.status(500).json({ message: 'Server error retrieving artifacts.' });
-  }
-};
-
-// Controller to get all deleted artifacts (for admins to view or restore)
-export const getDeletedArtifacts = async (req, res) => {
-  try {
-    const artifacts = await Artifact.findAll({
-      where: {
-        deleted_at: { [Op.ne]: null } // Only fetch soft-deleted artifacts
-      },
-      include: ArtifactDescription,
-      order: [['deleted_at', 'DESC']]
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching artifacts',
+      error: error.message
     });
-    
-    return res.json(artifacts);
-  } catch (error) {
-    console.error('Error fetching deleted artifacts:', error);
-    return res.status(500).json({ message: 'Server error retrieving deleted artifacts.' });
   }
 };
 
-// Controller to get a specific artifact by ID (including deleted ones if specified)
+// Get a single artifact by ID
 export const getArtifactById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { includeDeleted } = req.query; // Optional query param to include deleted artifacts
-
-    if (!id) {
-      return res.status(400).json({ message: 'Artifact ID is required.' });
-    }
-
-    // Set up where clause based on whether deleted artifacts should be included
-    const whereClause = includeDeleted === 'true' ? 
-      { id } : 
-      { id, deleted_at: null };
-
+    
     const artifact = await Artifact.findOne({
-      where: whereClause,
-      include: ArtifactDescription
-    });
-
-    if (!artifact) {
-      return res.status(404).json({ message: 'Artifact not found.' });
-    }
-
-    return res.json(artifact);
-  } catch (error) {
-    console.error('Error fetching artifact:', error);
-    return res.status(500).json({ message: 'Server error retrieving artifact.' });
-  }
-};
-
-// Controller to soft delete an artifact
-export const softDeleteArtifact = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const artifact = await Artifact.findByPk(id);
-    
-    if (!artifact) {
-      return res.status(404).json({ message: 'Artifact not found.' });
-    }
-    
-    // If already deleted, return appropriate message
-    if (artifact.deleted_at) {
-      return res.status(400).json({ message: 'Artifact is already deleted.' });
-    }
-    
-    // Update the deleted_at field to current timestamp
-    await artifact.update({
-      deleted_at: new Date()
-    });
-    
-    return res.json({
-      message: 'Artifact soft deleted successfully',
-      artifact_id: id,
-      deleted_at: artifact.deleted_at
-    });
-  } catch (error) {
-    console.error('Error soft deleting artifact:', error);
-    return res.status(500).json({ message: 'Server error soft deleting artifact.' });
-  }
-};
-
-// Controller to restore a soft deleted artifact
-export const restoreArtifact = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const artifact = await Artifact.findByPk(id);
-    
-    if (!artifact) {
-      return res.status(404).json({ message: 'Artifact not found.' });
-    }
-    
-    // If not deleted, return appropriate message
-    if (!artifact.deleted_at) {
-      return res.status(400).json({ message: 'Artifact is not deleted.' });
-    }
-    
-    // Set deleted_at to null to restore the artifact
-    await artifact.update({
-      deleted_at: null
-    });
-    
-    return res.json({
-      message: 'Artifact restored successfully',
-      artifact_id: id
-    });
-  } catch (error) {
-    console.error('Error restoring artifact:', error);
-    return res.status(500).json({ message: 'Server error restoring artifact.' });
-  }
-};
-
-// Controller to hard delete an artifact (permanent deletion)
-export const hardDeleteArtifact = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const artifact = await Artifact.findByPk(id, {
-      include: ArtifactDescription
+      where: { 
+        id: id,
+        deleted_at: null
+      },
+      include: [
+        {
+          model: ArtifactDetails
+        },
+        {
+          model: ArtifactFiles
+        },
+        {
+          model: ArtifactLending
+        },
+        {
+          model: Donator
+        }
+      ]
     });
     
     if (!artifact) {
-      return res.status(404).json({ message: 'Artifact not found.' });
-    }
-    
-    // Delete associated files
-    if (artifact.related_files) {
-      // Delete pictures
-      if (artifact.related_files.pictures) {
-        for (const picture of artifact.related_files.pictures) {
-          try {
-            const filePath = picture.filename ? 
-              path.join(picturesDir, picture.filename) :
-              picture.path?.replace(/.*\/uploads\/artifacts\/pictures\//, path.join(picturesDir, '/'));
-              
-            if (filePath && fs.existsSync(filePath)) {
-              fs.unlinkSync(filePath);
-              console.log(`Deleted file: ${filePath}`);
-            }
-          } catch (fileError) {
-            console.error(`Error deleting picture file: ${fileError.message}`);
-            // Continue with deletion even if file removal fails
-          }
-        }
-      }
-      
-      // Delete documents
-      if (artifact.related_files.documents) {
-        for (const doc of artifact.related_files.documents) {
-          try {
-            const filePath = doc.filename ? 
-              path.join(documentsDir, doc.filename) :
-              doc.path?.replace(/.*\/uploads\/artifacts\/documents\//, path.join(documentsDir, '/'));
-              
-            if (filePath && fs.existsSync(filePath)) {
-              fs.unlinkSync(filePath);
-              console.log(`Deleted file: ${filePath}`);
-            }
-          } catch (fileError) {
-            console.error(`Error deleting document file: ${fileError.message}`);
-            // Continue with deletion even if file removal fails
-          }
-        }
-      }
-    }
-    
-    // Delete the artifact (this will cascade delete the description due to the model association)
-    await artifact.destroy();
-    
-    return res.json({
-      message: 'Artifact permanently deleted successfully',
-      artifact_id: id
-    });
-  } catch (error) {
-    console.error('Error hard deleting artifact:', error);
-    return res.status(500).json({ message: 'Server error hard deleting artifact.' });
-  }
-};
-
-// Controller to update an artifact
-export const updateArtifact = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    upload(req, res, async (err) => {
-      if (err) {
-        console.error("Upload error:", err);
-        return res.status(400).json({ message: `Upload error: ${err.message}` });
-      }
-      
-      // Find the artifact, including soft-deleted ones
-      const artifact = await Artifact.findByPk(id, {
-        include: ArtifactDescription
-      });
-      
-      if (!artifact) {
-        return res.status(404).json({ message: 'Artifact not found.' });
-      }
-      
-      // If artifact is soft-deleted, prevent updates unless explicitly restoring
-      if (artifact.deleted_at && req.body.restore !== 'true') {
-        return res.status(400).json({ 
-          message: 'Cannot update a deleted artifact. Restore the artifact first.' 
-        });
-      }
-      
-      // Parse form data
-      const {
-        artifact_creator,
-        artifact_type,
-        creation_date,
-        accession_type,
-        artifact_condition,
-        modified_date,
-        donation_date,
-        display_status
-      } = req.body;
-      
-      // Parse nested objects if provided
-      const lending_duration = req.body.lending_duration ? 
-        JSON.parse(req.body.lending_duration) : undefined;
-      const description = req.body.description ? 
-        JSON.parse(req.body.description) : undefined;
-      
-      // Update related files if new ones were uploaded
-      let related_files = artifact.related_files || { pictures: [], documents: [] };
-      
-      if (req.files) {
-        const API_URL = process.env.VITE_API_URL || 'http://localhost:3000';
-        
-        if (req.files['pictures']) {
-          const newPictures = req.files['pictures'].map(file => ({
-            filename: file.filename,
-            originalName: file.originalname,
-            size: file.size,
-            path: `${API_URL}/uploads/artifacts/pictures/${file.filename}`,
-            mimetype: file.mimetype
-          }));
-          
-          // Append new pictures to existing ones
-          related_files.pictures = [...related_files.pictures, ...newPictures];
-        }
-        
-        if (req.files['documents']) {
-          const newDocuments = req.files['documents'].map(file => ({
-            filename: file.filename,
-            originalName: file.originalname,
-            size: file.size,
-            path: `${API_URL}/uploads/artifacts/documents/${file.filename}`,
-            mimetype: file.mimetype
-          }));
-          
-          // Append new documents to existing ones
-          related_files.documents = [...related_files.documents, ...newDocuments];
-        }
-      }
-      
-      // Update artifact
-      await artifact.update({
-        artifact_creator: artifact_creator || artifact.artifact_creator,
-        artifact_type: artifact_type || artifact.artifact_type,
-        creation_date: creation_date || artifact.creation_date,
-        accession_type: accession_type || artifact.accession_type,
-        artifact_condition: artifact_condition || artifact.artifact_condition,
-        modified_date: modified_date || new Date(),
-        donation_date: donation_date || artifact.donation_date,
-        display_status: display_status || artifact.display_status,
-        lending_duration: lending_duration || artifact.lending_duration,
-        related_files,
-        // If restoring, set deleted_at to null
-        deleted_at: req.body.restore === 'true' ? null : artifact.deleted_at
-      });
-      
-      // Update artifact description if provided
-      if (description && artifact.ArtifactDescription) {
-        await artifact.ArtifactDescription.update({
-          origin: description.origin || artifact.ArtifactDescription.origin,
-          culture: description.culture || artifact.ArtifactDescription.culture,
-          period: description.period || artifact.ArtifactDescription.period,
-          discovery_details: description.discovery_details || artifact.ArtifactDescription.discovery_details,
-          excavation_site: description.excavation_site || artifact.ArtifactDescription.excavation_site,
-          accession_no: description.accession_no || artifact.ArtifactDescription.accession_no,
-          aquisition_history: description.aquisition_history || artifact.ArtifactDescription.aquisition_history
-        });
-      }
-      
-      return res.json({
-        message: 'Artifact updated successfully',
-        artifact
-      });
-    });
-  } catch (error) {
-    console.error('Error updating artifact:', error);
-    return res.status(500).json({ message: 'Server error updating artifact.' });
-  }
-};
-
-// Controller to batch soft delete multiple artifacts
-export const batchSoftDelete = async (req, res) => {
-  try {
-    const { ids } = req.body; // Expects an array of IDs
-    
-    if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ message: 'No artifact IDs provided for deletion.' });
-    }
-    
-    // Update all specified artifacts to set deleted_at
-    const result = await Artifact.update(
-      { deleted_at: new Date() },
-      { 
-        where: { 
-          id: { [Op.in]: ids },
-          deleted_at: null // Only update artifacts that aren't already deleted
-        } 
-      }
-    );
-    
-    return res.json({
-      message: `${result[0]} artifacts soft deleted successfully`,
-      count: result[0],
-      artifact_ids: ids
-    });
-  } catch (error) {
-    console.error('Error batch soft deleting artifacts:', error);
-    return res.status(500).json({ message: 'Server error batch soft deleting artifacts.' });
-  }
-};
-
-// Controller to batch restore multiple artifacts
-export const batchRestore = async (req, res) => {
-  try {
-    const { ids } = req.body; // Expects an array of IDs
-    
-    if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ message: 'No artifact IDs provided for restoration.' });
-    }
-    
-    // Update all specified artifacts to set deleted_at to null
-    const result = await Artifact.update(
-      { deleted_at: null },
-      { 
-        where: { 
-          id: { [Op.in]: ids },
-          deleted_at: { [Op.ne]: null } // Only update artifacts that are deleted
-        } 
-      }
-    );
-    
-    return res.json({
-      message: `${result[0]} artifacts restored successfully`,
-      count: result[0],
-      artifact_ids: ids
-    });
-  } catch (error) {
-    console.error('Error batch restoring artifacts:', error);
-    return res.status(500).json({ message: 'Server error batch restoring artifacts.' });
-  }
-};
-
-// Controller to batch hard delete multiple artifacts
-export const batchHardDelete = async (req, res) => {
-  try {
-    const { ids } = req.body; // Expects an array of IDs
-    
-    if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ message: 'No artifact IDs provided for permanent deletion.' });
-    }
-    
-    // Find all specified artifacts first to get file info
-    const artifacts = await Artifact.findAll({
-      where: { id: { [Op.in]: ids } }
-    });
-    
-    // Delete associated files for each artifact
-    for (const artifact of artifacts) {
-      if (artifact.related_files) {
-        // Delete pictures
-        if (artifact.related_files.pictures) {
-          for (const picture of artifact.related_files.pictures) {
-            try {
-              const filePath = picture.filename ? 
-                path.join(picturesDir, picture.filename) :
-                picture.path?.replace(/.*\/uploads\/artifacts\/pictures\//, path.join(picturesDir, '/'));
-                
-              if (filePath && fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-              }
-            } catch (fileError) {
-              console.error(`Error deleting file for artifact ${artifact.id}: ${fileError.message}`);
-              // Continue with next file even if this one fails
-            }
-          }
-        }
-        
-        // Delete documents
-        if (artifact.related_files.documents) {
-          for (const doc of artifact.related_files.documents) {
-            try {
-              const filePath = doc.filename ? 
-                path.join(documentsDir, doc.filename) :
-                doc.path?.replace(/.*\/uploads\/artifacts\/documents\//, path.join(documentsDir, '/'));
-                
-              if (filePath && fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-              }
-            } catch (fileError) {
-              console.error(`Error deleting document for artifact ${artifact.id}: ${fileError.message}`);
-              // Continue with next file even if this one fails
-            }
-          }
-        }
-      }
-    }
-    
-    // Delete all specified artifacts (cascade will delete their descriptions)
-    const result = await Artifact.destroy({
-      where: { id: { [Op.in]: ids } }
-    });
-    
-    return res.json({
-      message: `${result} artifacts permanently deleted successfully`,
-      count: result,
-      artifact_ids: ids
-    });
-  } catch (error) {
-    console.error('Error batch hard deleting artifacts:', error);
-    return res.status(500).json({ message: 'Server error batch hard deleting artifacts.' });
-  }
-};
-
-// Controller to remove a specific file from an artifact
-export const removeArtifactFile = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { fileType, fileIndex } = req.body;
-    
-    if (!fileType || !['pictures', 'documents'].includes(fileType) || fileIndex === undefined) {
-      return res.status(400).json({ message: 'Invalid file information provided.' });
-    }
-    
-    const artifact = await Artifact.findByPk(id);
-    
-    if (!artifact) {
-      return res.status(404).json({ message: 'Artifact not found.' });
-    }
-    
-    if (artifact.deleted_at) {
-      return res.status(400).json({ 
-        message: 'Cannot modify files of a deleted artifact. Restore the artifact first.' 
+      return res.status(404).json({
+        success: false,
+        message: 'Artifact not found'
       });
     }
     
-    if (!artifact.related_files || !artifact.related_files[fileType] || 
-        !artifact.related_files[fileType][fileIndex]) {
-      return res.status(404).json({ message: 'File not found in artifact.' });
-    }
+    return res.status(200).json(artifact);
     
-    // Get file to delete
-    const fileToDelete = artifact.related_files[fileType][fileIndex];
-    
-    // Delete the physical file
-    const baseDir = fileType === 'pictures' ? picturesDir : documentsDir;
-    const filename = fileToDelete.filename || path.basename(fileToDelete.path);
-    const filePath = path.join(baseDir, filename);
-    
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
-    
-    // Update the artifact's related_files by removing the file
-    artifact.related_files[fileType].splice(fileIndex, 1);
-    
-    await artifact.update({
-      related_files: artifact.related_files
-    });
-    
-    return res.json({
-      message: 'File removed successfully',
-      artifact
-    });
   } catch (error) {
-    console.error('Error removing artifact file:', error);
-    return res.status(500).json({ message: 'Server error removing file.' });
+    console.error('Error fetching artifact by ID:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching artifact',
+      error: error.message
+    });
   }
 };
