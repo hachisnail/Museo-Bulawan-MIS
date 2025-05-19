@@ -247,7 +247,7 @@ const Artifact = () => {
               {isAddArtifactOpen ? (<ArtifactAdd onClose={closeArtifactModal} />) : (
               <>
               <div className='flex flex-col gap-y-2 '>
-                <span className=' text-5xl font-semibold'>Inventory</span>
+                <span className=' text-5xl font-semibold'>Inventory Management</span>
                 <span className='text-2xl font-semibold'>Artifact</span>
               </div>
               <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 border-t-1 pt-5'>
