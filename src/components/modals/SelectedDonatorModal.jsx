@@ -170,9 +170,11 @@ const SelectedDonatorModal = ({ isOpen, onClose, selectedDonationForm }) => {
       </div>
 
       {/* Optional: Image preview modal */}
-      {previewImage && (
-        <ImagePreview imageSrc={previewImage} onClose={handleClosePreview} />
-      )}
+      <ImagePreview
+        isOpen={!!previewImage}
+        onClose={handleClosePreview}
+        imageSrc={previewImage}
+      />
     </>
   );
 };

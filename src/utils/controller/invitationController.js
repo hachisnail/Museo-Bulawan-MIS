@@ -813,7 +813,7 @@ export const resetSuccess = (req, res) => {
           <h1>Password reset successfull</h1>
           <p>You can now login with your new password.</p>
          
-          <p>Return to <a href="/login>Login</a></p>
+          <p>Return to <a href="https://mis.museobulawan.online/login">Login</a></p>
         </div>
         
       </body>

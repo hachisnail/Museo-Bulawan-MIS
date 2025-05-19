@@ -1,652 +1,786 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import AdminNav from '../../components/navbar/AdminNav';
-import CustomDatePicker from '../../components/function/CustomDatePicker';
-import AcquisitionModal from '../../components/modals/AcquisitionModal';
-import SelectedDonatorModal from '../../components/modals/SelectedDonatorModal';
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+import AdminNav from '../../components/navbar/AdminNav'
+import CustomDatePicker from '../../components/function/CustomDatePicker'
+import AcquisitionModal from '../../components/modals/AcquisitionModal'
+import SelectedDonatorModal from '../../components/modals/SelectedDonatorModal'
 
-import Toast from '../../components/function/Toast';
+import Toast from '../../components/function/Toast'
 
 const Acquisition = () => {
   // Existing state variables remain...
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [forms, setForms] = useState([]);
-  const [acquisitions, setAcquisitions] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedForm, setSelectedForm] = useState(null);
-    const [isAcquisitionModalOpen, setIsAcquisitionModalOpen] = useState(false);
-  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
-  const [confirmationAction, setConfirmationAction] = useState(null);
-  const [selectedResponse, setSelectedResponse] = useState(null);
-  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-  const [selectedDonationForm, setSelectedDonationForm] = useState(null);
-  const [confirmationModal, setConfirmationModal] = useState({ action: '', open: false });
-  const [activeTab, setActiveTab] = useState('form');
-  const [expandedDonator, setExpandedDonator] = useState(null);
-  const [highlightedDonator, setHighlightedDonator] = useState(null);
-  const [donationCount, setDonationCount] = useState(0);
-  const [lendingCount, setLendingCount] = useState(0);
-  const [acceptedCount, setAcceptedCount] = useState(0);
-  const [rejectedCount, setRejectedCount] = useState(0);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All Actions');
-  const [columnFilter, setColumnFilter] = useState('');
-  const [sortDirection, setSortDirection] = useState('asc');
-  const [filteredData, setFilteredData] = useState({ acquisitions: [] });
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [forms, setForms] = useState([])
+  const [acquisitions, setAcquisitions] = useState([])
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedForm, setSelectedForm] = useState(null)
+  const [isAcquisitionModalOpen, setIsAcquisitionModalOpen] = useState(false)
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
+  const [confirmationAction, setConfirmationAction] = useState(null)
+  const [selectedResponse, setSelectedResponse] = useState(null)
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false)
+  const [selectedDonationForm, setSelectedDonationForm] = useState(null)
+  const [confirmationModal, setConfirmationModal] = useState({
+    action: '',
+    open: false,
+  })
+  const [activeTab, setActiveTab] = useState('form')
+  const [expandedDonator, setExpandedDonator] = useState(null)
+  const [highlightedDonator, setHighlightedDonator] = useState(null)
+  const [donationCount, setDonationCount] = useState(0)
+  const [lendingCount, setLendingCount] = useState(0)
+  const [acceptedCount, setAcceptedCount] = useState(0)
+  const [rejectedCount, setRejectedCount] = useState(0)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('All Actions')
+  const [columnFilter, setColumnFilter] = useState('')
+  const [sortDirection, setSortDirection] = useState('asc')
+  const [filteredData, setFilteredData] = useState({ acquisitions: [] })
   const [toastConfig, setToastConfig] = useState({
     isVisible: false,
     message: '',
-    type: 'success'
-  });
+    type: 'success',
+  })
 
   // Add state for document management
-  const [documentView, setDocumentView] = useState(false);
-
-
-  
+  const [documentView, setDocumentView] = useState(false)
 
   // Function to fetch documents from localStorage
   const fetchDocuments = () => {
-    const docs = [];
+    const docs = []
     for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
+      const key = localStorage.key(i)
       if (key && key.startsWith('document_')) {
         try {
-          const docData = JSON.parse(localStorage.getItem(key));
-          docs.push({ 
-            key: key, 
-            ...docData
-          });
+          const docData = JSON.parse(localStorage.getItem(key))
+          docs.push({
+            key: key,
+            ...docData,
+          })
         } catch (error) {
-          console.error('Error parsing document from localStorage:', error);
+          console.error('Error parsing document from localStorage:', error)
         }
       }
     }
-    setStoredDocuments(docs);
-    setIsAcquisitionModalOpen(true);
-  };
-
+    setStoredDocuments(docs)
+    setIsAcquisitionModalOpen(true)
+  }
 
   // Toast functions
   const showToast = (message, type = 'success') => {
     setToastConfig({
       isVisible: true,
       message,
-      type
-    });
-  };
+      type,
+    })
+  }
 
   const hideToast = () => {
     setToastConfig({
       ...toastConfig,
-      isVisible: false
-    });
-  };
+      isVisible: false,
+    })
+  }
 
-  const token = localStorage.getItem('token');
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+  const token = localStorage.getItem('token')
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
   // Format date functions
   const formatDate = (date) => {
-    if (!date) return "N/A";
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(date).toLocaleDateString(undefined, options);
-  };
-  
+    if (!date) return 'N/A'
+    const options = { year: 'numeric', month: 'long', day: 'numeric' }
+    return new Date(date).toLocaleDateString(undefined, options)
+  }
+
   const formatDateForAPI = (date) => {
-    if (!date) return null;
-    const d = new Date(date);
-    if (isNaN(d.getTime())) return null;
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
-  
-  const currentDate = formatDate(new Date());
+    if (!date) return null
+    const d = new Date(date)
+    if (isNaN(d.getTime())) return null
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      '0'
+    )}-${String(d.getDate()).padStart(2, '0')}`
+  }
+
+  const currentDate = formatDate(new Date())
 
   // Standardize status naming
   const standardizeStatus = (status) => {
-    if (!status) return "Default Status";
+    if (!status) return 'Default Status'
     return status
       .toLowerCase()
       .replace(/_/g, ' ')
       .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
 
   // Get styled status label
   const getStatusLabel = (status) => {
-    const standardStatus = standardizeStatus(status);
-    let bgColor;
-    let textColor = 'text-white';
+    const standardStatus = standardizeStatus(status)
+    let bgColor
+    let textColor = 'text-white'
 
     switch (standardStatus.toLowerCase()) {
       case 'accepted':
-        bgColor = 'bg-green-500';
-        break;
+        bgColor = 'bg-green-500'
+        break
       case 'rejected':
-        bgColor = 'bg-red-600';
-        break;
+        bgColor = 'bg-red-600'
+        break
       case 'pending':
-        bgColor = 'bg-[#AEAAD4]';
-        break;
+        bgColor = 'bg-[#AEAAD4]'
+        break
       case 'acquired':
-        bgColor = 'bg-blue-600';
-        break;
+        bgColor = 'bg-blue-600'
+        break
       case 'failed':
-        bgColor = 'bg-orange-600';
-        break;
+        bgColor = 'bg-orange-600'
+        break
       default:
-        bgColor = 'bg-gray-500';
+        bgColor = 'bg-gray-500'
     }
 
     return (
-      <span className={`${bgColor} ${textColor} px-3 py-1 rounded-lg inline-flex items-center justify-center`}>
+      <span
+        className={`${bgColor} ${textColor} px-3 py-1 rounded-lg inline-flex items-center justify-center`}
+      >
         {standardStatus}
       </span>
-    );
-  };
+    )
+  }
 
   // Fetch forms from backend
   const fetchForms = async () => {
     try {
-      let url = `${API_URL}/api/auth/form`;
+      let url = `${API_URL}/api/auth/form`
 
       // Add date filtering if selected
       if (selectedDate) {
-        const dateParam = formatDateForAPI(selectedDate);
+        const dateParam = formatDateForAPI(selectedDate)
         if (dateParam) {
-          url += `?date=${dateParam}`;
+          url += `?date=${dateParam}`
         }
       }
 
-      const response = await axios.get(url, 
-        { withCredentials: true });
-      
+      const response = await axios.get(url, { withCredentials: true })
+
       // Ensure response data is an array
       if (Array.isArray(response.data)) {
-        setForms(response.data);
-        setAcquisitions(response.data);
-        
+        setForms(response.data)
+        setAcquisitions(response.data)
+
         // Update count statistics
-        setDonationCount(response.data.filter(form => form.ContributionType?.accession_type === 'Donation').length);
-        setLendingCount(response.data.filter(form => form.ContributionType?.accession_type === 'Lending').length);
-        setAcceptedCount(response.data.filter(form => form.ContributionType?.status === 'Accepted').length);
-        setRejectedCount(response.data.filter(form => form.ContributionType?.status === 'Rejected').length);
+        setDonationCount(
+          response.data.filter(
+            (form) => form.ContributionType?.accession_type === 'Donation'
+          ).length
+        )
+        setLendingCount(
+          response.data.filter(
+            (form) => form.ContributionType?.accession_type === 'Lending'
+          ).length
+        )
+        setAcceptedCount(
+          response.data.filter(
+            (form) => form.ContributionType?.status === 'Accepted'
+          ).length
+        )
+        setRejectedCount(
+          response.data.filter(
+            (form) => form.ContributionType?.status === 'Rejected'
+          ).length
+        )
       } else {
-        console.error('Expected an array but got:', response.data);
-        setForms([]);
-        setAcquisitions([]);
+        console.error('Expected an array but got:', response.data)
+        setForms([])
+        setAcquisitions([])
       }
     } catch (error) {
-      console.error('Error fetching forms:', error);
-      showToast('Failed to load acquisition data', 'error');
+      console.error('Error fetching forms:', error)
+      showToast('Failed to load acquisition data', 'error')
     }
-  };
+  }
 
   // Filter forms based on search and status
   const filterForms = (forms) => {
-    return forms.filter(form => {
+    return forms.filter((form) => {
       // Search matching
-      const matchesSearch = !searchQuery || 
-                          (form.artifact_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          form.Donator?.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-      
+      const matchesSearch =
+        !searchQuery ||
+        form.artifact_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        form.Donator?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+
       // Status filtering
-      const formStatus = form.ContributionType?.status;
-      const transferStatus = form.ContributionType?.transfer_status;
-      
+      const formStatus = form.ContributionType?.status
+      const transferStatus = form.ContributionType?.transfer_status
+
       // Match forms based on either normal status or transfer status
-      const matchesStatus = 
-        statusFilter === 'All Actions' || 
+      const matchesStatus =
+        statusFilter === 'All Actions' ||
         standardizeStatus(formStatus) === statusFilter ||
-        (statusFilter === 'Acquired' && standardizeStatus(transferStatus) === 'Acquired') ||
-        (statusFilter === 'Failed' && standardizeStatus(transferStatus) === 'Failed');
-      
+        (statusFilter === 'Acquired' &&
+          standardizeStatus(transferStatus) === 'Acquired') ||
+        (statusFilter === 'Failed' &&
+          standardizeStatus(transferStatus) === 'Failed')
+
       // Date filtering based on selectedDate
-      let matchesDate = true;
+      let matchesDate = true
       if (selectedDate) {
-        const formDate = new Date(form.donation_date || form.createdAt);
-        const selectedDateTime = new Date(selectedDate);
-        
+        const formDate = new Date(form.donation_date || form.createdAt)
+        const selectedDateTime = new Date(selectedDate)
+
         // Compare only the date part (year, month, day)
-        matchesDate = 
-          formDate.getFullYear() === selectedDateTime.getFullYear() && 
-          formDate.getMonth() === selectedDateTime.getMonth() && 
-          formDate.getDate() === selectedDateTime.getDate();
+        matchesDate =
+          formDate.getFullYear() === selectedDateTime.getFullYear() &&
+          formDate.getMonth() === selectedDateTime.getMonth() &&
+          formDate.getDate() === selectedDateTime.getDate()
       }
-      
-      return matchesSearch && matchesStatus && matchesDate;
-    });
-  };
+
+      return matchesSearch && matchesStatus && matchesDate
+    })
+  }
 
   // Handle date change
   const handleDateChange = (date) => {
-    setSelectedDate(date);
+    setSelectedDate(date)
     if (date) {
-      showToast(`Filtering data for ${formatDate(date)}`, 'info');
+      showToast(`Filtering data for ${formatDate(date)}`, 'info')
     } else {
-      showToast('Showing all dates', 'info');
+      showToast('Showing all dates', 'info')
     }
-  };
+  }
 
   // Handle confirmation action
   const handleConfirmAction = async () => {
-    if (!selectedForm) return;
+    if (!selectedForm) return
 
     try {
-      const status = confirmationAction === 'approve' ? 'Accepted' : 'Rejected';
+      const status = confirmationAction === 'approve' ? 'Accepted' : 'Rejected'
 
       // Update the form status
-      await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/status`, { status });
+      await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/status`, {
+        status,
+      })
 
       // If the form is rejected, automatically set transfer status to Failed
       if (status === 'Rejected') {
-        await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
-          transfer_status: 'Failed'
-        });
+        await axios.put(
+          `${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`,
+          {
+            transfer_status: 'Failed',
+          }
+        )
       } else if (status === 'Accepted') {
         // If the form is accepted, set transfer status to On Progress
-        await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
-          transfer_status: 'On Progress'
-        });
+        await axios.put(
+          `${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`,
+          {
+            transfer_status: 'On Progress',
+          }
+        )
       }
 
       // Optionally, update the `updated_at` timestamp
-      await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/timestamp`);
+      await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/timestamp`)
 
-      showToast(`Form ${status === 'accepted' ? 'approved' : 'rejected'} successfully!`, 'success');
-      fetchForms(); // Refresh forms list
+      showToast(
+        `Form ${status === 'accepted' ? 'approved' : 'rejected'} successfully!`,
+        'success'
+      )
+      fetchForms() // Refresh forms list
     } catch (error) {
-      console.error('Error processing action:', error);
-      showToast('Failed to update form status', 'error');
+      console.error('Error processing action:', error)
+      showToast('Failed to update form status', 'error')
     }
 
-    setIsConfirmationOpen(false);
-  };
+    setIsConfirmationOpen(false)
+  }
 
   // Handle delivery action
   const handleDeliveryAction = async (action) => {
-    if (!selectedForm) return;
-  
+    if (!selectedForm) return
+
     try {
-      const transferStatus = action === 'delivered' ? 'Acquired' : 'Failed';
-  
-      await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
-        transfer_status: transferStatus,
-      });
-  
-      showToast(`Transfer status updated to: ${transferStatus}`, 'success');
-      fetchForms(); // Refresh forms list
+      const transferStatus = action === 'delivered' ? 'Acquired' : 'Failed'
+
+      await axios.put(
+        `${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`,
+        {
+          transfer_status: transferStatus,
+        }
+      )
+
+      showToast(`Transfer status updated to: ${transferStatus}`, 'success')
+      fetchForms() // Refresh forms list
     } catch (error) {
-      console.error('Error updating transfer status:', error);
-      showToast('Failed to update transfer status', 'error');
+      console.error('Error updating transfer status:', error)
+      showToast('Failed to update transfer status', 'error')
     }
-  
-    setConfirmationModal({ action: '', open: false });
-  };
+
+    setConfirmationModal({ action: '', open: false })
+  }
 
   // Handle modal actions
   const handleCloseModal = () => {
-    setIsAcquisitionModalOpen(false); // 👈 hides the modal
-    setSelectedForm(null);  
-    setSelectedResponse(null);
-  };
+    setIsAcquisitionModalOpen(false) // 👈 hides the modal
+    setSelectedForm(null)
+    setSelectedResponse(null)
+  }
 
   const handleApprove = () => {
-    setConfirmationAction('approve');
-    setSelectedResponse('yes');
-    setIsConfirmationOpen(true);
-  };
+    setConfirmationAction('approve')
+    setSelectedResponse('yes')
+    setIsConfirmationOpen(true)
+  }
 
   const handleDecline = () => {
-    setConfirmationAction('decline');
-    setSelectedResponse('no');
-    setIsConfirmationOpen(true);
-  };
+    setConfirmationAction('decline')
+    setSelectedResponse('no')
+    setIsConfirmationOpen(true)
+  }
 
   const handleOpenModal = (form) => {
-    setSelectedForm(form);
-    setIsModalOpen(true);
-  };
+    setSelectedForm(form)
+    setIsModalOpen(true)
+  }
 
   const handleOpenDonationModal = (form) => {
-    setSelectedDonationForm(form);
-    setIsDonationModalOpen(true);
-  };
+    setSelectedDonationForm(form)
+    setIsDonationModalOpen(true)
+  }
 
   const handleCloseDonationModal = () => {
-    setIsDonationModalOpen(false);
-    setSelectedDonationForm(null);
-  };
+    setIsDonationModalOpen(false)
+    setSelectedDonationForm(null)
+  }
 
   const handleToggleDropdown = (donorId) => {
     if (expandedDonator === donorId) {
-      setExpandedDonator(null);
-      setHighlightedDonator(null);
+      setExpandedDonator(null)
+      setHighlightedDonator(null)
     } else {
-      setExpandedDonator(donorId);
-      setHighlightedDonator(donorId);
+      setExpandedDonator(donorId)
+      setHighlightedDonator(donorId)
     }
-  };
+  }
   useEffect(() => {
     // Only run this if we have forms data
     if (forms.length > 0) {
       // Filter forms based on selected date
-      let filteredForms = [...forms];
-      
+      let filteredForms = [...forms]
+
       if (selectedDate) {
-        const selectedDateTime = new Date(selectedDate);
-        filteredForms = forms.filter(form => {
-          const formDate = new Date(form.donation_date || form.createdAt);
+        const selectedDateTime = new Date(selectedDate)
+        filteredForms = forms.filter((form) => {
+          const formDate = new Date(form.donation_date || form.createdAt)
           return (
-            formDate.getFullYear() === selectedDateTime.getFullYear() && 
-            formDate.getMonth() === selectedDateTime.getMonth() && 
+            formDate.getFullYear() === selectedDateTime.getFullYear() &&
+            formDate.getMonth() === selectedDateTime.getMonth() &&
             formDate.getDate() === selectedDateTime.getDate()
-          );
-        });
-      }    // Update counts based on filtered forms
-      setDonationCount(filteredForms.filter(form => form.ContributionType?.accession_type === 'Donation').length);
-      setLendingCount(filteredForms.filter(form => form.ContributionType?.accession_type === 'Lending').length);
-      setAcceptedCount(filteredForms.filter(form => form.ContributionType?.status === 'Accepted').length);
-      setRejectedCount(filteredForms.filter(form => form.ContributionType?.status === 'Rejected').length);
+          )
+        })
+      } // Update counts based on filtered forms
+      setDonationCount(
+        filteredForms.filter(
+          (form) => form.ContributionType?.accession_type === 'Donation'
+        ).length
+      )
+      setLendingCount(
+        filteredForms.filter(
+          (form) => form.ContributionType?.accession_type === 'Lending'
+        ).length
+      )
+      setAcceptedCount(
+        filteredForms.filter(
+          (form) => form.ContributionType?.status === 'Accepted'
+        ).length
+      )
+      setRejectedCount(
+        filteredForms.filter(
+          (form) => form.ContributionType?.status === 'Rejected'
+        ).length
+      )
     }
-  }, [forms, selectedDate]);
+  }, [forms, selectedDate])
   // Fetch documents when tab changes or component loads
   useEffect(() => {
     if (documentView) {
-      fetchDocuments();
+      fetchDocuments()
     }
-  }, [documentView]);
+  }, [documentView])
 
   // Initial data load
   useEffect(() => {
-    fetchForms();
-  }, []);
+    fetchForms()
+  }, [])
 
   // Effect to refresh data when date changes
   useEffect(() => {
-    fetchForms();
-  }, [selectedDate]);
+    fetchForms()
+  }, [selectedDate])
 
   // Group donations by donor for the donator records view
   const donationGroups = forms.reduce((acc, form) => {
-    if (form?.ContributionType?.accession_type === 'Donation' || form?.ContributionType?.accession_type === 'Lending') {
-      const donorId = form?.Donator?.id;
+    if (
+      form?.ContributionType?.accession_type === 'Donation' ||
+      form?.ContributionType?.accession_type === 'Lending'
+    ) {
+      const donorId = form?.Donator?.id
       if (!acc[donorId]) {
         acc[donorId] = {
           donorId,
           donorName: form.Donator.name,
           date: form.donation_date,
           forms: [],
-        };
+        }
       }
-      acc[donorId].forms.push(form);
+      acc[donorId].forms.push(form)
     }
-    return acc;
-  }, {});
+    return acc
+  }, {})
 
-  const donationGroupsArray = Object.values(donationGroups);
+  const donationGroupsArray = Object.values(donationGroups)
 
   // Update filtered data when source data or filters change
   useEffect(() => {
     // Apply filtering
-    let filtered = filterForms(acquisitions);
-    
+    let filtered = filterForms(acquisitions)
+
     // Apply sorting
     if (columnFilter) {
       filtered = [...filtered].sort((a, b) => {
-        let valueA, valueB;
-        
+        let valueA, valueB
+
         switch (columnFilter) {
           case 'date':
-            valueA = new Date(a.donation_date || a.createdAt);
-            valueB = new Date(b.donation_date || b.createdAt);
-            break;
+            valueA = new Date(a.donation_date || a.createdAt)
+            valueB = new Date(b.donation_date || b.createdAt)
+            break
           case 'donator':
-            valueA = a.Donator?.name || '';
-            valueB = b.Donator?.name || '';
-            break;
+            valueA = a.Donator?.name || ''
+            valueB = b.Donator?.name || ''
+            break
           case 'artifact':
-            valueA = a.artifact_name || '';
-            valueB = b.artifact_name || '';
-            break;
+            valueA = a.artifact_name || ''
+            valueB = b.artifact_name || ''
+            break
           case 'status':
-            valueA = a.ContributionType?.status || '';
-            valueB = b.ContributionType?.status || '';
-            break;
+            valueA = a.ContributionType?.status || ''
+            valueB = b.ContributionType?.status || ''
+            break
           case 'transfer':
-            valueA = a.ContributionType?.transfer_status || '';
-            valueB = b.ContributionType?.transfer_status || '';
-            break;
+            valueA = a.ContributionType?.transfer_status || ''
+            valueB = b.ContributionType?.transfer_status || ''
+            break
           case 'updated':
-            valueA = new Date(a.updated_at || 0);
-            valueB = new Date(b.updated_at || 0);
-            break;
+            valueA = new Date(a.updated_at || 0)
+            valueB = new Date(b.updated_at || 0)
+            break
           default:
-            valueA = 0;
-            valueB = 0;
+            valueA = 0
+            valueB = 0
         }
-        
-        const result = typeof valueA === 'string'
-          ? valueA.localeCompare(valueB)
-          : (valueA - valueB);
-        
-        return sortDirection === 'asc' ? result : -result;
-      });
+
+        const result =
+          typeof valueA === 'string'
+            ? valueA.localeCompare(valueB)
+            : valueA - valueB
+
+        return sortDirection === 'asc' ? result : -result
+      })
     }
-    
-    setFilteredData({ acquisitions: filtered });
-  }, [acquisitions, searchQuery, statusFilter, columnFilter, sortDirection, selectedDate]);
+
+    setFilteredData({ acquisitions: filtered })
+  }, [
+    acquisitions,
+    searchQuery,
+    statusFilter,
+    columnFilter,
+    sortDirection,
+    selectedDate,
+  ])
 
   return (
     <>
-      <div className='w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]'>
+      <div className="w-screen min-h-[79.8rem] h-screen bg-[#F0F0F0] select-none flex pt-[7rem]">
         {/* Left Nav */}
-        <div className='bg-[#1C1B19] w-auto min-h-full h-full min-w-[6rem] sm:min-w-auto'>
+        <div className="bg-[#1C1B19] w-auto min-h-full h-full min-w-[6rem] sm:min-w-auto">
           <AdminNav />
         </div>
 
         {/* Main Content */}
-        <div className='w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-auto'>
-        {isAcquisitionModalOpen ? (<AcquisitionModal
-     
-          isModalOpen={isAcquisitionModalOpen} // ✅ use the correct state
-        
-          selectedForm={selectedForm}
-          handleCloseModal={handleCloseModal}
-          isDonationModalOpen={isDonationModalOpen}
-          selectedDonationForm={selectedDonationForm}
-          handleCloseDonationModal={handleCloseDonationModal}
-          confirmationModal={confirmationModal}
-          setConfirmationModal={setConfirmationModal}
-          isConfirmationOpen={isConfirmationOpen}
-          confirmationAction={confirmationAction}
-          handleConfirmAction={handleConfirmAction}
-          setIsConfirmationOpen={setIsConfirmationOpen}
-          selectedResponse={selectedResponse}
-          handleApprove={handleApprove}
-          handleDecline={handleDecline}
-          handleDeliveryAction={handleDeliveryAction}
-        />) : (<>
-         <div className='flex flex-col '>
-                <span className=' text-5xl font-semibold'>Donation and Lending Management</span>
-                <span className='text-2xl font-semibold'>Acquisition</span>
-              </div>
-          <div className='w-full h-[calc(100%-9rem)] flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5'>
-            {/* Left Panel: Stats + Tabs */}
-            <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
-              {/* Tab Selector - add Documents tab */}
-              <div className='w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex justify-start py-2 gap-x-2 flex-wrap'>
-                <button
-                  className={`px-4 h-full border-1 rounded-lg cursor-pointer ${activeTab === 'form' && !documentView ? 'bg-black text-white' : 'border-gray-500'}`}
-                  onClick={() => { setActiveTab('form'); setDocumentView(false); }}
-                >
-                  <span className='text-2xl font-semibold'>Form</span>
-                </button>
-                <button
-                  className={`px-4 h-full border-1 rounded-lg cursor-pointer ${activeTab === 'donationRecords' && !documentView ? 'bg-black text-white' : 'border-gray-500'}`}
-                  onClick={() => { setActiveTab('donationRecords'); setDocumentView(false); }}
-                >
-                  <span className='text-2xl font-semibold'>Donation Records</span>
-                </button>
-              
-              </div>
-
-              {/* Stats Section */}
-              <div className='w-full h-full flex flex-col gap-y-[5rem]'>
-              <div className='bg-[#161616] px-4 h-[5rem] flex justify-between items-center rounded-sm'>
-              <span className='text-2xl text-white font-semibold'>Total Forms</span>
-              <div className='w-[6rem] h-[3rem] bg-[#D4DBFF] flex items-center justify-center rounded-md'>
-                <span className='text-2xl text-black font-semibold'>
-                  {filteredData.acquisitions.length}
+        <div className="w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-auto">
+          {isAcquisitionModalOpen ? (
+            <AcquisitionModal
+              isModalOpen={isAcquisitionModalOpen} // ✅ use the correct state
+              selectedForm={selectedForm}
+              handleCloseModal={handleCloseModal}
+              isDonationModalOpen={isDonationModalOpen}
+              selectedDonationForm={selectedDonationForm}
+              handleCloseDonationModal={handleCloseDonationModal}
+              confirmationModal={confirmationModal}
+              setConfirmationModal={setConfirmationModal}
+              isConfirmationOpen={isConfirmationOpen}
+              confirmationAction={confirmationAction}
+              handleConfirmAction={handleConfirmAction}
+              setIsConfirmationOpen={setIsConfirmationOpen}
+              selectedResponse={selectedResponse}
+              handleApprove={handleApprove}
+              handleDecline={handleDecline}
+              handleDeliveryAction={handleDeliveryAction}
+            />
+          ) : (
+            <>
+              <div className="gap-y-2 font-semibold flex flex-col">
+                <span className="text-5xl">
+                  Donation and Lending Management
                 </span>
-              </div>
-            </div>
-
-
-                {/* Statistics */}
-                <div className='w-full h-fit flex flex-col gap-y-7'>
-                <span className='text-2xl font-semibold text-[#727272]'>
-                    {selectedDate ? formatDate(selectedDate) : currentDate}
+                <div className="text-2xl flex items-center text-center">
+                  <span onClick={handleCloseModal} className="">
+                    Acquisiton{' '}
                   </span>
-
-                  <div className='w-full h-fit flex justify-between items-center'>
-                    <span className='text-2xl font-semibold'>Donation Forms</span>
-                    <div className='w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center'>
-                      <span className='text-2xl font-semibold'>{donationCount}</span>
-                    </div>
-                  </div>
-
-                  <div className='w-full h-fit flex justify-between items-center'>
-                    <span className='text-2xl font-semibold'>Lending Forms</span>
-                    <div className='w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center'>
-                      <span className='text-2xl font-semibold'>{lendingCount}</span>
-                    </div>
-                  </div>
-
-                  <div className='w-full h-fit flex justify-between items-center'>
-                    <span className='text-2xl font-semibold'>Accepted Forms</span>
-                    <div className='w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center'>
-                      <span className='text-2xl font-semibold'>{acceptedCount}</span>
-                    </div>
-                  </div>
-
-                  <div className='w-full h-fit flex justify-between items-center'>
-                    <span className='text-2xl font-semibold'>Rejected Forms</span>
-                    <div className='w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center'>
-                      <span className='text-2xl font-semibold'>{rejectedCount}</span>
-                    </div>
-                  </div>
                 </div>
               </div>
-            </div>
+              <div className="w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 border-t-1 pt-5">
+                {/* Left Panel: Stats + Tabs */}
+                <div className="min-w-[34rem] h-full flex flex-col gap-y-7">
+                  {/* Tab Selector - add Documents tab */}
+                  <div className="w-full max-w-[35rem] text-gray-500 min-h-[5rem] flex justify-start py-2 gap-x-2 flex-wrap">
+                    <button
+                      className={`px-4 h-full border-1 rounded-lg cursor-pointer ${
+                        activeTab === 'form' && !documentView
+                          ? 'bg-black text-white'
+                          : 'border-gray-500'
+                      }`}
+                      onClick={() => {
+                        setActiveTab('form')
+                        setDocumentView(false)
+                      }}
+                    >
+                      <span className="text-2xl font-semibold">Form</span>
+                    </button>
+                    <button
+                      className={`px-4 h-full border-1 rounded-lg cursor-pointer ${
+                        activeTab === 'donationRecords' && !documentView
+                          ? 'bg-black text-white'
+                          : 'border-gray-500'
+                      }`}
+                      onClick={() => {
+                        setActiveTab('donationRecords')
+                        setDocumentView(false)
+                      }}
+                    >
+                      <span className="text-2xl font-semibold">
+                        Donation Records
+                      </span>
+                    </button>
+                  </div>
 
-            {/* Right Section: Search Controls and Table */}
-            <div className="w-full h-full flex flex-col gap-y-7">
-              {/* Controls - Not Scrolling */}
-              <div className="min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2">
-                {/* Date Picker */}
-                <div className="flex-shrink-0">
-                  <CustomDatePicker
-                    selected={selectedDate}
-                    onChange={(date) => handleDateChange(date)}
-                    isClearable={true}
-                    placeholderText="Filter by Date"
-                    popperPlacement="bottom-start"
-                    popperClassName="z-50"
-                    customInput={
-                      <button className={`px-3 h-16 rounded-lg border-1 ${selectedDate ? 'border-gray-700' : 'border-gray-500'} cursor-pointer`}>
-                        <i className={`${selectedDate ? 'text-gray-700 fa-solid' : 'text-gray-500 fa-regular'} fa-calendar text-4xl`}></i>
-                      </button>
-                    }
-                  />
-                </div>
+                  {/* Stats Section */}
+                  <div className="w-full h-full flex flex-col gap-y-[5rem]">
+                    <div className="bg-[#161616] px-4 h-[5rem] flex justify-between items-center rounded-sm">
+                      <span className="text-2xl text-white font-semibold">
+                        Total Forms
+                      </span>
+                      <div className="w-[6rem] h-[3rem] bg-[#D4DBFF] flex items-center justify-center rounded-md">
+                        <span className="text-2xl text-black font-semibold">
+                          {filteredData.acquisitions.length}
+                        </span>
+                      </div>
+                    </div>
 
-                {/* Search */}
-                <div className="relative h-full min-w-[20rem]">
-                  <i className="text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"></i>
-                  <input
-                    type="text"
-                    placeholder="Search by name or donator"
-                    className="h-full pl-10 pr-3 py-2 border-1 border-gray-500 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
+                    {/* Statistics */}
+                    <div className="w-full h-fit flex flex-col gap-y-7">
+                      <span className="text-2xl font-semibold text-[#727272]">
+                        {selectedDate ? formatDate(selectedDate) : currentDate}
+                      </span>
 
-                {/* Sort */}
-                <div className="relative h-full min-w-48">
-                  <select
-                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    onChange={(e) => {
-                      const [column, direction] = e.target.value.split('|');
-                      setColumnFilter(column);
-                      setSortDirection(direction || 'asc');
-                    }}
-                    value={`${columnFilter}|${sortDirection}`}
-                  >
-                    <option value="">Sort By...</option>
-                    <option value="date|asc">Date (Oldest First)</option>
-                    <option value="date|desc">Date (Newest First)</option>
-                    <option value="donator|asc">Donator Name (A-Z)</option>
-                    <option value="donator|desc">Donator Name (Z-A)</option>
-                    <option value="artifact|asc">Artifact Name (A-Z)</option>
-                    <option value="artifact|desc">Artifact Name (Z-A)</option>
-                    <option value="status|asc">Status (A-Z)</option>
-                    <option value="status|desc">Status (Z-A)</option>
-                    <option value="transfer|asc">Transfer Status (A-Z)</option>
-                    <option value="transfer|desc">Transfer Status (Z-A)</option>
-                    <option value="updated|asc">Last Updated (Oldest First)</option>
-                    <option value="updated|desc">Last Updated (Newest First)</option>
-                  </select>
-                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
-                </div>
-
-                {/* Status Filter */}
-                <div className="relative h-full min-w-48">
-                  <select
-                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                  >
-                    <option value="All Actions">All Actions</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Accepted">Accepted</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Acquired">Acquired</option>
-                    <option value="Failed">Failed</option>
-                  </select>
-                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
-                </div>
-              </div>
-
-              {/* Table - Header + Scrollable Body */}
-              {activeTab === 'form' && (
-                <div className="min-w-[94rem] w-full flex flex-col">
-                      {/* Table Header (Static) */}
-                      <div className="grid grid-cols-6 font-semibold text-[#727272] text-2xl  sticky top-0 z-10">
-                        <div className="border-l-1 px-3 py-2">Date</div>
-                        <div className="border-l-1 px-3 py-2">Donator</div>
-                        <div className="border-l-1 px-3 py-2">Artifact Name</div>
-                        <div className="border-l-1 px-3 py-2">Status</div>
-                        <div className="border-l-1 px-3 py-2">Transfer Status</div>
-                        <div className="border-l-1 px-3 py-2">Last Updated</div>
+                      <div className="w-full h-fit flex justify-between items-center">
+                        <span className="text-2xl font-semibold">
+                          Donation Forms
+                        </span>
+                        <div className="w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center">
+                          <span className="text-2xl font-semibold">
+                            {donationCount}
+                          </span>
+                        </div>
                       </div>
 
+                      <div className="w-full h-fit flex justify-between items-center">
+                        <span className="text-2xl font-semibold">
+                          Lending Forms
+                        </span>
+                        <div className="w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center">
+                          <span className="text-2xl font-semibold">
+                            {lendingCount}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="w-full h-fit flex justify-between items-center">
+                        <span className="text-2xl font-semibold">
+                          Accepted Forms
+                        </span>
+                        <div className="w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center">
+                          <span className="text-2xl font-semibold">
+                            {acceptedCount}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="w-full h-fit flex justify-between items-center">
+                        <span className="text-2xl font-semibold">
+                          Rejected Forms
+                        </span>
+                        <div className="w-[5rem] h-[2rem] flex items-center bg-[#D4DBFF] rounded-md justify-center">
+                          <span className="text-2xl font-semibold">
+                            {rejectedCount}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Section: Search Controls and Table */}
+                <div className="w-full h-full flex flex-col gap-y-7">
+                  {/* Controls - Not Scrolling */}
+                  <div className="min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2">
+                    {/* Date Picker */}
+                    <div className="flex-shrink-0">
+                      <CustomDatePicker
+                        selected={selectedDate}
+                        onChange={(date) => handleDateChange(date)}
+                        isClearable={true}
+                        placeholderText="Filter by Date"
+                        popperPlacement="bottom-start"
+                        popperClassName="z-50"
+                        customInput={
+                          <button
+                            className={`px-3 h-16 rounded-lg border-1 ${
+                              selectedDate
+                                ? 'border-gray-700'
+                                : 'border-gray-500'
+                            } cursor-pointer`}
+                          >
+                            <i
+                              className={`${
+                                selectedDate
+                                  ? 'text-gray-700 fa-solid'
+                                  : 'text-gray-500 fa-regular'
+                              } fa-calendar text-4xl`}
+                            ></i>
+                          </button>
+                        }
+                      />
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative h-full min-w-[20rem]">
+                      <i className="text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"></i>
+                      <input
+                        type="text"
+                        placeholder="Search by name or donator"
+                        className="h-full pl-10 pr-3 py-2 border-1 border-gray-500 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Sort */}
+                    <div className="relative h-full min-w-48">
+                      <select
+                        className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onChange={(e) => {
+                          const [column, direction] = e.target.value.split('|')
+                          setColumnFilter(column)
+                          setSortDirection(direction || 'asc')
+                        }}
+                        value={`${columnFilter}|${sortDirection}`}
+                      >
+                        <option value="">Sort By...</option>
+                        <option value="date|asc">Date (Oldest First)</option>
+                        <option value="date|desc">Date (Newest First)</option>
+                        <option value="donator|asc">Donator Name (A-Z)</option>
+                        <option value="donator|desc">Donator Name (Z-A)</option>
+                        <option value="artifact|asc">
+                          Artifact Name (A-Z)
+                        </option>
+                        <option value="artifact|desc">
+                          Artifact Name (Z-A)
+                        </option>
+                        <option value="status|asc">Status (A-Z)</option>
+                        <option value="status|desc">Status (Z-A)</option>
+                        <option value="transfer|asc">
+                          Transfer Status (A-Z)
+                        </option>
+                        <option value="transfer|desc">
+                          Transfer Status (Z-A)
+                        </option>
+                        <option value="updated|asc">
+                          Last Updated (Oldest First)
+                        </option>
+                        <option value="updated|desc">
+                          Last Updated (Newest First)
+                        </option>
+                      </select>
+                      <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                    </div>
+
+                    {/* Status Filter */}
+                    <div className="relative h-full min-w-48">
+                      <select
+                        className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                      >
+                        <option value="All Actions">All Actions</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Accepted">Accepted</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Acquired">Acquired</option>
+                        <option value="Failed">Failed</option>
+                      </select>
+                      <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                    </div>
+                  </div>
+
+                  {/* Table - Header + Scrollable Body */}
+                  {activeTab === 'form' && (
+                  <div className='h-full flex flex-col gap-y-7'>
+                    <div className="min-w-[94rem] w-full font-semibold text-[#727272] text-2xl h-fit justify-between gap-y-7 grid grid-cols-6">
+                      {/* Table Header (Static) */}
+                        <div className="border-l-1 px-3 py-2">Date</div>
+                        <div className="border-l-1 px-3 py-2">Donator</div>
+                        <div className="border-l-1 px-3 py-2">
+                          Artifact Name
+                        </div>
+                        <div className="border-l-1 px-3 py-2">Status</div>
+                        <div className="border-l-1 px-3 py-2">
+                          Transfer Status
+                        </div>
+                        <div className="border-l-1 px-3 py-2">Last Updated</div>
+                    </div>
+
                       {/* Scrollable Body */}
-                      <div className="overflow-y-auto max-h-[65vh] border-b border-gray-300">
+                      <div className="w-full min-w-[94rem] overflow-y-scroll border-y-1 border-gray-400 h-full flex flex-col mt-2">
                         {filteredData.acquisitions.length > 0 ? (
                           filteredData.acquisitions.map((form) => (
                             <div
                               key={form.id}
                               className="grid grid-cols-6 text-xl h-[4rem] font-semibold cursor-pointer hover:bg-gray-300"
                               onClick={() => {
-                                setSelectedForm(form);
-                                setIsAcquisitionModalOpen(true);
+                                setSelectedForm(form)
+                                setIsAcquisitionModalOpen(true)
                               }}
                             >
                               <div className="px-4 py-2 border-b border-gray-400 flex items-center">
-                                {form.donation_date ? new Date(form.donation_date).toLocaleDateString() : 'N/A'}
+                                {form.donation_date
+                                  ? new Date(
+                                      form.donation_date
+                                    ).toLocaleDateString()
+                                  : 'N/A'}
                               </div>
                               <div className="px-4 py-2 border-b border-gray-400 flex items-center">
                                 {form.Donator?.name || 'N/A'}
@@ -655,139 +789,167 @@ const Acquisition = () => {
                                 {form.artifact_name}
                               </div>
                               <div className="px-4 py-2 border-b border-gray-400 flex items-center">
-                                {getStatusLabel(form.ContributionType.status || 'Pending')}
+                                {getStatusLabel(
+                                  form.ContributionType.status || 'Pending'
+                                )}
                               </div>
                               <div className="px-4 py-2 border-b border-gray-400 flex items-center">
-                                {getStatusLabel(form.ContributionType.transfer_status || 'N/A')}
+                                {getStatusLabel(
+                                  form.ContributionType.transfer_status || 'N/A'
+                                )}
                               </div>
                               <div className="px-4 py-2 border-b border-gray-400 flex items-center">
-                                {form.updated_at ? new Date(form.updated_at).toLocaleString() : 'N/A'}
+                                {form.updated_at
+                                  ? new Date(form.updated_at).toLocaleString()
+                                  : 'N/A'}
                               </div>
                             </div>
                           ))
                         ) : (
-                          <div className="min-w-[94rem] py-16 flex justify-center items-center">
+                          <div className="min-w-[94rem] h-full py-16 flex justify-center items-center">
                             <div className="text-2xl text-gray-500 flex flex-col items-center">
                               <i className="fas fa-inbox text-5xl mb-4"></i>
                               <p>No acquisition data available</p>
-                              <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
+                              <p className="text-lg mt-2">
+                                Try adjusting your filters or search criteria
+                              </p>
                             </div>
                           </div>
                         )}
                       </div>
                     </div>
-              )}
+                  )}
 
-              {activeTab === 'donationRecords' && (
-        <div>
-          {/* Table header for top-level rows */}
-          <div className="min-w-[94rem] w-full font-semibold h-fit grid grid-cols-3 justify-between">
-            <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">Date</div>
-            <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">Donator</div>
-            <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">Donations</div>
-          </div>
-
-          <div className="w-full min-w-[94rem] h-auto flex flex-col mt-2">
-            {donationGroupsArray.map((group) => {
-              const { donorId, donorName, date, forms } = group;
-
-              return (
-                <div key={donorId}>
-                  {/* Top-level row */}
-                  <div
-                    className={`min-w-[94rem] text-xl h-[4rem] font-semibold grid grid-cols-3 cursor-pointer hover:bg-gray-300 ${
-                      highlightedDonator === donorId ? 'bg-gray-300' : ''
-                    }`}
-                    onClick={() => handleToggleDropdown(donorId)}
-                  >
-                    <div className="px-4 py-2 border-b-1 border-gray-400 flex items-center">
-                      {date ? new Date(date).toLocaleDateString() : 'N/A'}
-                    </div>
-                    <div className="px-4 py-2 border-b-1 border-gray-400 flex items-center">
-                      {donorName || 'N/A'}
-                    </div>
-                    <div className="px-4 py-2 border-b-1 border-gray-400 flex items-center justify-between">
-                      {forms.length}
-                      <i
-                        className={`fa-solid fa-caret-down transition-transform duration-300 ${
-                          expandedDonator === donorId ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Expanded section */}
-                  {expandedDonator === donorId && (
-                    <div className="bg-white p-4 border-1 border-gray-300 w-2/3 ml-auto h-auto">
-                      <div className="grid grid-cols-5 text-left font-semibold mb-3 text-xl">
-                        <div>Title</div>
-                        <div>Contribution Type</div>
-                        <div>Status</div>
-                        <div>Transfer Status</div>
-                        <div>Date</div>
+                  {activeTab === 'donationRecords' && (
+                    <div className='h-full flex flex-col gap-y-7'>
+                      {/* Table header for top-level rows */}
+                      <div className="min-w-[94rem]  w-full font-semibold h-fit grid grid-cols-3 justify-between">
+                        <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">
+                          Date
+                        </div>
+                        <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">
+                          Donator
+                        </div>
+                        <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">
+                          Donations
+                        </div>
                       </div>
-                      <div className="w-full max-h-42 overflow-auto">
-                        {forms.map((f) => (
-                          <div
-                            key={f.id}
-                            className="grid grid-cols-5 text-xl hover:bg-gray-300 cursor-pointer"
-                            onClick={() => handleOpenDonationModal(f)}
-                          >
-                            <div className="py-3 border-b-1 border-gray-400">{f.artifact_name}</div>
-                            <div className="py-3 border-b-1 border-gray-400">
-                              {f.ContributionType.accession_type}
-                            </div>
-                            <div className="py-3 border-b-1 border-gray-400">
-                              <span
-                                className={`p-1 px-3 rounded-lg text-white ${
-                                  f.ContributionType.status === 'Accepted'
-                                    ? 'bg-green-600'
-                                    : f.ContributionType.status === 'Rejected'
-                                    ? 'bg-red-600'
-                                    : 'bg-gray-400'
+
+                      <div className="w-full min-w-[94rem] border-y-1 border-gray-400 h-full flex flex-col mt-2">
+                        {donationGroupsArray.map((group) => {
+                          const { donorId, donorName, date, forms } = group
+
+                          return (
+                            <div key={donorId}>
+                              {/* Top-level row */}
+                              <div
+                                className={`min-w-[94rem] text-xl h-[4rem] font-semibold grid grid-cols-3 cursor-pointer hover:bg-gray-300 ${
+                                  highlightedDonator === donorId
+                                    ? 'bg-gray-300'
+                                    : ''
                                 }`}
+                                onClick={() => handleToggleDropdown(donorId)}
                               >
-                                {f.ContributionType.status || 'To Review'}
-                              </span>
+                                <div className="px-4 py-2 border-b-1 border-gray-400 flex items-center">
+                                  {date
+                                    ? new Date(date).toLocaleDateString()
+                                    : 'N/A'}
+                                </div>
+                                <div className="px-4 py-2 border-b-1 border-gray-400 flex items-center">
+                                  {donorName || 'N/A'}
+                                </div>
+                                <div className="px-4 py-2 border-b-1 border-gray-400 flex items-center justify-between">
+                                  {forms.length}
+                                  <i
+                                    className={`fa-solid fa-caret-down transition-transform duration-300 ${
+                                      expandedDonator === donorId
+                                        ? 'rotate-180'
+                                        : ''
+                                    }`}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Expanded section */}
+                              {expandedDonator === donorId && (
+                                <div className="bg-white p-4 border-1 border-gray-300 w-2/3 ml-auto h-auto">
+                                  <div className="grid grid-cols-5 text-left font-semibold mb-3 text-xl">
+                                    <div>Title</div>
+                                    <div>Contribution Type</div>
+                                    <div>Status</div>
+                                    <div>Transfer Status</div>
+                                    <div>Date</div>
+                                  </div>
+                                  <div className="w-full max-h-42 overflow-auto">
+                                    {forms.map((f) => (
+                                      <div
+                                        key={f.id}
+                                        className="grid grid-cols-5 text-xl hover:bg-gray-300 cursor-pointer"
+                                        onClick={() =>
+                                          handleOpenDonationModal(f)
+                                        }
+                                      >
+                                        <div className="py-3 border-b-1 border-gray-400">
+                                          {f.artifact_name}
+                                        </div>
+                                        <div className="py-3 border-b-1 border-gray-400">
+                                          {f.ContributionType.accession_type}
+                                        </div>
+                                        <div className="py-3 border-b-1 border-gray-400">
+                                          <span
+                                            className={`p-1 px-3 rounded-lg text-white ${
+                                              f.ContributionType.status ===
+                                              'Accepted'
+                                                ? 'bg-green-600'
+                                                : f.ContributionType.status ===
+                                                  'Rejected'
+                                                ? 'bg-red-600'
+                                                : 'bg-gray-400'
+                                            }`}
+                                          >
+                                            {f.ContributionType.status ||
+                                              'To Review'}
+                                          </span>
+                                        </div>
+                                        <div className="py-3 border-b-1 border-gray-400">
+                                          {f.ContributionType.transfer_status ||
+                                            'N/A'}
+                                        </div>
+                                        <div className="py-3 border-b-1 border-gray-400">
+                                          {f.donation_date
+                                            ? new Date(
+                                                f.donation_date
+                                              ).toLocaleDateString()
+                                            : 'N/A'}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            <div className="py-3 border-b-1 border-gray-400">
-                              {f.ContributionType.transfer_status || 'N/A'}
-                            </div>
-                            <div className="py-3 border-b-1 border-gray-400">
-                              {f.donation_date ? new Date(f.donation_date).toLocaleDateString() : 'N/A'}
-                            </div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   )}
+
+                  <SelectedDonatorModal
+                    isOpen={isDonationModalOpen}
+                    onClose={handleCloseDonationModal}
+                    selectedDonationForm={selectedDonationForm}
+                  />
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </>
+          )}
         </div>
-              )}
-
-
-              <SelectedDonatorModal
-                isOpen={isDonationModalOpen}
-                onClose={handleCloseDonationModal}
-                selectedDonationForm={selectedDonationForm}
-              />
-
-            </div>
-
-          </div>
-          </>) }
-        </div>
-       {/* <SelectedDonatorModal
+        {/* <SelectedDonatorModal
   isOpen={isDonationModalOpen}
   onClose={handleCloseDonationModal}
   selectedDonationForm={selectedDonationForm}
 /> */}
-
       </div>
-
 
       {/* Modals */}
       {/* <AcquisitionModal
@@ -817,7 +979,7 @@ const Acquisition = () => {
         onClose={hideToast}
       />
     </>
-  );
-};
+  )
+}
 
-export default Acquisition;
+export default Acquisition
