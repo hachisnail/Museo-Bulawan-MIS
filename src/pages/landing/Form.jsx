@@ -149,6 +149,8 @@ const Form = () => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [missingFields, setMissingFields] = useState([]);
+
 
   // Capitalize first letter of First/Last Name
   const handleFirstNameChange = (e) => {
@@ -204,27 +206,51 @@ const removeDocument = (indexToRemove) => {
 
 
   // Open the confirmation modal before final submit
-  const handleOpenConfirmation = (e) => {
-    e.preventDefault();
-    
-    // Validate required fields before showing confirmation
-    if (!firstName || !lastName || !age || !email || !selectedProvince || 
-        !selectedCity || !selectedBarangay || !artifactName || !description || 
-        !acquired || images.length === 0) {
-      setErrorMessage('Please fill in all required fields marked with *');
-      return;
+ const handleOpenConfirmation = (e) => {
+  e.preventDefault();
+
+  const required = [
+    { id: 'firstName', value: firstName },
+    { id: 'lastName', value: lastName },
+    { id: 'age', value: age },
+    { id: 'email', value: email },
+    { id: 'province', value: selectedProvince },
+    { id: 'city', value: selectedCity },
+    { id: 'barangay', value: selectedBarangay },
+    { id: 'artifactName', value: artifactName },
+    { id: 'description', value: description },
+    { id: 'acquired', value: acquired },
+    { id: 'images', value: images.length > 0 }
+  ];
+
+  if (formType === 'lending') {
+    required.push(
+      { id: 'durationPeriod', value: durationPeriod },
+      { id: 'remarks', value: remarks },
+      { id: 'reason', value: reason },
+      { id: 'condition', value: condition }
+    );
+  }
+
+  const missing = required.filter(field => !field.value).map(field => field.id);
+
+  if (missing.length > 0) {
+    setMissingFields(missing);
+    setErrorMessage('Please fill in all required fields marked with *');
+
+    const firstMissing = document.getElementById(missing[0]);
+    if (firstMissing) {
+      firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    
-    // Additional validation for lending form
-    if (formType === 'lending' && (!durationPeriod || !remarks || !reason || !condition)) {
-      setErrorMessage('Please fill in all required lending fields marked with *');
-      return;
-    }
-    
-    // Clear any previous error messages
-    setErrorMessage('');
-    setShowConfirmationModal(true);
-  };
+
+    return;
+  }
+
+  setMissingFields([]);
+  setErrorMessage('');
+  setShowConfirmationModal(true);
+};
+
 
   // Submit the form to the server
   const handleSubmit = async () => {
@@ -464,6 +490,7 @@ const removeDocument = (indexToRemove) => {
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
+                  id="firstName"
                     type="text"
                     placeholder="First Name"
                     required
@@ -472,6 +499,7 @@ const removeDocument = (indexToRemove) => {
                     className="md:col-span-4 px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
                   />
                   <input
+                  id="lastName"
                     type="text"
                     placeholder="Last Name"
                     required
@@ -532,6 +560,7 @@ const removeDocument = (indexToRemove) => {
                     Email <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="email"
                     type="email"
                     placeholder="example@gmail.com"
                     required
@@ -630,7 +659,7 @@ const removeDocument = (indexToRemove) => {
                       <div className="col-span-9">
                         <input
                           type="text"
-                          id="loanDuration"
+                          id="durationPeriod"
                           name="loanDuration"
                           placeholder="Enter duration"
                           required
@@ -711,6 +740,7 @@ const removeDocument = (indexToRemove) => {
                     Title/Name of the Artifact <span className="text-red-500">*</span>
                   </label>
                   <input
+                   id="artifactName"
                     type="text"
                     placeholder="Title/Name of the Artifact"
                     required
@@ -726,6 +756,7 @@ const removeDocument = (indexToRemove) => {
                     Artifact Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
+                  id="description"
                     placeholder="Artifact Description"
                     required
                     value={description}
@@ -740,6 +771,7 @@ const removeDocument = (indexToRemove) => {
                     How and where did you acquire the artifact? <span className="text-red-500">*</span>
                   </label>
                   <textarea
+                  id="acquired"
                     placeholder="Acquisition Details"
                     required
                     value={acquired}
@@ -774,77 +806,80 @@ const removeDocument = (indexToRemove) => {
                   />
                 </div>
 
-                {/* Images */}
-                <div className="grid md:grid-cols-12 items-center gap-4 mb-6">
-                  <label className="col-span-5 md:col-span-3 text-xl font-bold">
-                    Images of the Artifact <span className="text-red-500">*</span>
-                  </label>
-                  <div className="col-span-7 md:col-span-9">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="px-4 py-2 border-2 border-black rounded-2xl text-sm"
-                    />
-                    {renderImagePreviews(images)}
-                  </div>
-                </div>
-
-{/* Documentation Files */}
-<div className="grid md:grid-cols-12 items-center gap-4 mb-6">
-  <label className="col-span-5 md:col-span-3 text-xl font-bold">
-    Relevant Documentation
-  </label>
-  <div className="col-span-7 md:col-span-9 flex flex-col gap-2">
-    <input
-      type="file"
-      multiple
-      // Remove the accept="image/*" restriction to allow all file types
-      onChange={handleDocumentUpload}
-      className="px-4 py-2 border-2 border-black rounded-2xl text-sm"
-    />
-    
-    {uploadedDocuments.length > 0 && (
-      <div className="mt-2 border p-2 rounded-md">
-        <p className="font-semibold mb-1">Uploaded Documents:</p>
-        <ul className="space-y-1">
-          {uploadedDocuments.map((doc, index) => (
-            <li key={index} className="flex justify-between items-center">
-              <span>{doc.name} ({Math.round(doc.size / 1024)} KB)</span>
-              <button 
-                onClick={() => removeDocument(index)}
-                className="text-red-600 hover:text-red-800"
-                type="button"
+           {/* File Upload Section Component */}
+               {[
+  {
+    id: "images",
+    label: "Images of the Artifact",
+    isRequired: true,
+    onChange: handleImageUpload,
+    accept: "image/*",
+    preview: renderImagePreviews(images),
+  },
+  {
+    id: "documents",
+    label: "Relevant Documentation",
+    isRequired: false,
+    onChange: handleDocumentUpload,
+    accept:
+      ".pdf,.doc,.docx,.txt,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf,text/plain",
+    preview:
+      uploadedDocuments.length > 0 && (
+        <div className="mt-2 border p-2 rounded-md">
+          <p className="font-semibold mb-1">Uploaded Documents:</p>
+          <ul className="space-y-1 text-sm">
+            {uploadedDocuments.map((doc, index) => (
+              <li
+                key={index}
+                className="flex justify-between items-center"
               >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
+                <span>
+                  {doc.name} ({Math.round(doc.size / 1024)} KB)
+                </span>
+                <button
+                  onClick={() => removeDocument(index)}
+                  className="text-red-600 hover:text-red-800"
+                  type="button"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ),
+  },
+  {
+    id: "relatedImages",
+    label: "Related Images",
+    isRequired: false,
+    onChange: handleRelatedImageUpload,
+    accept: "image/*",
+    preview: renderImagePreviews(relatedImages),
+  },
+].map((section, idx) => (
+  <div key={idx} id={section.id} className="grid md:grid-cols-12 items-start gap-4 mb-6">
+    <label className="col-span-5 md:col-span-3 text-xl font-bold">
+      {section.label}
+      {section.isRequired && <span className="text-red-500"> *</span>}
+    </label>
+    <div className="col-span-7 md:col-span-9 flex flex-col gap-2">
+      <input
+        type="file"
+        multiple
+        accept={section.accept}
+        onChange={section.onChange}
+        className={`px-4 py-2 border-2 rounded-2xl text-sm ${
+          section.isRequired && missingFields.includes(section.id)
+            ? "border-red-500"
+            : "border-black"
+        }`}
+      />
+      {section.preview}
+    </div>
   </div>
-</div>
+))}
 
-
-                {/* Related Images */}
-                          
-              <div className="grid md:grid-cols-12 items-center gap-4 mb-6">
-                <label className="col-span-5 md:col-span-3 text-xl font-bold">
-                  Related Images
-                </label>
-                <div className="col-span-7 md:col-span-9">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleRelatedImageUpload}
-                    className="px-4 py-2 border-2 border-black rounded-2xl text-sm"
-                  />
-                  {renderImagePreviews(relatedImages)}
-                </div>
-              </div>
 
 
                 {/* Submit */}
