@@ -114,19 +114,19 @@ const SelectedDonatorModal = ({ isOpen, onClose, selectedDonationForm }) => {
                             </div>
                             <div className="w-full h-auto flex flex-col">
                                 <span className="text-2xl">Artifact Description</span>
-                                <span className="text-xl text-[#4E84D4]">{selectedDonationForm.artifact_description}</span>
+                                <span className="text-xl text-[#4E84D4] break-words">{selectedDonationForm.description}</span>
                             </div>
                             <div className="w-full h-auto flex flex-col">
                                 <span className="text-2xl">How and where the artifact is acquired.</span>
-                                <span className="text-xl text-[#4E84D4]">{selectedDonationForm.acquired}</span>
+                                <span className="text-xl text-[#4E84D4] break-words">{selectedDonationForm.acquired}</span>
                             </div>
                             <div className="w-full h-auto flex flex-col">
                                 <span className="text-2xl">Information about the artifact that the museum should know.</span>
-                                <span className="text-xl text-[#4E84D4]">{selectedDonationForm.additional_info}</span>
+                                <span className="text-xl text-[#4E84D4] break-words">{selectedDonationForm.additional_info}</span>
                             </div>
                             <div className="w-full h-auto flex flex-col">
                                 <span className="text-2xl">Brief narrative or story related to the artifact.</span>
-                                <span className="text-xl text-[#4E84D4]">{selectedDonationForm.narrative}</span>
+                                <span className="text-xl text-[#4E84D4] break-words">{selectedDonationForm.narrative}</span>
                             </div>
                             
                             {/* Image section - UPDATED with preview and download */}

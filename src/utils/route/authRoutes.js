@@ -1,16 +1,18 @@
 import express from 'express';
-import { login,
-  logout, 
-  auth, 
-  refreshToken, 
-  verifyCookie, 
+import {
+  login,
+  logout,
+  auth,
+  refreshToken,
+  verifyCookie,
   sessionStatus,
-  getUserProfile 
+  getUserProfile
 } from '../controller/authController.js';
-import { displayUsers, 
-  displaySpecificUser, 
-  getUserLoginLogs, 
-  fetchCredential 
+import {
+  displayUsers,
+  displaySpecificUser,
+  getUserLoginLogs,
+  fetchCredential
 } from '../controller/userController.js';
 import {
   createAppointment,
@@ -68,7 +70,7 @@ import {
   updateScheduleStatus
 } from '../controller/scheduleController.js';
 
-import { 
+import {
   createArtifact,
   getAllArtifacts,
   getDeletedArtifacts,
@@ -103,10 +105,10 @@ router.get('/login-logs/:userId', auth, getUserLoginLogs);
 
 // Appointments
 router.post('/appointment', createAppointment, logAction('create', 'Appointment'));
-router.get('/appointment', auth, getAllAppointments);
+router.get('/appointment', getAllAppointments);
 router.patch('/appointment/:id/status', auth, updateAppointmentStatus);
 router.get('/appointment/stats', auth, getAppointmentStats);
-router.get('/attendance', auth, getAttendanceData);
+router.get('/attendance/', auth, getAttendanceData);
 router.get('/visitor-records', auth, getVisitorRecords);
 router.get('/attendance/:id', auth, getAttendanceDetail);
 router.get('/visitor-record/:visitorId/:appointmentId', auth, getVisitorRecordDetail);

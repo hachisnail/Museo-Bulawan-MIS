@@ -78,6 +78,26 @@ const Appointment = () => {
   const token = localStorage.getItem('token')
   const API_URL = import.meta.env.VITE_API_URL
 
+  // Convert time from 24-hour to 12-hour format for display
+  const convertTo12Hour = (timeStr) => {
+    if (!timeStr) return '';
+
+    // Remove seconds if they exist
+    const cleanTime = timeStr.includes(':') ? timeStr.split(':').slice(0, 2).join(':') : timeStr;
+
+    // Parse hours and minutes
+    const [hourStr, minuteStr] = cleanTime.split(':');
+    let hour = parseInt(hourStr, 10);
+    const minute = parseInt(minuteStr || '0', 10);
+
+    // Convert to 12-hour format
+    const period = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12 || 12;
+
+    return `${hour}:${minute.toString().padStart(2, '0')} ${period}`;
+  };
+
+
   /**
    * Format date to YYYY-MM-DD for API requests
    */
@@ -107,12 +127,18 @@ const Appointment = () => {
       return "Flexible";
     }
 
-    // Format the start and end times to display format
-    const formattedStart = start_time.includes(':') ? start_time.substring(0, 5) : start_time;
-    const formattedEnd = end_time.includes(':') ? end_time.substring(0, 5) : end_time;
+    // Convert and format to 12-hour format
+    const formattedStart = convertTo12Hour(start_time);
+    const formattedEnd = convertTo12Hour(end_time);
 
-    return `${formattedStart}-${formattedEnd}`;
+    // Only return the time range if both times are valid
+    if (formattedStart && formattedEnd) {
+      return `${formattedStart} - ${formattedEnd}`;
+    }
+
+    return "Flexible";
   };
+
 
 
   // Add these functions to your Appointment.jsx component
@@ -125,12 +151,15 @@ const Appointment = () => {
         { withCredentials: true }
       );
       return response.data;
+
     } catch (error) {
       console.error('Error fetching attendance detail:', error);
       showToast('Error fetching attendance details', 'error');
       return null;
     }
   };
+
+
 
   // Function to fetch visitor record detail from backend
   const fetchVisitorRecordDetail = async (visitorId, appointmentId) => {
@@ -139,6 +168,11 @@ const Appointment = () => {
         `${API_URL}/api/auth/visitor-record/${visitorId}/${appointmentId}`,
         { withCredentials: true }
       );
+      console.log('Visitor record detail response:', response.data); // Log response data
+      if (!response.data) {
+        console.error('Empty response data');
+        return null;
+      }
       return response.data;
     } catch (error) {
       console.error('Error fetching visitor record detail:', error);
@@ -146,28 +180,60 @@ const Appointment = () => {
     }
   };
 
-  // Update the handleAttendanceRowClick function
-  const handleAttendanceRowClick = async (row, e) => {
-    // Only proceed if we have an appointment ID
-    if (!row.appointment_id) {
-      console.error('No appointment ID found for this attendance record');
+  const handleAttendanceRowClick = async (row) => {
+    if (!row || !row.appointment_id) {
+      console.error('Missing appointment ID');
       showToast('Cannot find appointment details', 'error');
       return;
     }
 
-    // Get detailed data from backend
-    const detailData = await fetchAttendanceDetail(row.appointment_id);
+    try {
+      const details = await fetchAttendanceDetail(row.appointment_id);
 
-    if (!detailData) {
+      if (!details) {
+        throw new Error('Incomplete attendance details');
+      }
+
+      setAttendanceModalData({
+        appointmentId: details.appointment_id,
+        dateSent: details.creation_date
+          ? new Date(details.creation_date).toLocaleString()
+          : 'N/A',
+
+        fromFirstName: details.fromFirstName || 'N/A',
+        fromLastName: details.fromLastName || 'N/A',
+        email: details.email || 'N/A',
+        phone: details.phone || 'N/A',
+        organization: details.organization || 'N/A',
+        street: details.street || '',
+        barangay: details.barangay || '',
+        city_municipality: details.city_municipality || '',
+        province: details.province || '',
+
+        purpose: details.purpose || 'N/A',
+        populationCount: details.populationCount || 0,
+        preferredDate: details.preferredDate || 'N/A',
+        preferredTime:
+          details.preferredTime && details.preferredTime !== 'Flexible'
+            ? details.preferredTime
+            : 'Flexible',
+        notes: details.notes || 'N/A',
+
+        status: standardizeStatus(details.status || 'To Review'),
+        updatedAt: details.updatedAt
+          ? new Date(details.updatedAt).toLocaleString()
+          : 'N/A'
+      });
+
+      setShowAttendanceModal(true);
+      setShowAttendancePopup(false);
+    } catch (error) {
+      console.error('Error fetching attendance details:', error);
       showToast('Failed to load attendance details', 'error');
-      return;
     }
 
-    // Set data for the modal
-    setAttendanceModalData(detailData);
-    setShowAttendanceModal(true);
-    setShowAttendancePopup(false); // Close the popup if it's open
   };
+
 
   // Update the handleVisitorDetailClick function for visitor records
   const handleVisitorDetailClick = async (detail, record) => {
@@ -280,7 +346,7 @@ const Appointment = () => {
         }
       }
 
-      const response = await axios.get(url, 
+      const response = await axios.get(url,
         { withCredentials: true });
       setVisitorRecords(response.data);
     } catch (error) {
@@ -309,7 +375,7 @@ const Appointment = () => {
         }
       }
 
-      const response = await axios.get(url, 
+      const response = await axios.get(url,
         { withCredentials: true }
       );
       setAppointments(response.data);
@@ -337,7 +403,7 @@ const Appointment = () => {
         }
       }
 
-      const response = await axios.get(url, 
+      const response = await axios.get(url,
         { withCredentials: true }
       );
       setAttendanceData(response.data);
@@ -360,7 +426,7 @@ const Appointment = () => {
         }
       }
 
-      const response = await axios.get(url, 
+      const response = await axios.get(url,
         { withCredentials: true }
       );
       setStats(response.data);
@@ -675,7 +741,9 @@ const Appointment = () => {
       purpose: appt.purpose_of_visit || 'N/A',
       populationCount: appt.population_count || 0,
       preferredDate: appt.preferred_date || 'N/A',
-      preferredTime: formatTimeDisplay(appt.start_time, appt.end_time),
+      preferredTime: appt.start_time && appt.end_time
+        ? formatTimeDisplay(appt.start_time, appt.end_time)
+        : "Flexible",
       notes: appt.additional_notes || 'N/A',
       organization: appt.Visitor.organization || 'N/A',
       street: appt.Visitor.street || '',

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET ;
 const REFRESH_SECRET = process.env.REFRESH_SECRET ;
-const ACCESS_TOKEN_EXPIRY = '15m'; // Short-lived access token
+const ACCESS_TOKEN_EXPIRY = '4h'; // Short-lived access token
 const REFRESH_TOKEN_EXPIRY = '7d'; // Longer-lived refresh token
 
 class TokenService {

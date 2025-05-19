@@ -14,6 +14,7 @@ const Acquisition = () => {
   const [acquisitions, setAcquisitions] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedForm, setSelectedForm] = useState(null);
+    const [isAcquisitionModalOpen, setIsAcquisitionModalOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   const [confirmationAction, setConfirmationAction] = useState(null);
   const [selectedResponse, setSelectedResponse] = useState(null);
@@ -40,7 +41,7 @@ const Acquisition = () => {
 
   // Add state for document management
   const [documentView, setDocumentView] = useState(false);
-  const [storedDocuments, setStoredDocuments] = useState([]);
+
 
   
 
@@ -62,26 +63,9 @@ const Acquisition = () => {
       }
     }
     setStoredDocuments(docs);
+    setIsAcquisitionModalOpen(true);
   };
 
-  // Function to handle document download
-  const handleDocumentDownload = (doc) => {
-    const link = document.createElement('a');
-    link.href = doc.data; // Use the data URL directly
-    link.download = doc.name || 'document';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Function to delete document
-  const handleDocumentDelete = (key) => {
-    if (window.confirm('Are you sure you want to delete this document?')) {
-      localStorage.removeItem(key);
-      fetchDocuments();
-      showToast('Document deleted successfully', 'success');
-    }
-  };
 
   // Toast functions
   const showToast = (message, type = 'success') => {
@@ -250,17 +234,17 @@ const Acquisition = () => {
     if (!selectedForm) return;
 
     try {
-      const status = confirmationAction === 'approve' ? 'accepted' : 'rejected';
+      const status = confirmationAction === 'approve' ? 'Accepted' : 'Rejected';
 
       // Update the form status
       await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/status`, { status });
 
       // If the form is rejected, automatically set transfer status to Failed
-      if (status === 'rejected') {
+      if (status === 'Rejected') {
         await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
           transfer_status: 'Failed'
         });
-      } else if (status === 'accepted') {
+      } else if (status === 'Accepted') {
         // If the form is accepted, set transfer status to On Progress
         await axios.put(`${API_URL}/api/auth/form/${selectedForm.id}/transfer_status`, {
           transfer_status: 'On Progress'
@@ -303,8 +287,8 @@ const Acquisition = () => {
 
   // Handle modal actions
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedForm(null);
+    setIsAcquisitionModalOpen(false); // 👈 hides the modal
+    setSelectedForm(null);  
     setSelectedResponse(null);
   };
 
@@ -344,7 +328,29 @@ const Acquisition = () => {
       setHighlightedDonator(donorId);
     }
   };
-
+  useEffect(() => {
+    // Only run this if we have forms data
+    if (forms.length > 0) {
+      // Filter forms based on selected date
+      let filteredForms = [...forms];
+      
+      if (selectedDate) {
+        const selectedDateTime = new Date(selectedDate);
+        filteredForms = forms.filter(form => {
+          const formDate = new Date(form.donation_date || form.createdAt);
+          return (
+            formDate.getFullYear() === selectedDateTime.getFullYear() && 
+            formDate.getMonth() === selectedDateTime.getMonth() && 
+            formDate.getDate() === selectedDateTime.getDate()
+          );
+        });
+      }    // Update counts based on filtered forms
+      setDonationCount(filteredForms.filter(form => form.ContributionType?.accession_type === 'Donation').length);
+      setLendingCount(filteredForms.filter(form => form.ContributionType?.accession_type === 'Lending').length);
+      setAcceptedCount(filteredForms.filter(form => form.ContributionType?.status === 'Accepted').length);
+      setRejectedCount(filteredForms.filter(form => form.ContributionType?.status === 'Rejected').length);
+    }
+  }, [forms, selectedDate]);
   // Fetch documents when tab changes or component loads
   useEffect(() => {
     if (documentView) {
@@ -442,9 +448,31 @@ const Acquisition = () => {
 
         {/* Main Content */}
         <div className='w-full min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-auto'>
-          <span className='text-5xl font-semibold'>Donation and Lending Management</span>
-
-          <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
+        {isAcquisitionModalOpen ? (<AcquisitionModal
+     
+          isModalOpen={isAcquisitionModalOpen} // ✅ use the correct state
+        
+          selectedForm={selectedForm}
+          handleCloseModal={handleCloseModal}
+          isDonationModalOpen={isDonationModalOpen}
+          selectedDonationForm={selectedDonationForm}
+          handleCloseDonationModal={handleCloseDonationModal}
+          confirmationModal={confirmationModal}
+          setConfirmationModal={setConfirmationModal}
+          isConfirmationOpen={isConfirmationOpen}
+          confirmationAction={confirmationAction}
+          handleConfirmAction={handleConfirmAction}
+          setIsConfirmationOpen={setIsConfirmationOpen}
+          selectedResponse={selectedResponse}
+          handleApprove={handleApprove}
+          handleDecline={handleDecline}
+          handleDeliveryAction={handleDeliveryAction}
+        />) : (<>
+         <div className='flex flex-col '>
+                <span className=' text-5xl font-semibold'>Donation and Lending Management</span>
+                <span className='text-2xl font-semibold'>Acquisition</span>
+              </div>
+          <div className='w-full h-[calc(100%-9rem)] flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5'>
             {/* Left Panel: Stats + Tabs */}
             <div className='min-w-[34rem] h-full flex flex-col gap-y-7'>
               {/* Tab Selector - add Documents tab */}
@@ -466,18 +494,21 @@ const Acquisition = () => {
 
               {/* Stats Section */}
               <div className='w-full h-full flex flex-col gap-y-[5rem]'>
-                <div className='bg-[#161616] px-4 h-[5rem] flex justify-between items-center rounded-sm'>
-                  <span className='text-2xl text-white font-semibold'>Total Forms</span>
-                  <div className='w-[6rem] h-[3rem] bg-[#D4DBFF] flex items-center justify-center rounded-md'>
-                    <span className='text-2xl text-black font-semibold'>
-                      {forms.length}
-                    </span>
-                  </div>
-                </div>
+              <div className='bg-[#161616] px-4 h-[5rem] flex justify-between items-center rounded-sm'>
+              <span className='text-2xl text-white font-semibold'>Total Forms</span>
+              <div className='w-[6rem] h-[3rem] bg-[#D4DBFF] flex items-center justify-center rounded-md'>
+                <span className='text-2xl text-black font-semibold'>
+                  {filteredData.acquisitions.length}
+                </span>
+              </div>
+            </div>
+
 
                 {/* Statistics */}
                 <div className='w-full h-fit flex flex-col gap-y-7'>
-                  <span className='text-2xl font-semibold text-[#727272]'>{currentDate}</span>
+                <span className='text-2xl font-semibold text-[#727272]'>
+                    {selectedDate ? formatDate(selectedDate) : currentDate}
+                  </span>
 
                   <div className='w-full h-fit flex justify-between items-center'>
                     <span className='text-2xl font-semibold'>Donation Forms</span>
@@ -511,18 +542,18 @@ const Acquisition = () => {
             </div>
 
             {/* Right Section: Search Controls and Table */}
-            <div className='w-full h-full flex flex-col gap-y-7 overflow-x-auto overflow-y-auto'>
-              {/* Search and Filter Controls */}
-              <div className='min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2'>
-                {/* Date picker */}
-                <div className='flex-shrink-0'>
+            <div className="w-full h-full flex flex-col gap-y-7">
+              {/* Controls - Not Scrolling */}
+              <div className="min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2">
+                {/* Date Picker */}
+                <div className="flex-shrink-0">
                   <CustomDatePicker
                     selected={selectedDate}
                     onChange={(date) => handleDateChange(date)}
                     isClearable={true}
                     placeholderText="Filter by Date"
-                    popperPlacement='bottom-start'
-                    popperClassName='z-50'
+                    popperPlacement="bottom-start"
+                    popperClassName="z-50"
                     customInput={
                       <button className={`px-3 h-16 rounded-lg border-1 ${selectedDate ? 'border-gray-700' : 'border-gray-500'} cursor-pointer`}>
                         <i className={`${selectedDate ? 'text-gray-700 fa-solid' : 'text-gray-500 fa-regular'} fa-calendar text-4xl`}></i>
@@ -531,22 +562,22 @@ const Acquisition = () => {
                   />
                 </div>
 
-                {/* Search input */}
-                <div className='relative h-full min-w-[20rem]'>
-                  <i className='text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer'></i>
+                {/* Search */}
+                <div className="relative h-full min-w-[20rem]">
+                  <i className="text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"></i>
                   <input
-                    type='text'
-                    placeholder='Search by name or donator'
-                    className='h-full pl-10 pr-3 py-2 border-1 border-gray-500 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    type="text"
+                    placeholder="Search by name or donator"
+                    className="h-full pl-10 pr-3 py-2 border-1 border-gray-500 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
 
-                {/* Sort dropdown */}
-                <div className='relative h-full min-w-48'>
+                {/* Sort */}
+                <div className="relative h-full min-w-48">
                   <select
-                    className='appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onChange={(e) => {
                       const [column, direction] = e.target.value.split('|');
                       setColumnFilter(column);
@@ -568,13 +599,13 @@ const Acquisition = () => {
                     <option value="updated|asc">Last Updated (Oldest First)</option>
                     <option value="updated|desc">Last Updated (Newest First)</option>
                   </select>
-                  <i className='text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600'></i>
+                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
                 </div>
 
-                {/* Status filter */}
-                <div className='relative h-full min-w-48'>
+                {/* Status Filter */}
+                <div className="relative h-full min-w-48">
                   <select
-                    className='appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                   >
@@ -585,159 +616,69 @@ const Acquisition = () => {
                     <option value="Acquired">Acquired</option>
                     <option value="Failed">Failed</option>
                   </select>
-                  <i className='text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600'></i>
+                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
                 </div>
               </div>
 
-              {/* Table Content */}
-              <div className='w-full h-full flex flex-col gap-y-7'>
-                {/* Form Table */}
-                {activeTab === 'form' && (
-                  <>
-                                {/* Table Headers */}
-                    <div className='min-w-[94rem] w-full font-semibold min-h-fit grid grid-cols-6 justify-between '>
-                      <div className='text-[#727272] text-2xl border-l-1  px-3 py-2'>Date</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Donator</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Artifact Name</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Status</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Transfer Status</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Last Updated</div>
-                    </div>  
+              {/* Table - Header + Scrollable Body */}
+              <div className="min-w-[94rem] w-full flex flex-col">
+                {/* Table Header (Static) */}
+                <div className="grid grid-cols-6 font-semibold text-[#727272] text-2xl  sticky top-0 z-10">
+                  <div className="border-l-1 px-3 py-2">Date</div>
+                  <div className="border-l-1 px-3 py-2">Donator</div>
+                  <div className="border-l-1 px-3 py-2">Artifact Name</div>
+                  <div className="border-l-1 px-3 py-2">Status</div>
+                  <div className="border-l-1 px-3 py-2">Transfer Status</div>
+                  <div className="border-l-1 px-3 py-2">Last Updated</div>
+                </div>
 
-                    {/* Table Data */}
-                    <div className='w-full min-w-[94rem] h-full  flex flex-col border-gray-400 border-y'>
-                      {filteredData.acquisitions.length > 0 ? (
-                        filteredData.acquisitions.map((form) => (
-                          <div
-                            key={form.id}
-                            className='min-w-[94rem] text-xl h-[4rem] font-semibold grid grid-cols-6 cursor-pointer hover:bg-gray-300'
-                            onClick={() => handleOpenModal(form)}
-                          >
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {form.donation_date ? new Date(form.donation_date).toLocaleDateString() : 'N/A'}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {form.Donator?.name || 'N/A'}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {form.artifact_name}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {getStatusLabel(form.ContributionType.status || 'Pending')}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {getStatusLabel(form.ContributionType.transfer_status || 'N/A')}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {form.updated_at ? new Date(form.updated_at).toLocaleString() : 'N/A'}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
-                          <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
-                            <i className="fas fa-inbox text-5xl mb-4"></i>
-                            <p>No acquisition data available</p>
-                            <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
-                          </div>
+                {/* Scrollable Body */}
+                <div className="overflow-y-auto max-h-[65vh] border-b border-gray-300">
+                  {filteredData.acquisitions.length > 0 ? (
+                    filteredData.acquisitions.map((form) => (
+                      <div
+                        key={form.id}
+                        className="grid grid-cols-6 text-xl h-[4rem] font-semibold cursor-pointer hover:bg-gray-300"
+                        onClick={() => {
+                          setSelectedForm(form);
+                          setIsAcquisitionModalOpen(true);
+                        }}
+                      >
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {form.donation_date ? new Date(form.donation_date).toLocaleDateString() : 'N/A'}
                         </div>
-                      )}
-                  </div>
-                  </>
-
-                )}
-
-                {/* Donation Records Tab */}
-                {activeTab === 'donationRecords' && (
-                  <>
-                    {/* Table header for top-level rows */}
-                    <div className='min-w-[94rem] w-full font-semibold h-fit grid grid-cols-3 justify-between '>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Date</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Donator</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Donations</div>
-                    </div>
-                  
-                    <div className='w-full min-w-[94rem] h-full flex flex-col border-y-1 border-gray-400'>
-                      {donationGroupsArray.length > 0 ? (
-                        donationGroupsArray.map((group) => {
-                          const { donorId, donorName, date, forms } = group;
-
-                          return (
-                            <div key={donorId}>
-                              {/* Top-level row */}
-                              <div
-                                className={`min-w-[94rem] text-xl h-[4rem] font-semibold grid grid-cols-3 cursor-pointer hover:bg-gray-300 ${
-                                  highlightedDonator === donorId ? 'bg-gray-300' : ''
-                                }`}
-                                onClick={() => handleToggleDropdown(donorId)}
-                              >
-                                <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                                  {date ? new Date(date).toLocaleDateString() : 'N/A'}
-                                </div>
-                                <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                                  {donorName || 'N/A'}
-                                </div>
-                                <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center justify-between'>
-                                  {forms.length}
-                                  <i
-                                    className={`fa-solid fa-caret-down transition-transform duration-300 ${
-                                      expandedDonator === donorId ? 'rotate-180' : ''
-                                    }`}
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Expanded section */}
-                              {expandedDonator === donorId && (
-                                <div className="bg-white p-4 border-1 border-gray-300 w-2/3 ml-auto h-auto ">
-                                  <div className="grid grid-cols-5 text-left font-semibold mb-3 text-xl">
-                                    <div>Title</div>
-                                    <div>Contribution Type</div>
-                                    <div>Status</div>
-                                    <div>Transfer Status</div>
-                                    <div>Date</div>
-                                  </div>
-                                  <div className="w-full max-h-42 overflow-auto">
-                                    {forms.map((f) => (
-                                      <div
-                                        key={f.id}
-                                        className="grid grid-cols-5 text-xl hover:bg-gray-300 cursor-pointer"
-                                        onClick={() => handleOpenDonationModal(f)} // Open modal on click
-                                      >
-                                        <div className="py-3 border-b-1 border-gray-400">{f.artifact_name}</div>
-                                        <div className="py-3 border-b-1 border-gray-400">{f.ContributionType.accession_type}</div>
-                                        <div className="py-3 border-b-1 border-gray-400">
-                                          {getStatusLabel(f.ContributionType.status || 'Pending')}
-                                        </div>
-                                        <div className="py-3 border-b-1 border-gray-400">
-                                          {getStatusLabel(f.ContributionType.transfer_status || 'N/A')}
-                                        </div>
-                                        <div className="py-3 border-b-1 border-gray-400">
-                                          {f.donation_date ? new Date(f.donation_date).toLocaleDateString() : 'N/A'}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
-                          <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
-                            <i className="fas fa-inbox text-5xl mb-4"></i>
-                            <p>No donation records available</p>
-                            <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
-                          </div>
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {form.Donator?.name || 'N/A'}
                         </div>
-                      )}
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {form.artifact_name}
+                        </div>
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {getStatusLabel(form.ContributionType.status || 'Pending')}
+                        </div>
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {getStatusLabel(form.ContributionType.transfer_status || 'N/A')}
+                        </div>
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {form.updated_at ? new Date(form.updated_at).toLocaleString() : 'N/A'}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="min-w-[94rem] py-16 flex justify-center items-center">
+                      <div className="text-2xl text-gray-500 flex flex-col items-center">
+                        <i className="fas fa-inbox text-5xl mb-4"></i>
+                        <p>No acquisition data available</p>
+                        <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
+                      </div>
                     </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </div>
+
           </div>
+          </>) }
         </div>
         <SelectedDonatorModal
         isOpen={isDonationModalOpen}
@@ -748,7 +689,7 @@ const Acquisition = () => {
 
 
       {/* Modals */}
-      <AcquisitionModal
+      {/* <AcquisitionModal
         isModalOpen={isModalOpen}
         selectedForm={selectedForm}
         handleCloseModal={handleCloseModal}
@@ -765,7 +706,7 @@ const Acquisition = () => {
         handleApprove={handleApprove}
         handleDecline={handleDecline}
         handleDeliveryAction={handleDeliveryAction}
-      />
+      /> */}
 
       {/* Toast Message Component */}
       <Toast

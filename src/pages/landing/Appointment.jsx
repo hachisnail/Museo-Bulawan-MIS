@@ -131,6 +131,8 @@ const Appointment = () => {
   const [timeSlotCounts, setTimeSlotCounts] = useState({});
   const [timeSlotExclusive, setTimeSlotExclusive] = useState({});
   const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
+  // Add this with your other state declarations
+  const [confirmedSlots, setConfirmedSlots] = useState({});
 
   const togglePurposeInfo = () => setShowPurposeInfo(!showPurposeInfo);
   const isTimeRequired = (purp) =>
@@ -140,112 +142,140 @@ const Appointment = () => {
     purp === 'Workshops or Classes' ||
     purp === 'Others';
 
+  function convertTimeFormatToUIKey(startTime, endTime) {
+    // Map 24-hour time back to UI display format
+    const timeMap = {
+      "09:00-10:29": "09:00-10:29",
+      "10:30-11:59": "10:30-11:59",
+      "13:00-14:29": "01:00-02:29", // 1:00 PM - 2:29 PM
+      "14:30-16:00": "02:30-04:00"  // 2:30 PM - 4:00 PM
+    };
+
+    const standardKey = `${startTime}-${endTime}`;
+
+    // Return the UI format key if found in our mapping
+    if (timeMap[standardKey]) {
+      return timeMap[standardKey];
+    }
+
+    // Check if we have 12-hour format already
+    if (timeMap.values().includes(standardKey)) {
+      return standardKey;
+    }
+
+    return null;
+  }
+
   // Function to check time slot availability considering both appointments and schedules
-  // Update the checkTimeSlotAvailability function around line 160-230
+  // Inside the checkTimeSlotAvailability function
   const checkTimeSlotAvailability = async (date) => {
     if (!date) return;
 
     setIsLoadingTimeSlots(true);
+    console.log('Checking availability for date:', date);
 
     try {
-      // Format date for API in YYYY-MM-DD format - FIXED to use local timezone
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const formattedDate = `${year}-${month}-${day}`;
+      console.log('Formatted date:', formattedDate);
 
-      // Get API URL from environment variables
       const API_URL = import.meta.env.VITE_API_URL || '/api';
-
-      // Time slots available in the appointment form
       const timeSlots = ['09:00-10:29', '10:30-11:59', '01:00-02:29', '02:30-04:00'];
-
-      // Initialize counts and exclusive flags for each time slot
       const counts = {};
       const exclusive = {};
+      const confirmedSlots = {}; // Track confirmed appointments
 
       timeSlots.forEach(slot => {
         counts[slot] = 0;
         exclusive[slot] = false;
+        confirmedSlots[slot] = false;
       });
 
-      // Fetch appointments - UPDATED to use correct endpoint
-      try {
-        // Get the token from localStorage for authentication
-        const token = localStorage.getItem('token');
+      // Fetch confirmed appointments
+      console.log('Fetching appointments...');
+      const appointmentResponse = await axios.get(`${API_URL}/api/auth/appointment`, { withCredentials: true });
+      console.log('Appointments fetched:', appointmentResponse.data);
 
-        // Fetch ALL appointments instead of trying to filter by date on the server
-        const appointmentResponse = await axios.get(
-          `${API_URL}/api/auth/appointment`,
-          { withCredentials: true }
-        );
+      const todayAppointments = appointmentResponse.data.filter(appointment => {
+        const appointmentDate = appointment.preferred_date.split('T')[0];
+        return appointmentDate === formattedDate;
+      });
+      console.log('Today\'s appointments:', todayAppointments);
 
-        // Filter appointments for the selected date
-        const todayAppointments = appointmentResponse.data.filter(appointment => {
-          // Skip appointments without preferred_date
-          if (!appointment.preferred_date) return false;
+      // Inside checkTimeSlotAvailability function
+      todayAppointments.forEach(appointment => {
+        const status = (appointment.AppointmentStatus?.status || '').toUpperCase();
+        if (status === 'CONFIRMED') {
+          if (appointment.start_time && appointment.end_time) {
+            // Convert HH:MM:SS to HH:MM format
+            let startTime = appointment.start_time.substring(0, 5);
+            let endTime = appointment.end_time.substring(0, 5);
 
-          // Extract date part only and compare with our formatted date
-          const appointmentDate = appointment.preferred_date.split('T')[0];
-          return appointmentDate === formattedDate;
-        });
+            // Create a standardized time slot key by converting to 24-hour format if needed
+            let timeSlotKey;
 
-        // Process appointments for time slots
-        todayAppointments.forEach(appointment => {
-          // Only count CONFIRMED appointments
-          const status = (appointment.AppointmentStatus?.status || '').toUpperCase();
-          if (status === 'CONFIRMED') {
-            if (appointment.preferred_time && timeSlots.includes(appointment.preferred_time)) {
-              counts[appointment.preferred_time] += 1;
+            // Check if we need to convert from 12-hour to 24-hour format
+            const startHour = parseInt(startTime.split(':')[0], 10);
+            const endHour = parseInt(endTime.split(':')[0], 10);
+
+            // Convert afternoon hours (1-4) to 24-hour format
+            if (startHour >= 1 && startHour <= 4) {
+              const convertedStartHour = startHour + 12;
+              startTime = `${convertedStartHour}:${startTime.split(':')[1]}`;
+            }
+
+            if (endHour >= 1 && endHour <= 4) {
+              const convertedEndHour = endHour + 12;
+              endTime = `${convertedEndHour}:${endTime.split(':')[1]}`;
+            }
+
+            // Find matching time slot in UI format
+            const mappedKey = convertTimeFormatToUIKey(startTime, endTime);
+
+            if (mappedKey) {
+              confirmedSlots[mappedKey] = true; // Block this time slot
             }
           }
-        });
-      } catch (error) {
-        console.error('Error fetching appointments:', error);
-      }
+        }
+      });
 
-      // Fetch schedules
-      try {
-        const token = localStorage.getItem('token');
 
-        // Use query parameter for schedules API (this is correct)
-        const scheduleResponse = await axios.get(
-          `${API_URL}/api/auth/schedules?date=${formattedDate}`,
-          { withCredentials: true }
-        );
+      // Fetch exclusive schedules
+      console.log('Fetching schedules...');
+      const scheduleResponse = await axios.get(`${API_URL}/api/auth/schedules?date=${formattedDate}`, { withCredentials: true });
+      console.log('Schedules fetched:', scheduleResponse.data);
 
-        // Process schedules for each time slot
-        if (scheduleResponse.data && Array.isArray(scheduleResponse.data)) {
-          scheduleResponse.data
-            // Only consider active schedules (not COMPLETED ones)
-            .filter(schedule => schedule.status !== 'COMPLETED')
-            .forEach(schedule => {
-              if (schedule.start_time && schedule.end_time) {
-                timeSlots.forEach(slot => {
-                  // Extract time ranges
-                  const [slotStart, slotEnd] = slot.split('-');
-
-                  // Check for overlap between schedule and time slot
-                  if (checkTimeOverlap(schedule.start_time, schedule.end_time, slotStart, slotEnd)) {
-                    if (schedule.availability === 'EXCLUSIVE') {
-                      // Mark as exclusive
-                      exclusive[slot] = true;
-                    } else {
-                      // Add to count for SHARED schedules
-                      counts[slot] += 1;
-                    }
-                  }
-                });
+      if (scheduleResponse.data && Array.isArray(scheduleResponse.data)) {
+        scheduleResponse.data.filter(schedule => schedule.status !== 'COMPLETED').forEach(schedule => {
+          console.log('Processing schedule:', schedule);
+          if (schedule.start_time && schedule.end_time) {
+            timeSlots.forEach(slot => {
+              const [slotStart, slotEnd] = slot.split('-');
+              if (checkTimeOverlap(schedule.start_time, schedule.end_time, slotStart, slotEnd)) {
+                console.log(`Overlap found for slot ${slot}`);
+                if (schedule.availability === 'EXCLUSIVE') {
+                  exclusive[slot] = true;
+                  console.log(`Slot ${slot} marked as exclusive`);
+                } else {
+                  counts[slot] += 1;
+                  console.log(`Count increased for slot ${slot}`);
+                }
               }
             });
-        }
-      } catch (error) {
-        console.error('Error fetching schedules:', error);
+          }
+        });
       }
 
-      // Update states with results
+      console.log('Final counts:', counts);
+      console.log('Final exclusive slots:', exclusive);
+      console.log('Final confirmed slots:', confirmedSlots);
+
+      // Update time slot counts, exclusivity, and confirmed slots
       setTimeSlotCounts(counts);
       setTimeSlotExclusive(exclusive);
+      setConfirmedSlots(confirmedSlots);
 
     } catch (error) {
       console.error('Error checking time slot availability:', error);
@@ -254,29 +284,37 @@ const Appointment = () => {
     }
   };
 
-
-  // Helper function to check time overlap
   const checkTimeOverlap = (start1, end1, start2, end2) => {
-    // Convert times to minutes for easier comparison
     const timeToMinutes = (timeStr) => {
-      // Convert 12-hour format to 24-hour if needed
+      // First standardize the time format
+      let hour, minute;
+
       if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) {
+        // Handle 12-hour format with AM/PM indicator
         const isPM = timeStr.toLowerCase().includes('pm');
         const timePart = timeStr.toLowerCase().replace(/am|pm/g, '').trim();
         const [hourStr, minuteStr] = timePart.split(':');
-        let hour = parseInt(hourStr, 10);
-        const minute = parseInt(minuteStr || '0', 10);
+        hour = parseInt(hourStr, 10);
+        minute = parseInt(minuteStr || '0', 10);
 
-        if (isPM && hour < 12) hour += 12;
+        // Convert to 24-hour format
+        if (isPM && hour !== 12) hour += 12;
         if (!isPM && hour === 12) hour = 0;
+      } else {
+        // Handle format without AM/PM indicator
+        const cleanTime = timeStr.split(':').slice(0, 2).join(':');
+        const [hourStr, minuteStr] = cleanTime.split(':');
+        hour = parseInt(hourStr, 10);
+        minute = parseInt(minuteStr || '0', 10);
 
-        return hour * 60 + minute;
+        // Museum hours are 9:00am-5:00pm
+        // For hours between 1 and 5 without AM/PM indicator, assume PM (13:00-17:00)
+        if (hour >= 1 && hour <= 5) {
+          hour += 12; // Convert to 24-hour format (e.g., 2:30 becomes 14:30)
+        }
+        // Hours 9-12 remain as is (assumed to be AM)
       }
 
-      // Already in 24-hour format
-      const [hourStr, minuteStr] = timeStr.split(':');
-      const hour = parseInt(hourStr, 10);
-      const minute = parseInt(minuteStr || '0', 10);
       return hour * 60 + minute;
     };
 
@@ -285,8 +323,11 @@ const Appointment = () => {
     const s2 = timeToMinutes(start2);
     const e2 = timeToMinutes(end2);
 
-    // Two ranges overlap if one starts before the other ends
-    return s1 < e2 && s2 < e1;
+    console.log(`Converted times - T1: ${s1}-${e1} minutes, T2: ${s2}-${e2} minutes`);
+    const hasOverlap = s1 < e2 && s2 < e1;
+    console.log(`Overlap result: ${hasOverlap}`);
+
+    return hasOverlap;
   };
 
   // Fetch time slot availability when date changes
@@ -329,9 +370,22 @@ const Appointment = () => {
 
     if (selectedTime) {
       const [startTime, endTime] = selectedTime.split('-');
-      startTimeValue = startTime + ":00"; // Add seconds for SQL TIME format
-      endTimeValue = endTime + ":00";     // Add seconds for SQL TIME format
+
+      // Convert to 24-hour format
+      const convertTo24Hour = (timeStr) => {
+        const [hourStr, minuteStr] = timeStr.split(':');
+        let hour = parseInt(hourStr, 10);
+        // For hours 1-5 without AM/PM, assume PM (13:00-17:00)
+        if (hour >= 1 && hour <= 5) {
+          hour += 12; // Convert to 24-hour format
+        }
+        return `${hour.toString().padStart(2, '0')}:${minuteStr}:00`;
+      };
+
+      startTimeValue = convertTo24Hour(startTime);
+      endTimeValue = convertTo24Hour(endTime);
     }
+
 
     const payload = {
       first_name: firstName,
@@ -728,27 +782,24 @@ const Appointment = () => {
                     </label>
                     <div className="md:col-span-3 flex flex-wrap gap-2 md:gap-3">
                       {['09:00-10:29', '10:30-11:59', '01:00-02:29', '02:30-04:00'].map((time) => {
-                        // Check if slot is unavailable due to exclusivity or count limit
+                        // Check if slot is unavailable due to exclusivity, count limit, or confirmed appointment
                         const isExclusive = timeSlotExclusive[time];
-                        const count = timeSlotCounts[time] || 0;
-                        const isAtLimit = count >= 5;
-                        const isUnavailable = isExclusive || isAtLimit;
+                        const hasConfirmedAppointment = confirmedSlots[time];
+                        const isUnavailable = isExclusive || hasConfirmedAppointment;
 
-                        // Determine reason for unavailability for tooltip
                         let unavailabilityReason = '';
                         if (isExclusive) {
                           unavailabilityReason = 'This time slot has an exclusive schedule and is not available.';
-                        } else if (isAtLimit) {
-                          unavailabilityReason = 'This time slot has reached the maximum limit of 5 appointments.';
+                        } else if (hasConfirmedAppointment) {
+                          unavailabilityReason = 'This time slot already has a confirmed appointment.';
                         }
 
                         return (
                           <div key={time} className="relative group">
                             <label
                               className={`cursor-pointer border-2 border-black px-4 py-2 rounded-md flex items-center justify-center hover:bg-gray-100 
-                                ${selectedTime === time ? 'bg-[#cfdac8]' : ''}
-                                ${isUnavailable ? 'opacity-50 cursor-not-allowed' : ''}
-                              `}
+          ${selectedTime === time ? 'bg-[#cfdac8]' : ''} 
+          ${isUnavailable ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               <input
                                 type="radio"
@@ -759,9 +810,7 @@ const Appointment = () => {
                                 onChange={() => !isUnavailable && setSelectedTime(time)}
                                 disabled={isUnavailable}
                               />
-                              <span className="text-sm md:text-lg font-medium">
-                                {time}
-                              </span>
+                              <span className="text-sm md:text-lg font-medium">{time}</span>
                               {isUnavailable && (
                                 <span className="absolute top-0 right-0 bottom-0 left-0 flex items-center justify-center text-red-600">
                                   <i className="fa-solid fa-times text-xl"></i>
@@ -773,16 +822,13 @@ const Appointment = () => {
                             {isUnavailable && (
                               <div className="absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-2 bg-white border border-gray-200 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sm pointer-events-none">
                                 {unavailabilityReason}
-                                {isAtLimit && !isExclusive &&
-                                  <div className="mt-1 text-xs text-gray-500">
-                                    Current bookings: {count}/5
-                                  </div>
-                                }
                               </div>
                             )}
                           </div>
                         );
                       })}
+
+
                     </div>
                     {isLoadingTimeSlots && (
                       <div className="md:col-span-5 text-sm text-gray-500 mt-1">
