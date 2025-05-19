@@ -828,10 +828,6 @@ const ArticleModal = ({
       Article content will appear here...
     </p>
   )}
-  {/* Fade effect for overflow */}
-  <div className="absolute bottom-0 left-0 w-full h-12 pointer-events-none" style={{
-    background: 'linear-gradient(to top, white 80%, transparent)'
-  }} />
 </div>
             </div>
           </div>
