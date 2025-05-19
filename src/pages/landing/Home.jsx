@@ -424,8 +424,8 @@ displayArticles = displayArticles.slice(0, 2);
                           />
                         </div>
                         <div className="w-full xl:w-3/5 flex flex-col justify-between gap-y-5">
-                          <div className='w-full h-70'>
-                            <h3 className="text-2xl xl:text-6xl font-bold text-white overflow-hidden">
+                          <div className='w-full h-25'>
+                            <h3 className="text-2xl xl:text-5xl font-bold text-white overflow-hidden">
                               {article.title || "Untitled"}
                             </h3>
                           </div>
@@ -435,8 +435,8 @@ displayArticles = displayArticles.slice(0, 2);
                               {article.article_category || ""}
                             </p>
                           </div>
-                          <div className='h-full w-full'>
-                            <span className='w-full h-full overflow-hidden text-white text-xl'>
+                          <div className='w-full h-50 flex overflow-hidden'>
+                            <span className=' overflow-hidden text-white text-xl'>
                               {article.description.replace(/<[^>]+>/g, '')|| '' }
                             </span>
                           </div>

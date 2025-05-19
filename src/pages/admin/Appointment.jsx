@@ -800,9 +800,12 @@ const Appointment = () => {
 
         {/* Main content */}
         <div className="w-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-hidden">
-          <span className="text-5xl font-semibold">Appointments</span>
+          <div className='flex flex-col gap-y-2 '>
+                <span className=' text-5xl font-semibold'>Appointment Form Management</span>
+                <span className='text-2xl font-semibold'>Appointment</span>
+              </div>
 
-          <div className="w-full h-[calc(100%-9rem)] flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5">
+          <div className="w-full h-[calc(100%-9rem)] flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 pt-5 border-t-1">
             {/* Left panel: Stats + Buttons */}
             <div className="min-w-[34rem] h-full flex flex-col gap-y-7">
               {/* Tab Buttons */}

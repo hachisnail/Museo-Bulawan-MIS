@@ -98,10 +98,17 @@ const Log = () => {
         </div>
 
         <div className='w-full bg-[#151515] min-h-full h-full flex flex-col gap-y-10 px-7 pb-7 pt-[4rem] overflow-scroll'>
-          <span className=' text-5xl font-semibold text-white'>Logging</span>
-          <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 '>
+          <div className="gap-y-2 text-white  font-semibold flex flex-col">
+                <span className="text-5xl">Logging Management</span>
+                <div className="text-2xl flex items-center text-center">
+                  <span>
+                    Log{' '}
+                  </span>
+                </div>
+              </div>
+          <div className='w-full h-full flex flex-col xl:flex-row gap-y-5 xl:gap-y-0 xl:gap-x-5 border-t-1 border-[#373737] pt-5 '>
            
-            <div className=' w-full h-[60rem] flex flex-col gap-y-7 overflow-x-scroll overflow-y-scroll'>
+            <div className=' w-full h-[57rem] flex flex-col gap-y-7 overflow-x-scroll overflow-y-scroll'>
               {/* table */}
               <div className='min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2'>
                 {/* toolbar */}

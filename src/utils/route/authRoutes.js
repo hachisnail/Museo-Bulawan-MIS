@@ -73,16 +73,7 @@ import {
 import {
   createArtifact,
   getAllArtifacts,
-  getDeletedArtifacts,
-  getArtifactById,
-  softDeleteArtifact,
-  restoreArtifact,
-  hardDeleteArtifact,
-  updateArtifact,
-  batchSoftDelete,
-  batchRestore,
-  batchHardDelete,
-  removeArtifactFile
+  getArtifactById
 } from '../controller/artifactController.js';
 
 
@@ -146,19 +137,9 @@ router.put('/form/:id/transfer_status', updateTransferStatus);
 router.post('/form/:id/send-status-email', sendFormStatusEmail);
 
 // Artifact routes
-router.post('/artifact', auth, createArtifact, logAction('create', 'Artifact'));
-router.get('/artifact', auth, getAllArtifacts);
-router.get('/artifact/deleted', auth, getDeletedArtifacts);
-router.get('/artifact/:id', auth, getArtifactById);
-router.put('/artifact/:id', auth, updateArtifact, logAction('update', 'Artifact'));
-router.delete('/artifact/:id', auth, softDeleteArtifact, logAction('delete', 'Artifact'));
-router.post('/artifact/:id/restore', auth, restoreArtifact, logAction('restore', 'Artifact'));
-router.delete('/artifact/:id/permanent', auth, hardDeleteArtifact, logAction('permanent-delete', 'Artifact'));
-router.post('/artifact/:id/remove-file', auth, removeArtifactFile, logAction('update', 'ArtifactFile'));
-router.post('/artifact/batch-delete', auth, batchSoftDelete, logAction('batch-delete', 'Artifact'));
-router.post('/artifact/batch-restore', auth, batchRestore, logAction('batch-restore', 'Artifact'));
-router.post('/artifact/batch-hard-delete', auth, batchHardDelete, logAction('batch-permanent-delete', 'Artifact'));
-
+router.post('/artifact', createArtifact, logAction('create', 'Artifact'));
+router.get('/artifact', getAllArtifacts);
+router.get('/artifact/:id', getArtifactById);
 
 
 
