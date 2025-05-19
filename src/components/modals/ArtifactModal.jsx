@@ -4,8 +4,8 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL
 
-export const ArtifactView = ({onClose}) => {
-  
+export const ArtifactView = ({ onClose }) => {
+
   return (
     <>
       <div className=" gap-y-2 font-semibold flex flex-col">
@@ -27,7 +27,7 @@ export const ArtifactView = ({onClose}) => {
           <div className='w-[46rem] h-full flex  flex-col items-center gap-y-5'>
 
             <div className='h-fit w-full flex items-center'>
-            {/* picture container */}
+              {/* picture container */}
               <div className='w-fit px-4 h-fit flex justify-center flex-col items-center gap-y-5'>
                 {/* preview container */}
                 <div className="w-[10rem] h-[10rem] bg-gray-900 rounded-md">
@@ -43,7 +43,7 @@ export const ArtifactView = ({onClose}) => {
               </div>
 
               <div className='min-w-[33rem] h-[33rem] bg-gray-900 rounded-md'>
-                  {/* current picture */}
+                {/* current picture */}
 
               </div>
             </div>
@@ -56,16 +56,16 @@ export const ArtifactView = ({onClose}) => {
                 <span className='text-xl '>
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
- 
+
                   Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
- 
- 
+
+
                 </span>
               </div>
             </div>
 
           </div>
-          
+
 
 
           <div className='w-[31rem] h-full rounded-md flex flex-col gap-y-5'>
@@ -73,58 +73,58 @@ export const ArtifactView = ({onClose}) => {
             <div className='w-full h-fit flex flex-col gap-y-2 border-1 rounded-sm p-5 border-gray-400'>
               <span className='text-2xl font-semibold'>Display Information</span>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Display Status:</span>
-                  <span className='font-semibold'>Stored</span>
+                <span className='w-[10rem]  '>Display Status:</span>
+                <span className='font-semibold'>Stored</span>
               </div>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Last Maintenance:</span>
-                  <span className='font-semibold'>asdasd</span>
+                <span className='w-[10rem]  '>Last Maintenance:</span>
+                <span className='font-semibold'>asdasd</span>
               </div>
-              
+
 
             </div>
             <div className='w-full h-fit flex flex-col gap-y-2 border-1 rounded-sm p-5 border-gray-400'>
-            {/* metadata */}
+              {/* metadata */}
 
               <span className='text-2xl font-semibold'>Artifact Information</span>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Date of Creation:</span>
-                  <span className='font-semibold'>asdasd</span>
-              </div>
-
-             <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Origin/Provenance:</span>
-                  <span className='font-semibold'>asdasd</span>
-              </div>
-              <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Current Location:</span>
-                  <span className='font-semibold'>asdasd</span>
-              </div>
-              <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Culture or Civilization:</span>
-                  <span className='font-semibold'>asdasd</span>
-              </div>
-              <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Period/Era:</span>
-                  <span className='font-semibold'>asdasd</span>
+                <span className='w-[10rem]  '>Date of Creation:</span>
+                <span className='font-semibold'>asdasd</span>
               </div>
 
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Discovery Details:</span>
-                  <span className='font-semibold'>asdasd</span>
+                <span className='w-[10rem]  '>Origin/Provenance:</span>
+                <span className='font-semibold'>asdasd</span>
               </div>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Excavation Site:</span>
-                  <span className='font-semibold'>asdasd</span>
+                <span className='w-[10rem]  '>Current Location:</span>
+                <span className='font-semibold'>asdasd</span>
               </div>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Collection/<br/>Accession Number:</span>
-                  <span className='font-semibold'><br/>asdasd</span>
+                <span className='w-[10rem]  '>Culture or Civilization:</span>
+                <span className='font-semibold'>asdasd</span>
+              </div>
+              <div className='ml-5 flex gap-x-2 text-lg'>
+                <span className='w-[10rem]  '>Period/Era:</span>
+                <span className='font-semibold'>asdasd</span>
               </div>
 
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Acquisition History:</span>
-                  <span className='font-semibold'>asdasd</span>
+                <span className='w-[10rem]  '>Discovery Details:</span>
+                <span className='font-semibold'>asdasd</span>
+              </div>
+              <div className='ml-5 flex gap-x-2 text-lg'>
+                <span className='w-[10rem]  '>Excavation Site:</span>
+                <span className='font-semibold'>asdasd</span>
+              </div>
+              <div className='ml-5 flex gap-x-2 text-lg'>
+                <span className='w-[10rem]  '>Collection/<br />Accession Number:</span>
+                <span className='font-semibold'><br />asdasd</span>
+              </div>
+
+              <div className='ml-5 flex gap-x-2 text-lg'>
+                <span className='w-[10rem]  '>Acquisition History:</span>
+                <span className='font-semibold'>asdasd</span>
               </div>
             </div>
 
@@ -132,24 +132,24 @@ export const ArtifactView = ({onClose}) => {
               {/* donators Information */}
               <span className='text-2xl font-semibold'>Donators Information</span>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>From:</span>
-                  <span className='font-semibold'>asdasd  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; asdasd </span>
+                <span className='w-[10rem]  '>From:</span>
+                <span className='font-semibold'>asdasd  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; asdasd </span>
               </div>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Email:</span>
-                  <span className='font-semibold'>asdasd@email.com </span>
+                <span className='w-[10rem]  '>Email:</span>
+                <span className='font-semibold'>asdasd@email.com </span>
               </div>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Phone Number:</span>
-                  <span className='font-semibold'>asdasd </span>
+                <span className='w-[10rem]  '>Phone Number:</span>
+                <span className='font-semibold'>asdasd </span>
               </div>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Address:</span>
-                  <span className='font-semibold'>asdasd </span>
+                <span className='w-[10rem]  '>Address:</span>
+                <span className='font-semibold'>asdasd </span>
               </div>
               <div className='ml-5 flex gap-x-2 text-lg'>
-                  <span className='w-[10rem]  '>Organization:</span>
-                  <span className='font-semibold h-auto truncate w-[16.5rem]'>asdasdasdasdasdasdasdasdasdasdadasdasdasdadadasd </span>
+                <span className='w-[10rem]  '>Organization:</span>
+                <span className='font-semibold h-auto truncate w-[16.5rem]'>asdasdasdasdasdasdasdasdasdasdadasdasdasdadadasd </span>
               </div>
             </div>
 
@@ -172,12 +172,12 @@ export const ArtifactView = ({onClose}) => {
               </div>
               <div className='w-full h-fit border-1 border-gray-400 rounded-sm p-5 flex flex-col gap-y-2'>
                 <span className='text-2xl font-semibold'>Related Files</span>
-                  <div className='w-full flex flex-col h-[5rem] pl-5 gap-y-2'>
-                    {/* span table to display related files */}
-                    <span className='text-lg text-red-600'>asds.pdf</span>
-                  </div>
+                <div className='w-full flex flex-col h-[5rem] pl-5 gap-y-2'>
+                  {/* span table to display related files */}
+                  <span className='text-lg text-red-600'>asds.pdf</span>
+                </div>
               </div>
-              
+
               <div className='w-full h-full border-1 border-gray-400 rounded-sm p-5 flex flex-col gap-y-2'>
                 <span className='text-2xl font-semibold'>Hyperlinks</span>
                 <div className='w-full h-full'>
@@ -185,24 +185,21 @@ export const ArtifactView = ({onClose}) => {
                 </div>
 
                 <div className='w-full h-fit flex justify-end'>
-                   <button className='w-20 h-10 border-1 rounded-sm border-gray-400 cursor-pointer hover:bg-gray-300'>View All</button>
+                  <button className='w-20 h-10 border-1 rounded-sm border-gray-400 cursor-pointer hover:bg-gray-300'>View All</button>
                 </div>
 
 
               </div>
-              
+
 
             </div>
           </div>
         </div>
-        
+
       </div>
     </>
   )
 }
-
-
-
 
 export const ArtifactAdd = ({ onClose }) => {
   // State for form fields
@@ -216,7 +213,7 @@ export const ArtifactAdd = ({ onClose }) => {
     modified_date: '',
     donation_date: '',
     display_status: 'stored',
-    description: '', // New field for text description
+    description: '', // Text description
     lending_duration: {
       start_date: '',
       end_date: '',
@@ -247,6 +244,14 @@ export const ArtifactAdd = ({ onClose }) => {
       aquisition_history: {
         provenance: '',
       },
+    },
+    // Add donation information
+    donation_info: {
+      donor_name: '',
+      donor_email: '',
+      donor_phone: '',
+      donor_address: '',
+      donor_organization: '',
     },
   })
 
@@ -330,7 +335,7 @@ export const ArtifactAdd = ({ onClose }) => {
         'modified_date',
         'donation_date',
         'display_status',
-        'description' // Add the description field here
+        'description'
       ];
 
       flatFields.forEach(field => {
@@ -342,6 +347,7 @@ export const ArtifactAdd = ({ onClose }) => {
       // Add complex objects as JSON
       formDataToSend.append('lending_duration', JSON.stringify(formData.lending_duration));
       formDataToSend.append('description_data', JSON.stringify(formData.description_data));
+      formDataToSend.append('donation_info', JSON.stringify(formData.donation_info));
 
       // Append picture files
       pictureFiles.forEach((file) => {
@@ -352,24 +358,16 @@ export const ArtifactAdd = ({ onClose }) => {
       documentFiles.forEach((file) => {
         formDataToSend.append('documents', file);
       });
-      
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.post(`${API_URL}/api/auth/artifact`, formDataToSend, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
 
-      console.log('Artifact created successfully:', response.data);
-      alert('Artifact created successfully!');
-      onClose(); // Close modal or reset form
+      console.log('Form data prepared:', formData);
+      console.log('Files prepared:', { documentFiles, pictureFiles });
+
+      // Note: Not implementing database submission as requested
+      alert('Artifact data prepared successfully!');
 
     } catch (error) {
-      console.error('Error creating artifact:', error);
-      const errorMsg = error?.response?.data?.message || error.message;
-      alert(`Error creating artifact: ${errorMsg}`);
+      console.error('Error with artifact data:', error);
+      alert(`Error preparing artifact data: ${error.message}`);
     }
   };
 
@@ -465,7 +463,6 @@ export const ArtifactAdd = ({ onClose }) => {
               />
             </div>
 
-            {/* Add the description field here */}
             <div className="flex mt-5">
               <label
                 htmlFor="description"
@@ -677,6 +674,162 @@ export const ArtifactAdd = ({ onClose }) => {
             </div>
           </div>
 
+          {/* Donor Information - Show only when not lend */}
+          {formData.accession_type !== 'lend' && (
+            <div className="border-2 border-gray-300 p-6 rounded-xl">
+              <h3 className="text-2xl font-bold mb-6">Donor Information</h3>
+
+              <div className="flex">
+                <label
+                  htmlFor="donation_info.donor_name"
+                  className="min-w-[15rem] text-lg md:text-2xl font-semibold"
+                >
+                  Donor Name
+                </label>
+                <input
+                  id="donation_info.donor_name"
+                  name="donation_info.donor_name"
+                  type="text"
+                  placeholder="John Smith"
+                  value={formData.donation_info.donor_name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
+                />
+              </div>
+
+              <div className="flex mt-5">
+                <label
+                  htmlFor="donation_info.donor_email"
+                  className="min-w-[15rem] text-lg md:text-2xl font-semibold"
+                >
+                  Email
+                </label>
+                <input
+                  id="donation_info.donor_email"
+                  name="donation_info.donor_email"
+                  type="email"
+                  placeholder="john@example.com"
+                  value={formData.donation_info.donor_email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
+                />
+              </div>
+
+              <div className="flex mt-5">
+                <label
+                  htmlFor="donation_info.donor_phone"
+                  className="min-w-[15rem] text-lg md:text-2xl font-semibold"
+                >
+                  Phone Number
+                </label>
+                <input
+                  id="donation_info.donor_phone"
+                  name="donation_info.donor_phone"
+                  type="tel"
+                  placeholder="+1 (555) 123-4567"
+                  value={formData.donation_info.donor_phone}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
+                />
+              </div>
+
+              <div className="flex mt-5">
+                <label
+                  htmlFor="donation_info.donor_address"
+                  className="min-w-[15rem] text-lg md:text-2xl font-semibold"
+                >
+                  Address
+                </label>
+                <input
+                  id="donation_info.donor_address"
+                  name="donation_info.donor_address"
+                  type="text"
+                  placeholder="123 Main St, City, Country"
+                  value={formData.donation_info.donor_address}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
+                />
+              </div>
+
+              <div className="flex mt-5">
+                <label
+                  htmlFor="donation_info.donor_organization"
+                  className="min-w-[15rem] text-lg md:text-2xl font-semibold"
+                >
+                  Organization
+                </label>
+                <input
+                  id="donation_info.donor_organization"
+                  name="donation_info.donor_organization"
+                  type="text"
+                  placeholder="Art Foundation Inc."
+                  value={formData.donation_info.donor_organization}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Lending Information - Show only when type is lend */}
+          {formData.accession_type === 'lend' && (
+            <div className="border-2 border-gray-300 p-6 rounded-xl">
+              <h3 className="text-2xl font-bold mb-6">Lending Information</h3>
+
+              <div className="flex">
+                <label
+                  htmlFor="lending_duration.lender"
+                  className="min-w-[15rem] text-lg md:text-2xl font-semibold"
+                >
+                  Lender Name
+                </label>
+                <input
+                  id="lending_duration.lender"
+                  name="lending_duration.lender"
+                  type="text"
+                  placeholder="British Museum"
+                  value={formData.lending_duration.lender}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
+                />
+              </div>
+
+              <div className="flex mt-5">
+                <label
+                  htmlFor="lending_duration.start_date"
+                  className="min-w-[15rem] text-lg md:text-2xl font-semibold"
+                >
+                  Lending Start
+                </label>
+                <input
+                  id="lending_duration.start_date"
+                  name="lending_duration.start_date"
+                  type="date"
+                  value={formData.lending_duration.start_date}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
+                />
+              </div>
+
+              <div className="flex mt-5">
+                <label
+                  htmlFor="lending_duration.end_date"
+                  className="min-w-[15rem] text-lg md:text-2xl font-semibold"
+                >
+                  Lending End
+                </label>
+                <input
+                  id="lending_duration.end_date"
+                  name="lending_duration.end_date"
+                  type="date"
+                  value={formData.lending_duration.end_date}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Discovery Section */}
           <div className="border-2 border-gray-300 p-6 rounded-xl">
             <h3 className="text-2xl font-bold mb-6">Discovery Information</h3>
@@ -747,63 +900,6 @@ export const ArtifactAdd = ({ onClose }) => {
                 type="text"
                 placeholder="Luxor, Egypt"
                 value={formData.description_data.excavation_site.location}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
-              />
-            </div>
-          </div>
-
-          {/* Lending Information */}
-          <div className="border-2 border-gray-300 p-6 rounded-xl">
-            <h3 className="text-2xl font-bold mb-6">Lending Information</h3>
-
-            <div className="flex">
-              <label
-                htmlFor="lending_duration.lender"
-                className="min-w-[15rem] text-lg md:text-2xl font-semibold"
-              >
-                Lender Name
-              </label>
-              <input
-                id="lending_duration.lender"
-                name="lending_duration.lender"
-                type="text"
-                placeholder="British Museum"
-                value={formData.lending_duration.lender}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
-              />
-            </div>
-
-            <div className="flex mt-5">
-              <label
-                htmlFor="lending_duration.start_date"
-                className="min-w-[15rem] text-lg md:text-2xl font-semibold"
-              >
-                Lending Start
-              </label>
-              <input
-                id="lending_duration.start_date"
-                name="lending_duration.start_date"
-                type="date"
-                value={formData.lending_duration.start_date}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
-              />
-            </div>
-
-            <div className="flex mt-5">
-              <label
-                htmlFor="lending_duration.end_date"
-                className="min-w-[15rem] text-lg md:text-2xl font-semibold"
-              >
-                Lending End
-              </label>
-              <input
-                id="lending_duration.end_date"
-                name="lending_duration.end_date"
-                type="date"
-                value={formData.lending_duration.end_date}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border-2 border-black rounded-2xl placeholder-gray-500 text-base md:text-lg"
               />
@@ -933,12 +1029,14 @@ export const ArtifactAdd = ({ onClose }) => {
   )
 }
 
+
+
 export const ArtifactHyperlink = ({ onClose }) => {
 
 
   return (
     <>
-    <div className=" gap-y-2 font-semibold flex flex-col">
+      <div className=" gap-y-2 font-semibold flex flex-col">
         <span className="text-5xl">More Information</span>
         <div className="text-2xl flex items-center text-center">
           <span
@@ -951,9 +1049,9 @@ export const ArtifactHyperlink = ({ onClose }) => {
           <span> Hyperlinks </span>
         </div>
       </div>
-    <div className='w-full h-full flex flex-col xl:flex-row gap-x-10 px-10 overflow-auto'>
+      <div className='w-full h-full flex flex-col xl:flex-row gap-x-10 px-10 overflow-auto'>
 
-    </div>
+      </div>
     </>
   )
 }

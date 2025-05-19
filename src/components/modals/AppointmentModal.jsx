@@ -30,6 +30,55 @@ export const AppointmentModal = ({
   const token = localStorage.getItem('token')
   const API_URL = import.meta.env.VITE_API_URL;
 
+
+  // Helper function to convert 24-hour time to 12-hour format with AM/PM
+  const convertTo12HourFormat = (time24h) => {
+    if (!time24h) return '';
+
+    // Handle case where time might already include AM/PM
+    if (time24h.includes('AM') || time24h.includes('PM')) {
+      return time24h;
+    }
+
+    try {
+      // Extract hours and minutes from time string (handling various formats)
+      const timeRegex = /(\d{1,2})[:.h]?(\d{2})?/;
+      const match = time24h.match(timeRegex);
+
+      if (!match) return time24h; // If format doesn't match, return original
+
+      let hours = parseInt(match[1], 10);
+      const minutes = match[2] ? `:${match[2]}` : ':00';
+
+      // Determine AM/PM
+      const period = hours >= 12 ? 'PM' : 'AM';
+
+      // Convert hours to 12-hour format
+      if (hours === 0) hours = 12; // Midnight
+      if (hours > 12) hours -= 12;
+
+      return `${hours}${minutes} ${period}`;
+    } catch (error) {
+      console.error('Error converting time format:', error);
+      return time24h; // Return original if conversion fails
+    }
+  };
+
+  const formatTimeRange = (timeRange) => {
+    if (!timeRange) return '';
+
+    // Check if the timeRange contains a hyphen indicating a range
+    if (timeRange.includes('-')) {
+      // Split the range into start and end times
+      const [startTime, endTime] = timeRange.split('-').map(t => t.trim());
+      // Convert each part to 12-hour format
+      return `${convertTo12HourFormat(startTime)} - ${convertTo12HourFormat(endTime)}`;
+    }
+
+    // If it's not a range, just convert the single time
+    return convertTo12HourFormat(timeRange);
+  };
+
   // Reset approval state and error state when modal data changes
   useEffect(() => {
     if (modalData && modalData.status) {
@@ -261,12 +310,16 @@ export const AppointmentModal = ({
             <div className="mb-6">
               <div className="text-gray-600 text-sm mb-1">Preferred Time</div>
               <div className="text-blue-500 text-lg">
-                {modalData.preferredTime ||
-                  (modalData.start_time && modalData.end_time
-                    ? `${modalData.start_time} - ${modalData.end_time}`
-                    : "Flexible")}
+                {modalData.preferredTime
+                  ? formatTimeRange(modalData.preferredTime)
+                  : modalData.start_time || modalData.end_time
+                    ? `${convertTo12HourFormat(modalData.start_time || '')}${modalData.start_time && modalData.end_time ? ' - ' : ''
+                    }${convertTo12HourFormat(modalData.end_time || '')}`
+                    : "Flexible"}
               </div>
             </div>
+
+
 
           </div>
         </div>
