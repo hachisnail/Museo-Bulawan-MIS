@@ -838,9 +838,9 @@ const AcquisitionModal = ({
             ) : (
             <div className="w-full h-full flex flex-col overflow-hidden px-42">
                 {/* Scrollable Columns Area */}
-                <div className="flex flex-1 max-h-[65vh] border border-gray-300 p-4">
+                <div className="flex flex-1 max-h-[60vh] border-t gap-6 ">
                   {/* Left Column: Artifact Info */}
-                  <div className="w-1/2 h-full overflow-y-auto p-6">
+                  <div className="w-1/2 h-full overflow-y-auto p-6 ">
                     <div className="h-auto w-full xl:w-full flex flex-col gap-y-6">
                       {/* Basic Information Section */}
                       <div className="border-2 border-gray-300 p-6 rounded-xl">
@@ -1464,7 +1464,7 @@ const AcquisitionModal = ({
                   </div>
 
                   {/* Right Column: Donator/Lender Info */}
-                  <div className="w-1/2 h-full overflow-y-auto p-6 border-l border-gray-300">
+                  <div className="w-1/2 h-full overflow-y-auto p-6 ">
                     <h2 className="text-2xl font-bold mb-4">
                       {formType === 'Donation' ? 'Donator' : 'Lender'} Information
                     </h2>
@@ -1732,7 +1732,7 @@ const AcquisitionModal = ({
                 </div>
 
                 {/* Footer Button (non-scrollable) */}
-                <div className="flex justify-end px-6 py-4 border-t border-gray-300">
+                <div className="flex justify-end px-6 py-4 ">
                   <button
                     onClick={() => setViewDetailsMode(false)}
                     className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md"
