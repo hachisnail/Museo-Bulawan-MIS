@@ -527,93 +527,91 @@ if (encodedProfile) {
 </div>
 
               {/* Table header */}
-              <div className='min-w-[40rem] grid grid-cols-5 font-semibold'>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Date</div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Title</div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Author</div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Category</div>
-                <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Status</div>
-              </div>
+              <div className="bg-[#F0F0F0] min-w-[60rem] w-full font-semibold grid grid-cols-5 justify-between mb-7">
+  <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">Date</div>
+  <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">Title</div>
+  <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">Author</div>
+  <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">Category</div>
+  <div className="text-[#727272] text-2xl border-l-1 px-3 py-2">Status</div>
+</div>
 
-              {/* Table rows - only this is scrollable */}
-              <div
-    className='min-w-[40rem] flex flex-col border-t-1 border-t-gray-400 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100
-      h-[30rem] md:h-[35rem] lg:h-[40rem] xl:h-[45rem]'
-  >
-    {loading ? (
-      <div className="col-span-5 py-8 text-center text-2xl text-gray-500">
-        Loading articles...
+{/* Table rows - scrollable */}
+<div className="w-full min-w-[60rem] overflow-y-auto h-full border-t-1 border-t-gray-400" style={{ maxHeight: '45rem' }}>
+  {loading ? (
+    <div className="min-w-[60rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
+      <div className="text-2xl text-gray-500 flex flex-col items-center">
+        <i className="fas fa-inbox text-5xl mb-4"></i>
+        <p>Loading articles...</p>
       </div>
-    ) : error ? (
-      <div className="col-span-5 py-8 text-center text-red-500">
-        {error}
-        <div className="mt-4">
-          <button
-            onClick={fetchArticles}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    ) : filteredArticles.length > 0 ? (
-      filteredArticles.map((article) => (
-        <div
-          key={article.article_id}
-          className='min-w-[40rem] text-xl grid grid-cols-5 border-b-1 border-gray-400 hover:bg-gray-300 cursor-pointer'
-          onClick={() => handleRowClick(article)}
+    </div>
+  ) : error ? (
+    <div className="min-w-[60rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
+      <div className="text-2xl text-red-500 flex flex-col items-center">
+        <i className="fas fa-exclamation-circle text-5xl mb-4"></i>
+        <p>{error}</p>
+        <button
+          onClick={fetchArticles}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-4"
         >
-          <div className='px-4 pt-1 pb-3'>
-            {article.upload_date
-              ? new Date(article.upload_date).toLocaleDateString()
-              : new Date(article.created_at).toLocaleDateString()}
-          </div>
-          <div className='px-4 pt-1 pb-3 truncate'>
-            {article.title}
-          </div>
-          <div className='px-4 pt-1 pb-3'>
-            {article.author || 'Unknown'}
-          </div>
-          <div className='px-4 pt-1 pb-3'>
-            {article.article_category}
-          </div>
-          <div className="px-4 py-1">
-            {userRole === 'admin' ? (
-              <select
-                value={article.status}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  handleStatusChange(article.article_id, e.target.value);
-                }}
-                onClick={e => e.stopPropagation()}
-                className="border rounded px-2 py-1"
-              >
-                <option value="pending">Pending</option>
-                <option value="posted">Posted</option>
-              </select>
-            ) : (
-              <span
-                className="px-2 py-1 cursor-pointer"
-                onClick={() => handleRowClick(article)}
-              >
-                {article.status}
-              </span>
-            )}
-          </div>
+          Try Again
+        </button>
+      </div>
+    </div>
+  ) : filteredArticles.length > 0 ? (
+    filteredArticles.map((article) => (
+      <div
+        key={article.article_id}
+        className="min-w-[60rem] text-xl h-fit font-semibold grid grid-cols-5 cursor-pointer hover:bg-gray-300"
+        onClick={() => handleRowClick(article)}
+      >
+        <div className="px-4 py-3 border-b-1 border-gray-400">
+          {article.upload_date
+            ? new Date(article.upload_date).toLocaleDateString()
+            : new Date(article.created_at).toLocaleDateString()}
         </div>
-      ))
-    ) : (
-      <div className="min-w-[40rem] py-16 flex justify-center items-center">
-        <div className="text-2xl text-gray-500 flex flex-col items-center">
-          <i className="fas fa-inbox text-5xl mb-4"></i>
-          <p>No article found</p>
-          <p className="text-lg mt-2">
-            Try adjusting your filters or search criteria
-          </p>
+        <div className="px-4 py-3 border-b-1 border-gray-400 truncate">
+          {article.title}
+        </div>
+        <div className="px-4 py-3 border-b-1 border-gray-400">
+          {article.author || 'Unknown'}
+        </div>
+        <div className="px-4 py-3 border-b-1 border-gray-400">
+          {article.article_category}
+        </div>
+        <div className="px-4 py-3 border-b-1 border-gray-400">
+          {userRole === 'admin' ? (
+            <select
+              value={article.status}
+              onChange={(e) => {
+                e.stopPropagation();
+                handleStatusChange(article.article_id, e.target.value);
+              }}
+              onClick={e => e.stopPropagation()}
+              className="border rounded px-2 py-1"
+            >
+              <option value="pending">Pending</option>
+              <option value="posted">Posted</option>
+            </select>
+          ) : (
+            <span className="px-2 py-1 cursor-pointer">
+              {article.status}
+            </span>
+          )}
         </div>
       </div>
-    )}
-  </div>
+    ))
+  ) : (
+    <div className="min-w-[60rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
+      <div className="text-2xl text-gray-500 flex flex-col items-center">
+        <i className="fas fa-inbox text-5xl mb-4"></i>
+        <p>No article found</p>
+        <p className="text-lg mt-2">
+          Try adjusting your filters or search criteria
+        </p>
+      </div>
+    </div>
+  )}
+</div>
             </div>
           </div>
         </>) }
