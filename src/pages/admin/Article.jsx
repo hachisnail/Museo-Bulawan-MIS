@@ -315,6 +315,33 @@ const ArticleForm = () => {
     }
   };
 
+  const getStatusBadge = (status) => {
+    let color = '';
+    let bg = '';
+    let label = '';
+    switch (status) {
+      case 'posted':
+        color = 'text-green-700';
+        bg = 'bg-green-100';
+        label = 'Posted';
+        break;
+      case 'pending':
+        color = 'text-yellow-700';
+        bg = 'bg-yellow-100';
+        label = 'Pending';
+        break;
+      default:
+        color = 'text-gray-700';
+        bg = 'bg-gray-200';
+        label = status;
+    }
+    return (
+      <span className={`px-3 py-1 rounded-full font-semibold text-base ${color} ${bg}`}>
+        {label}
+      </span>
+    );
+  };
+
   const encodedProfile = localStorage.getItem('userProfile');
 let userRole = '';
 if (encodedProfile) {
@@ -580,23 +607,29 @@ if (encodedProfile) {
         </div>
         <div className="px-4 py-3 border-b-1 border-gray-400">
           {userRole === 'admin' ? (
-            <select
-              value={article.status}
-              onChange={(e) => {
-                e.stopPropagation();
-                handleStatusChange(article.article_id, e.target.value);
-              }}
-              onClick={e => e.stopPropagation()}
-              className="border rounded px-2 py-1"
-            >
-              <option value="pending">Pending</option>
-              <option value="posted">Posted</option>
-            </select>
-          ) : (
-            <span className="px-2 py-1 cursor-pointer">
-              {article.status}
-            </span>
-          )}
+    <select
+      value={article.status}
+      onChange={(e) => {
+        e.stopPropagation();
+        handleStatusChange(article.article_id, e.target.value);
+      }}
+      onClick={e => e.stopPropagation()}
+      className={`
+        border rounded px-2 py-1 font-semibold
+        ${article.status === 'posted' ? 'bg-green-100 text-green-700' : ''}
+        ${article.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : ''}
+      `}
+      style={{
+        minWidth: '7rem',
+        transition: 'background 0.2s, color 0.2s'
+      }}
+    >
+      <option value="pending" className="text-yellow-700 bg-yellow-100">Pending</option>
+      <option value="posted" className="text-green-700 bg-green-100">Posted</option>
+    </select>
+  ) : (
+    getStatusBadge(article.status)
+  )}
         </div>
       </div>
     ))
