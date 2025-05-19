@@ -542,18 +542,18 @@ const Acquisition = () => {
             </div>
 
             {/* Right Section: Search Controls and Table */}
-            <div className='w-full h-full flex flex-col gap-y-7 overflow-x-auto overflow-y-auto'>
-              {/* Search and Filter Controls */}
-              <div className='min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2'>
-                {/* Date picker */}
-                <div className='flex-shrink-0'>
+            <div className="w-full h-full flex flex-col gap-y-7">
+              {/* Controls - Not Scrolling */}
+              <div className="min-w-[94rem] min-h-[5rem] py-2 flex items-center gap-x-2">
+                {/* Date Picker */}
+                <div className="flex-shrink-0">
                   <CustomDatePicker
                     selected={selectedDate}
                     onChange={(date) => handleDateChange(date)}
                     isClearable={true}
                     placeholderText="Filter by Date"
-                    popperPlacement='bottom-start'
-                    popperClassName='z-50'
+                    popperPlacement="bottom-start"
+                    popperClassName="z-50"
                     customInput={
                       <button className={`px-3 h-16 rounded-lg border-1 ${selectedDate ? 'border-gray-700' : 'border-gray-500'} cursor-pointer`}>
                         <i className={`${selectedDate ? 'text-gray-700 fa-solid' : 'text-gray-500 fa-regular'} fa-calendar text-4xl`}></i>
@@ -562,22 +562,22 @@ const Acquisition = () => {
                   />
                 </div>
 
-                {/* Search input */}
-                <div className='relative h-full min-w-[20rem]'>
-                  <i className='text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer'></i>
+                {/* Search */}
+                <div className="relative h-full min-w-[20rem]">
+                  <i className="text-2xl fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 cursor-pointer"></i>
                   <input
-                    type='text'
-                    placeholder='Search by name or donator'
-                    className='h-full pl-10 pr-3 py-2 border-1 border-gray-500 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    type="text"
+                    placeholder="Search by name or donator"
+                    className="h-full pl-10 pr-3 py-2 border-1 border-gray-500 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
 
-                {/* Sort dropdown */}
-                <div className='relative h-full min-w-48'>
+                {/* Sort */}
+                <div className="relative h-full min-w-48">
                   <select
-                    className='appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     onChange={(e) => {
                       const [column, direction] = e.target.value.split('|');
                       setColumnFilter(column);
@@ -599,13 +599,13 @@ const Acquisition = () => {
                     <option value="updated|asc">Last Updated (Oldest First)</option>
                     <option value="updated|desc">Last Updated (Newest First)</option>
                   </select>
-                  <i className='text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600'></i>
+                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
                 </div>
 
-                {/* Status filter */}
-                <div className='relative h-full min-w-48'>
+                {/* Status Filter */}
+                <div className="relative h-full min-w-48">
                   <select
-                    className='appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                    className="appearance-none border-1 border-gray-500 h-full text-2xl rounded-lg text-gray-500 w-full py-2 pl-4 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                   >
@@ -616,160 +616,67 @@ const Acquisition = () => {
                     <option value="Acquired">Acquired</option>
                     <option value="Failed">Failed</option>
                   </select>
-                  <i className='text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600'></i>
+                  <i className="text-2xl fas fa-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-600"></i>
                 </div>
               </div>
 
-              {/* Table Content */}
-              <div className='w-full h-full flex flex-col gap-y-7'>
-                {/* Form Table */}
-                {activeTab === 'form' && (
-                  <>
-                                {/* Table Headers */}
-                    <div className='min-w-[94rem] w-full font-semibold min-h-fit grid grid-cols-6 justify-between '>
-                      <div className='text-[#727272] text-2xl border-l-1  px-3 py-2'>Date</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Donator</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Artifact Name</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Status</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Transfer Status</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Last Updated</div>
-                    </div>  
+              {/* Table - Header + Scrollable Body */}
+              <div className="min-w-[94rem] w-full flex flex-col">
+                {/* Table Header (Static) */}
+                <div className="grid grid-cols-6 font-semibold text-[#727272] text-2xl  sticky top-0 z-10">
+                  <div className="border-l-1 px-3 py-2">Date</div>
+                  <div className="border-l-1 px-3 py-2">Donator</div>
+                  <div className="border-l-1 px-3 py-2">Artifact Name</div>
+                  <div className="border-l-1 px-3 py-2">Status</div>
+                  <div className="border-l-1 px-3 py-2">Transfer Status</div>
+                  <div className="border-l-1 px-3 py-2">Last Updated</div>
+                </div>
 
-                    {/* Table Data */}
-                    <div className='w-full min-w-[94rem] h-full  flex flex-col border-gray-400 border-y'>
-                      {filteredData.acquisitions.length > 0 ? (
-                        filteredData.acquisitions.map((form) => (
-                          <div
-                            key={form.id}
-                            className='min-w-[94rem] text-xl h-[4rem] font-semibold grid grid-cols-6 cursor-pointer hover:bg-gray-300'
-                            onClick={() => {
-                              setSelectedForm(form);
-                              setIsAcquisitionModalOpen(true);
-                            }}                          >
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {form.donation_date ? new Date(form.donation_date).toLocaleDateString() : 'N/A'}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {form.Donator?.name || 'N/A'}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {form.artifact_name}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {getStatusLabel(form.ContributionType.status || 'Pending')}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {getStatusLabel(form.ContributionType.transfer_status || 'N/A')}
-                            </div>
-                            <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                              {form.updated_at ? new Date(form.updated_at).toLocaleString() : 'N/A'}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
-                          <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
-                            <i className="fas fa-inbox text-5xl mb-4"></i>
-                            <p>No acquisition data available</p>
-                            <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
-                          </div>
+                {/* Scrollable Body */}
+                <div className="overflow-y-auto max-h-[65vh] border-b border-gray-300">
+                  {filteredData.acquisitions.length > 0 ? (
+                    filteredData.acquisitions.map((form) => (
+                      <div
+                        key={form.id}
+                        className="grid grid-cols-6 text-xl h-[4rem] font-semibold cursor-pointer hover:bg-gray-300"
+                        onClick={() => {
+                          setSelectedForm(form);
+                          setIsAcquisitionModalOpen(true);
+                        }}
+                      >
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {form.donation_date ? new Date(form.donation_date).toLocaleDateString() : 'N/A'}
                         </div>
-                      )}
-                  </div>
-                  </>
-
-                )}
-
-                {/* Donation Records Tab */}
-                {activeTab === 'donationRecords' && (
-                  <>
-                    {/* Table header for top-level rows */}
-                    <div className='min-w-[94rem] w-full font-semibold h-fit grid grid-cols-3 justify-between '>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Date</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Donator</div>
-                      <div className='text-[#727272] text-2xl border-l-1 px-3 py-2'>Donations</div>
-                    </div>
-                  
-                    <div className='w-full min-w-[94rem] h-full flex flex-col border-y-1 border-gray-400'>
-                      {donationGroupsArray.length > 0 ? (
-                        donationGroupsArray.map((group) => {
-                          const { donorId, donorName, date, forms } = group;
-
-                          return (
-                            <div key={donorId}>
-                              {/* Top-level row */}
-                              <div
-                                className={`min-w-[94rem] text-xl h-[4rem] font-semibold grid grid-cols-3 cursor-pointer hover:bg-gray-300 ${
-                                  highlightedDonator === donorId ? 'bg-gray-300' : ''
-                                }`}
-                                onClick={() => handleToggleDropdown(donorId)}
-                              >
-                                <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                                  {date ? new Date(date).toLocaleDateString() : 'N/A'}
-                                </div>
-                                <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center'>
-                                  {donorName || 'N/A'}
-                                </div>
-                                <div className='px-4 py-2 border-b-1 border-gray-400 flex items-center justify-between'>
-                                  {forms.length}
-                                  <i
-                                    className={`fa-solid fa-caret-down transition-transform duration-300 ${
-                                      expandedDonator === donorId ? 'rotate-180' : ''
-                                    }`}
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Expanded section */}
-                              {expandedDonator === donorId && (
-                                <div className="bg-white p-4 border-1 border-gray-300 w-2/3 ml-auto h-auto ">
-                                  <div className="grid grid-cols-5 text-left font-semibold mb-3 text-xl">
-                                    <div>Title</div>
-                                    <div>Contribution Type</div>
-                                    <div>Status</div>
-                                    <div>Transfer Status</div>
-                                    <div>Date</div>
-                                  </div>
-                                  <div className="w-full max-h-42 overflow-auto">
-                                    {forms.map((f) => (
-                                      <div
-                                        key={f.id}
-                                        className="grid grid-cols-5 text-xl hover:bg-gray-300 cursor-pointer"
-                                        onClick={() => handleOpenDonationModal(f)} // Open modal on click
-                                      >
-                                        <div className="py-3 border-b-1 border-gray-400">{f.artifact_name}</div>
-                                        <div className="py-3 border-b-1 border-gray-400">{f.ContributionType.accession_type}</div>
-                                        <div className="py-3 border-b-1 border-gray-400">
-                                          {getStatusLabel(f.ContributionType.status || 'Pending')}
-                                        </div>
-                                        <div className="py-3 border-b-1 border-gray-400">
-                                          {getStatusLabel(f.ContributionType.transfer_status || 'N/A')}
-                                        </div>
-                                        <div className="py-3 border-b-1 border-gray-400">
-                                          {f.donation_date ? new Date(f.donation_date).toLocaleDateString() : 'N/A'}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="min-w-[94rem] h-full py-16 flex justify-center items-center border-b-1 border-gray-400">
-                          <div className="text-2xl h-fit text-gray-500 flex flex-col items-center">
-                            <i className="fas fa-inbox text-5xl mb-4"></i>
-                            <p>No donation records available</p>
-                            <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
-                          </div>
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {form.Donator?.name || 'N/A'}
                         </div>
-                      )}
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {form.artifact_name}
+                        </div>
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {getStatusLabel(form.ContributionType.status || 'Pending')}
+                        </div>
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {getStatusLabel(form.ContributionType.transfer_status || 'N/A')}
+                        </div>
+                        <div className="px-4 py-2 border-b border-gray-400 flex items-center">
+                          {form.updated_at ? new Date(form.updated_at).toLocaleString() : 'N/A'}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="min-w-[94rem] py-16 flex justify-center items-center">
+                      <div className="text-2xl text-gray-500 flex flex-col items-center">
+                        <i className="fas fa-inbox text-5xl mb-4"></i>
+                        <p>No acquisition data available</p>
+                        <p className="text-lg mt-2">Try adjusting your filters or search criteria</p>
+                      </div>
                     </div>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </div>
+
           </div>
           </>) }
         </div>

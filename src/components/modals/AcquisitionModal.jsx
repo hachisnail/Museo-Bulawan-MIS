@@ -351,88 +351,285 @@ const AcquisitionModal = ({
                             <div className='w-1/3 h-full py-2'>
                               <div className='w-full h-full gap-2  pb-12'>
                                   <span className='text-3xl font-bold'>Images of the Artifact</span>
-                                  <div className='w-full h-full border border-amber-300'>
-                                      <div className="w-full h-full px-4 py-2 border-2 border-gray-400">
-                      {selectedForm.images && (
-                        <div className="flex flex-wrap gap-3 py-3 overflow-x-auto h-full overflow-y-auto">
-                          {(() => {
-                            try {
-                              const imagePaths = JSON.parse(selectedForm.images);
-                              return imagePaths.map((imagePath, index) => (
-                                <div key={index} className="relative flex-shrink-0 group">
-                                  <img
-                                    src={`/${imagePath}`}
-                                    alt={`Artifact image ${index + 1}`}
-                                    className="h-52 w-auto object-contain border border-gray-200 rounded shadow-sm cursor-pointer hover:opacity-90"
-                                    onClick={() => handleOpenPreview(`/${imagePath}`)}
-                                    onError={(e) => {
-                                      e.target.onerror = null;
-                                      e.target.src = '/placeholder-image.png';
-                                    }}
-                                  />
-                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="flex gap-2">
-                                      {/* Preview button */}
-                                      <button 
-                                        onClick={() => handleOpenPreview(`/${imagePath}`)}
-                                        className="bg-blue-600 text-white p-1.5 rounded-full hover:bg-blue-700"
-                                        title="Preview image"
-                                      >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
-                                        </svg>
-                                      </button>
-                                      
-                                      {/* Download button */}
-                                      <a 
-                                        href={`/${imagePath}`} 
-                                        download
-                                        className="bg-green-600 text-white p-1.5 rounded-full hover:bg-green-700"
-                                        title="Download image"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                                        </svg>
-                                      </a>
+                                  <div className='w-full h-full border rounded-md bg-gray-100'>
+                                      <div className="w-full h-full px-4 py-2">
+                                      {selectedForm.images && (
+                                        <div className="flex flex-wrap gap-3 py-3 overflow-x-auto h-full overflow-y-auto">
+                                          {(() => {
+                                            try {
+                                              const imagePaths = JSON.parse(selectedForm.images);
+                                              return imagePaths.map((imagePath, index) => (
+                                                <div key={index} className="relative flex-shrink-0 group">
+                                                  <img
+                                                    src={`/${imagePath}`}
+                                                    alt={`Artifact image ${index + 1}`}
+                                                    className="h-52 w-auto object-contain border border-gray-200 rounded shadow-sm cursor-pointer hover:opacity-90"
+                                                    onClick={() => handleOpenPreview(`/${imagePath}`)}
+                                                    onError={(e) => {
+                                                      e.target.onerror = null;
+                                                      e.target.src = '/placeholder-image.png';
+                                                    }}
+                                                  />
+                                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex gap-2">
+                                                      {/* Preview button */}
+                                                      <button 
+                                                        onClick={() => handleOpenPreview(`/${imagePath}`)}
+                                                        className="bg-blue-600 text-white p-1.5 rounded-full hover:bg-blue-700"
+                                                        title="Preview image"
+                                                      >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                      </button>
+                                                      
+                                                      {/* Download button */}
+                                                      <a 
+                                                        href={`/${imagePath}`} 
+                                                        download
+                                                        className="bg-green-600 text-white p-1.5 rounded-full hover:bg-green-700"
+                                                        title="Download image"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                      >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                        </svg>
+                                                      </a>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              ));
+                                            } catch (error) {
+                                              console.error("Error parsing images:", error);
+                                              return <p className="text-red-500 py-4 text-center">Error loading images</p>;
+                                            }
+                                          })()}
+                                        </div>
+                                      )}
+                                      {(!selectedForm.images || JSON.parse(selectedForm.images).length === 0) && (
+                                        <p className="text-gray-500 py-4 text-center">No images available</p>
+                                      )}
                                     </div>
-                                  </div>
-                                </div>
-                              ));
-                            } catch (error) {
-                              console.error("Error parsing images:", error);
-                              return <p className="text-red-500 py-4 text-center">Error loading images</p>;
-                            }
-                          })()}
-                        </div>
-                      )}
-                      {(!selectedForm.images || JSON.parse(selectedForm.images).length === 0) && (
-                        <p className="text-gray-500 py-4 text-center">No images available</p>
-                      )}
-                    </div>
-                  
                                   </div>
                               </div>
                             </div>
                             <div className='w-1/3 h-full py-2'>
-                              <div className='w-full h-full gap-2 pb-12'>
+                              <div className='w-full h-full gap-2  pb-12'>
                                   <span className='text-3xl font-bold'>Related Images of the Artifact</span>
-                                  <div className='w-full h-full border border-amber-300'>
-
+                                  <div className='w-full h-full border rounded-md bg-gray-100'>
+                                      <div className="w-full h-full px-4 py-2">
+                                      {selectedForm.related_images && (
+                                        <div className="flex flex-wrap gap-3 py-3 overflow-x-auto h-full overflow-y-auto">
+                                          {(() => {
+                                            try {
+                                              const imagePaths = JSON.parse(selectedForm.related_images);
+                                              return imagePaths.map((imagePath, index) => (
+                                                <div key={index} className="relative flex-shrink-0 group">
+                                                  <img
+                                                    src={`/${imagePath}`}
+                                                    alt={`Artifact image ${index + 1}`}
+                                                    className="h-52 w-auto object-contain border border-gray-200 rounded shadow-sm cursor-pointer hover:opacity-90"
+                                                    onClick={() => handleOpenPreview(`/${imagePath}`)}
+                                                    onError={(e) => {
+                                                      e.target.onerror = null;
+                                                      e.target.src = '/placeholder-image.png';
+                                                    }}
+                                                  />
+                                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex gap-2">
+                                                      {/* Preview button */}
+                                                      <button 
+                                                        onClick={() => handleOpenPreview(`/${imagePath}`)}
+                                                        className="bg-blue-600 text-white p-1.5 rounded-full hover:bg-blue-700"
+                                                        title="Preview image"
+                                                      >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                      </button>
+                                                      
+                                                      {/* Download button */}
+                                                      <a 
+                                                        href={`/${imagePath}`} 
+                                                        download
+                                                        className="bg-green-600 text-white p-1.5 rounded-full hover:bg-green-700"
+                                                        title="Download image"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                      >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                                        </svg>
+                                                      </a>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              ));
+                                            } catch (error) {
+                                              console.error("Error parsing images:", error);
+                                              return <p className="text-red-500 py-4 text-center">Error loading images</p>;
+                                            }
+                                          })()}
+                                        </div>
+                                      )}
+                                      {(!selectedForm.images || JSON.parse(selectedForm.images).length === 0) && (
+                                        <p className="text-gray-500 py-4 text-center">No images available</p>
+                                      )}
+                                    </div>
                                   </div>
                               </div>
                             </div>
                             <div className='w-1/3 h-full py-2'>
                               <div className='w-full h-full gap-2 pb-12'>
                                 <span className='text-3xl font-bold'>Documents about the artifact</span>
+                                 {/* Documents section */}
+                                  <div className="w-full h-full flex flex-col gap-2">
+                                    <span className="text-2xl">Relevant documentation or research about the artifact.</span>
+                                    {documentKeys.length > 0 ? (
+                                      <div className="border rounded-md p-3 bg-gray-50 w-full h-full">
+                                        <DocumentView documentKeys={documentKeys} />
+                                      </div>
+                                    ) : (
+                                      <span className="text-xl text-[#FF0000]">No documents available</span>
+                                    )}
+                                  </div>
+
                               </div>
                             </div>
                         </div>
                     </div>
                   </div>
-                   <div className='w-2/5'>
-                      Respond
+                   <div className='w-2/5 h-full'>
+                    {/* Response Section - Changes Based on Status */}
+{/* Response Section - Changes Based on Status */}
+{status === 'Pending' ? (
+  <div className="w-full border-t border-gray-300 mt-8 pt-6">
+    <div className="bg-white shadow-md rounded-xl p-8 space-y-8">
+      <h2 className="text-4xl font-bold text-gray-800">Respond</h2>
+
+      {/* Approval Buttons */}
+      <div>
+        <h3 className="text-2xl font-semibold text-gray-700">Approve?</h3>
+        <div className="flex gap-6 mt-4 px-2">
+          <button
+            className={`transition rounded-lg px-6 py-3 font-semibold text-lg w-40 border 
+              ${selectedResponse === 'yes'
+                ? 'bg-[#6F3FFF] text-white border-[#6F3FFF]'
+                : 'bg-gray-200 text-gray-800 hover:bg-indigo-100 border-gray-300'}`}
+            onClick={handleApprove}
+          >
+            Yes
+          </button>
+          <button
+            className={`transition rounded-lg px-6 py-3 font-semibold text-lg w-40 border 
+              ${selectedResponse === 'no'
+                ? 'bg-[#6F3FFF] text-white border-[#6F3FFF]'
+                : 'bg-gray-200 text-gray-800 hover:bg-indigo-100 border-gray-300'}`}
+            onClick={handleDecline}
+          >
+            No
+          </button>
+        </div>
+      </div>
+
+      {/* Message Box */}
+      <div className="space-y-3">
+        <label className="text-2xl font-semibold text-gray-700 flex items-center gap-2">
+          Leave a message
+          <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          ref={messageRef}
+          className={`w-full h-32 rounded-md p-4 text-lg resize-none transition border 
+            ${messageError ? 'border-red-500' : 'border-gray-400'}`}
+          placeholder="Type your message here..."
+          value={emailMessage}
+          onChange={(e) => {
+            setEmailMessage(e.target.value);
+            if (e.target.value.trim()) setMessageError('');
+          }}
+        />
+        {messageError && <p className="text-red-500 text-sm">{messageError}</p>}
+        <p className="text-gray-600 text-lg">
+          This message will be sent to <span className="text-[#6F3FFF] font-semibold">{selectedForm.Donator?.email || 'N/A'}</span>
+        </p>
+      </div>
+
+      {/* Send Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={handleSendEmailAndUpdateStatus}
+          disabled={sendingEmail || !selectedResponse}
+          className={`w-40 py-3 rounded-lg text-lg font-semibold transition 
+            ${sendingEmail || !selectedResponse
+              ? 'bg-gray-300 text-white cursor-not-allowed'
+              : 'bg-[#6F3FFF] hover:bg-[#4c3fff] text-white cursor-pointer'}`}
+        >
+          {sendingEmail ? 'Sending...' : 'Done'}
+        </button>
+      </div>
+    </div>
+  </div>
+) : status === 'Accepted' && transferStatus === 'On Progress' ? (
+  <div className="w-full border-t border-gray-300 mt-8 pt-6">
+    <div className="bg-white shadow-md rounded-xl p-8 space-y-8">
+      <h2 className="text-4xl font-bold text-gray-800">Update Transfer Status</h2>
+      <h3 className="text-2xl font-semibold text-gray-700">Was the artifact delivered?</h3>
+      <div className="flex gap-6 mt-4 px-2">
+        <button
+          className="bg-[#6F3FFF] hover:bg-[#4c3fff] text-white px-6 py-3 rounded-lg font-semibold text-lg transition"
+          onClick={() => setConfirmationModal({ action: 'acquired', open: true })}
+        >
+          Yes, Delivered
+        </button>
+        <button
+          className="bg-[#6F3FFF] hover:bg-[#4c3fff] text-white px-6 py-3 rounded-lg font-semibold text-lg transition"
+          onClick={() => setConfirmationModal({ action: 'failed', open: true })}
+        >
+          No, Failed
+        </button>
+      </div>
+      <div className="flex justify-end">
+        <button
+          onClick={handleCloseModal}
+          className="bg-[#6F3FFF] hover:bg-[#4c3fff] text-white px-6 py-3 rounded-lg font-semibold text-lg transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+) : (
+  <div className="w-full border-t border-gray-300 mt-8 pt-6">
+    <div className="bg-white shadow-md rounded-xl p-8 space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-4xl font-bold text-gray-800">Transfer Status</h2>
+        <span className={`px-4 py-2 rounded-lg text-lg font-semibold
+          ${transferStatus === 'Acquired'
+            ? 'bg-green-100 text-green-700'
+            : transferStatus === 'Failed'
+              ? 'bg-red-100 text-red-700'
+              : 'bg-gray-100 text-gray-700'}`}>
+          {transferStatus}
+        </span>
+      </div>
+      <p className="text-lg text-gray-600 px-1">
+        This form's processing has been completed. No further actions are available.
+      </p>
+      <div className="flex justify-end">
+        <button
+          onClick={handleCloseModal}
+          className="bg-[#6F3FFF] hover:bg-[#4c3fff] text-white px-6 py-3 rounded-lg font-semibold text-lg transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+
                   </div>
               </div>
 
