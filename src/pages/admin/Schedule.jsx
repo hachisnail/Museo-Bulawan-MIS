@@ -1,6 +1,6 @@
 // Schedule.jsx
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import AdminNav from '../../components/navbar/AdminNav'
 import Calendar from 'react-calendar'
 import TimePicker from 'react-time-picker'
@@ -307,7 +307,7 @@ const DayScheduler = ({
               }}
             >
               {/* Normal (non-hover) view - SIMPLIFIED */}
-                            <div
+              <div
                 className={`
                   w-full h-full
                   border ${isSelected ? 'border-white bg-gray-500 text-white' : 'border-gray-300 bg-white'}
@@ -323,8 +323,8 @@ const DayScheduler = ({
                 {(timeStringToMinutes(ev.endTime) - timeStringToMinutes(ev.startTime)) <= 15 ? (
                   // Compact row layout for very short events
                   <div className="flex items-center justify-between h-full space-x-2">
-                   
-              
+
+
                     {/* Title and badge in middle */}
                     <div className="flex-1 min-w-0 flex items-center space-x-2">
                       <span className="font-bold text-xs truncate">
@@ -337,7 +337,7 @@ const DayScheduler = ({
                         {ev.isAppointment ? 'Appt' : 'Sched'}
                       </span>
                     </div>
-               <p className={`absolute bottom-1 right-2 text-[10px] sm:text-xs ${isSelected ? '' : 'text-gray-400'}`}>
+                    <p className={`absolute bottom-1 right-2 text-[10px] sm:text-xs ${isSelected ? '' : 'text-gray-400'}`}>
                       {formatTimeTo12H(ev.startTime)} - {formatTimeTo12H(ev.endTime)}
                     </p>
                   </div>
@@ -348,24 +348,24 @@ const DayScheduler = ({
                       <p className="font-bold text-xs sm:text-sm truncate">
                         {ev.title}
                       </p>
-              
+
                       {ev.isAppointment && ev.organizer && (
                         <p className="text-[10px] sm:text-xs truncate">
                           Visitor: {ev.organizer}
                         </p>
                       )}
-              
+
                       {ev.isAppointment && ev.numPeople && (
                         <p className="text-[10px] sm:text-xs truncate">
                           {ev.numPeople}
                         </p>
                       )}
-              
+
                       <p className={`text-[10px] sm:text-xs truncate ${ev.isAppointment ? 'text-blue-500' : 'text-green-500'}`}>
                         {ev.isAppointment ? 'Appointment' : 'Schedule'}
                       </p>
                     </div>
-              
+
                     <p className={`absolute bottom-1 right-2 text-[10px] sm:text-xs ${isSelected ? '' : 'text-gray-400'}`}>
                       {formatTimeTo12H(ev.startTime)} - {formatTimeTo12H(ev.endTime)}
                     </p>
@@ -509,10 +509,10 @@ const Schedule = () => {
   // Schedule.jsx - Lines 967-1161
 
   // Define utility functions for data fetching
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     setIsLoading(true);
     try {
-      
+
 
       // Format date for API
       const formattedDate = dateString;
@@ -646,10 +646,9 @@ const Schedule = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [API_URL, dateString]);
 
-  const fetchTodayTours = async () => {
-    
+  const fetchTodayTours = useCallback(async () => {
     try {
 
       console.log("hit");
@@ -767,13 +766,13 @@ const Schedule = () => {
       console.error('Error fetching today tours:', error);
       showToast('Error loading today\'s tours', 'error');
     }
-  };
+  }, [API_URL, dateString]);
 
-  const fetchMonthEvents = async () => {
+  const fetchMonthEvents = useCallback(async () => {
     setIsLoading(true);
     try {
-     
-      
+
+
 
       // Use viewedDate instead of selectedDate to determine which month to fetch
       const year = viewedDate.getFullYear();
@@ -851,48 +850,48 @@ const Schedule = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [API_URL, viewedDate]);
 
+  // Memoize fetchAllData
+  const fetchAllData = useCallback(async () => {
+    if (!isLoading) {  // Add loading check
+      try {
+        await Promise.all([
+          fetchEvents(),
+          fetchTodayTours(),
+          fetchMonthEvents()
+        ]);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    }
+  }, [fetchEvents, fetchTodayTours, fetchMonthEvents, isLoading]);
+
+  // Single useEffect for initial data load and WebSocket
   useEffect(() => {
-    console.log("Date changed, fetching data for:", dateString);
-    fetchEvents();
-    fetchTodayTours();
-    fetchMonthEvents();
+    let isSubscribed = true;
+
+    const loadData = async () => {
+      if (isSubscribed) {
+        await fetchAllData();
+      }
+    };
+
+    // WebSocket handlers
     const handleDataChange = () => {
-      console.log('WebSocket: Data changed, refreshing all components...');
-      
-      // Refresh all components that need updates
-      fetchEvents();         // Update day scheduler events
-      fetchTodayTours();     // Update today's scheduled tours
-      fetchMonthEvents();    // Update calendar view with event counts (this is key for calendar dots)
-    }
-  
-    const handleRefresh = () => {
-      console.log('WebSocket: Refresh command received, refreshing all components...');
-      
-      // Refresh all components that need updates
-      fetchEvents();         // Update day scheduler events
-      fetchTodayTours();     // Update today's scheduled tours
-      fetchMonthEvents();    // Update calendar view with event counts (this is key for calendar dots)
-    }
-  
-    // Connect to WebSocket and set up handlers
-    connectWebSocket(handleDataChange, handleRefresh);
-    
-    // Cleanup function to close WebSocket connection when component unmounts
+      if (isSubscribed) {
+        loadData();
+      }
+    };
+
+    loadData();
+    connectWebSocket(handleDataChange, handleDataChange);
+
     return () => {
+      isSubscribed = false;
       closeWebSocket();
-    }
-  }, [selectedDate, dateString]);
-  
-  
-
-  // Separate useEffect for month view calendar events
-  useEffect(() => {
-    fetchMonthEvents();
-  }, [viewedDate, API_URL]);
-
-
+    };
+  }, [selectedDate]); // Reduced dependency array
 
   // Handle mark as done button click
   const handleMarkAsDone = async () => {
@@ -900,7 +899,7 @@ const Schedule = () => {
 
     if (selectedAppointment.isAppointment) {
       try {
-        
+
         const appointmentId = selectedAppointment.id.replace('appointment-', '');
 
         // Get the full appointment data
@@ -941,7 +940,7 @@ const Schedule = () => {
   const handleScheduleConfirm = async () => {
     try {
       setIsLoading(true);
-      
+
       const scheduleId = selectedAppointment.schedule_id;
 
       // Update schedule status to COMPLETED
@@ -966,7 +965,7 @@ const Schedule = () => {
 
 
 
-const handleAddEvent = async () => {
+  const handleAddEvent = async () => {
     try {
       // Validate input
       if (!newTitle) {
@@ -1002,13 +1001,13 @@ const handleAddEvent = async () => {
       // Check for existing exclusive schedules
       const existingExclusiveEvent = backendEvents.find(event => {
         if (!event.isSchedule) return false;
-        
+
         // Check if there's an exclusive event on the same date
         if (event.availability === 'EXCLUSIVE' && event.date === dateString) {
           // Convert times to minutes for comparison
           const eventStart = timeStringToMinutes(event.startTime);
           const eventEnd = timeStringToMinutes(event.endTime);
-          
+
           // Check for time overlap
           return (startMinutes < eventEnd && eventStart < endMinutes);
         }
@@ -1025,10 +1024,10 @@ const handleAddEvent = async () => {
       if (newAvailability === 'EXCLUSIVE') {
         const existingEvents = backendEvents.filter(event => {
           if (event.date !== dateString) return false;
-          
+
           const eventStart = timeStringToMinutes(event.startTime);
           const eventEnd = timeStringToMinutes(event.endTime);
-          
+
           return (startMinutes < eventEnd && eventStart < endMinutes);
         });
 
@@ -1064,21 +1063,21 @@ const handleAddEvent = async () => {
       );
 
       showToast('Schedule added successfully', 'success');
-      
+
       // Reset form
       setNewTitle('');
       setNewDesc('');
       setNewStartTime('09:00');
       setNewEndTime('10:00');
       setNewAvailability('SHARED');
-      
+
       fetchEvents();
 
     } catch (error) {
       console.error('Error creating schedule:', error);
       showToast(error.response?.data?.message || 'Failed to create schedule', 'error');
     }
-};
+  };
 
 
 
@@ -1228,7 +1227,7 @@ const handleAddEvent = async () => {
               <div className="min-w-[31rem] max-w-[31rem] flex flex-col h-[40rem] bg-white rounded-xl shadow-xl p-5">
                 <span className="text-2xl font-semibold mb-4">Today's Scheduled Tours</span>
                 <div className="w-full border-t border-gray-200 pt-4 space-y-3 max-h-140 overflow-y-auto">
-                  
+
                   {todayTours.length === 0 && (
                     <div className="bg-gray-100 text-gray-700 p-3 rounded-lg">
                       No Scheduled Tours
@@ -1309,7 +1308,7 @@ const handleAddEvent = async () => {
               </div>
               <div className="w-full h-full bg-white p-5 rounded-xl shadow-xl">
                 <DayScheduler
-                  appointments={backendEvents}  
+                  appointments={backendEvents}
                   selectedDate={selectedDate}
                   onSelectAppointment={setSelectedAppointment}
                   selectedAppointment={selectedAppointment}
@@ -1575,7 +1574,7 @@ const handleAddEvent = async () => {
           }}
           updateAppointmentStatus={async (id, status, presentCount) => {
             try {
-              
+
               await axios.patch(
                 `${API_URL}/api/auth/appointment/${id}/status`,
                 {
